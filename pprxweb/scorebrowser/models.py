@@ -8,21 +8,27 @@
 from django.db import models
 
 
-class ChartPairs(models.Model):
+class Player(models.Model):
     id = models.AutoField(primary_key=True)
-    x_chart_id = models.IntegerField()
-    y_chart_id = models.IntegerField()
-    slope = models.FloatField()
-    strength = models.FloatField()
+    name = models.TextField()
 
     class Meta:
         managed = False
-        db_table = 'chart_pairs'
+        db_table = 'players'
 
 
-class Charts(models.Model):
+class Song(models.Model):
+    id = models.TextField(primary_key=True)
+    title = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = 'songs'
+
+
+class Chart(models.Model):
     id = models.AutoField(primary_key=True)
-    song_id = models.TextField()
+    song = models.ForeignKey(Song, on_delete=models.PROTECT)
     difficulty = models.IntegerField()
     rating = models.IntegerField()
     spice = models.FloatField(blank=True, null=True)
@@ -34,40 +40,12 @@ class Charts(models.Model):
         db_table = 'charts'
 
 
-class Players(models.Model):
+class Score(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.TextField()
-
-    class Meta:
-        managed = False
-        db_table = 'players'
-
-
-class Scores(models.Model):
-    id = models.AutoField(primary_key=True)
-    player_id = models.IntegerField()
-    chart_id = models.IntegerField()
+    player = models.ForeignKey(Player, on_delete=models.PROTECT)
+    chart = models.ForeignKey(Chart, on_delete=models.PROTECT)
     score = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'scores'
-
-
-class Songs(models.Model):
-    id = models.TextField(primary_key=True)
-    title = models.TextField()
-
-    class Meta:
-        managed = False
-        db_table = 'songs'
-
-
-class UnprocessedPairs(models.Model):
-    id = models.AutoField(primary_key=True)
-    x_chart_id = models.IntegerField()
-    y_chart_id = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'unprocessed_pairs'

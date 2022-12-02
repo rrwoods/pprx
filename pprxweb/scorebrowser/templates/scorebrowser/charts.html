@@ -1,0 +1,16 @@
+{% load pprxtras %}
+
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta charset="utf-8" />
+		<title>Welcome to PPR X :)</title>
+	</head>
+	<body>
+		<ul>
+		{% for chart in charts %}
+			<li>{{chart.song.title}} {{chart.difficulty|difficulty}} {{chart.rating}}</li>
+		{% endfor %}
+		</ul>
+	</body>
+</html>

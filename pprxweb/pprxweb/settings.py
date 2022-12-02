@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'django.contrib.contenttypes',
     'scorebrowser.apps.ScorebrowserConfig',
 ]
 
@@ -44,6 +45,17 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'pprxweb.urls'
 
 TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+            ],
+        },
+    },
 ]
 
 WSGI_APPLICATION = 'pprxweb.wsgi.application'
