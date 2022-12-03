@@ -1,0 +1,19 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta charset="utf-8" />
+		<title>{% block title %}Welcome to PPR X :){% endblock %}</title>
+		{% block scripts %}{% endblock %}
+		<link rel="stylesheet" href="{% static 'styles.css' %}">
+	</head>
+	<body>
+		<div class="navbar-main">
+			<span class="navbar-link"><a href="{% url 'visibility' %}">Song visibility</a></span>
+			<span class="navbar-link"><a href="{% url 'goals' %}">Set quality goal</a></span>
+			<span class="navbar-link"><a href="{% url 'scores' %}">Browse scores</a></span>
+		</div>
+		{% block content %}{% endblock %}
+	</body>
+</html>

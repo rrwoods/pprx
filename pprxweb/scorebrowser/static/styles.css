@@ -1,0 +1,34 @@
+.navbar-main {
+	margin-bottom: 10px;
+}
+
+.navbar-link {
+	padding-right: 15px;
+}
+
+.visibility-options {
+	padding-right: 15px;
+}
+
+.inline-form {
+	display: inline;
+}
+
+.autospice {
+	color: gray;
+	font-style: italic;
+}
+
+.met-goal {
+	color: lightgray;
+	text-decoration: line-through;
+	text-decoration-color: red;
+}
+
+.extra-exclusive {
+	background-color: pink !important;
+}
+
+table.highlight-hovered-row tr:hover td {
+	background-color: lightblue;
+}

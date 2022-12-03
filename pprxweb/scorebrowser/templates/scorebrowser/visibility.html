@@ -1,0 +1,80 @@
+{% extends "scorebrowser/base.html" %}
+
+{% block scripts %}
+	<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+	<script src="https://unpkg.com/htmx.org@1.3.3"></script>
+{% endblock %}
+
+{% block content %}
+<span id="saved-pref" hidden=true></span>
+<table class="highlight-hovered-row">
+	<tr>
+		<th>Version</th>
+		<th>Song</th>
+		<th>White cabs</th>
+		<th>Gold cabs</th>
+	</tr>
+	{% for p in preferences %}
+		<tr>
+			<td>{{ p.song.version.name }}</td>
+			<td>{{ p.song.title }}</td>
+			<td class="visibility-options">
+				<form method="POST" class="inline-form" name="{{ p.song.id }}-white">
+					<select
+						name="pref_value"
+						hx-post="{% url 'update_visibility' %}"
+						hx-target="#saved-pref"
+					>
+						<option value=0 {% if p.white_visibility.id == 0 %}selected{% endif %}>{{ visibility_names.0 }}</option>
+						<option value=1 {% if p.white_visibility.id == 1 %}selected{% endif %}>{{ visibility_names.1 }}</option>
+						<option value=2 {% if p.white_visibility.id == 2 %}selected{% endif %}>{{ visibility_names.2 }}</option>
+					</select>
+					<input type="hidden" name="preference" value="{{ p.song.id }}-white-vis">
+					{% csrf_token %}
+				</form>
+				<form method="POST" class="inline-form">
+					<input
+						type="checkbox"
+						{% if p.hide_challenge_white %}checked{% endif %}
+						name="pref_value"
+						id="{{ p.song.id }}-white-hidec"
+						hx-post="{% url 'update_visibility' %}"
+						hx-target="#saved-pref"
+					>
+					<label for="{{ p.song.id }}-white-hidec">Hide Challenge</label>
+					<input type="hidden" name="preference" value="{{ p.song.id }}-white-hidec">
+					{% csrf_token %}
+				</form>
+			</td>
+			<td class="visibility-options">
+				<form method="POST" class="inline-form" name="{{ p.song.id }}-gold">
+					<select
+						name="pref_value"
+						hx-post="{% url 'update_visibility' %}"
+						hx-target="#saved-pref"
+					>
+						<option value=0 {% if p.gold_visibility.id == 0 %}selected{% endif %}>{{ visibility_names.0 }}</option>
+						<option value=1 {% if p.gold_visibility.id == 1 %}selected{% endif %}>{{ visibility_names.1 }}</option>
+						<option value=2 {% if p.gold_visibility.id == 2 %}selected{% endif %}>{{ visibility_names.2 }}</option>
+					</select>
+					<input type="hidden" name="preference" value="{{ p.song.id }}-gold-vis">
+					{% csrf_token %}
+				</form>
+				<form method="POST" class="inline-form">
+					<input
+						type="checkbox"
+						{% if p.hide_challenge_gold %}checked{% endif %}
+						name="pref_value"
+						id="{{ p.song.id }}-gold-hidec"
+						hx-post="{% url 'update_visibility' %}"
+						hx-target="#saved-pref"
+					>
+					<label for="{{ p.song.id }}-gold-hidec">Hide Challenge</label>
+					<input type="hidden" name="preference" value="{{ p.song.id }}-gold-hidec">
+					{% csrf_token %}
+				</form>
+			</td>
+		</tr>
+	{% endfor %}
+</table>
+{% endblock %}

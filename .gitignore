@@ -2,4 +2,6 @@
 *.pot
 *.pyc
 *.db
-__pycache__
+.env
+__pycache__/
+vim.exe.stackdump

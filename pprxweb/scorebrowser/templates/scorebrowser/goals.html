@@ -1,0 +1,56 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+
+{% block title %}PPR X - Set your goal!{% endblock %}
+
+{% block scripts %}
+	<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+	<script src="https://unpkg.com/htmx.org@1.3.3"></script>
+	<script src="{% static 'goals.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+	<span id="set-goal" hidden=true></span>
+	<h1>Primary target</h1>
+	<form method="POST" class="inline-form">
+		Score:
+		<input
+			type="text"
+			id="target-score"
+			name="benchmark_value"
+			hx-post="{% url 'set_goal' %}"
+			hx-target="#set-goal"
+			class="text-filter score-input"
+			value="{{ goal_score }}"
+		>
+		<input type="hidden" name="benchmark_type" value="score">
+		{% csrf_token %}
+	</form>
+	<form method="POST" class="inline-form" name="benchmark-select">
+		On:
+		<select
+			id="benchmark-select"
+			name="benchmark_value"
+			hx-post="{% url 'set_goal' %}"
+			hx-target="#set-goal"
+			class="select-filter"
+		>
+			{% for b in benchmarks %}
+				<option value={{b.id}} data-spice={{b.chart.spice}} {% if goal_benchmark == b.id %}selected{% endif %}>
+					{{ b.description }} {{ b.rating }} ({{ b.chart.song.title }} {{ b.chart.difficulty.name }} — {{ b.chart.spice|floatformat:2 }}🌶️)
+				</option>
+			{% endfor %}
+		</select>
+		<input type="hidden" name="benchmark_type" value="chart">
+		{% csrf_token %}
+	</form>
+	Target quality = <span id="quality"></span>
+	
+	<h1>Derived targets</h1>
+	<div id="derived-targets">
+		{% for b in benchmarks %}
+			<span id="score-{{b.id}}" data-spice={{b.chart.spice}}>0</span>
+			on {{ b.description }} {{ b.rating }} ({{ b.chart.song.title }} {{ b.chart.difficulty.name }} — {{ b.chart.spice|floatformat:2 }}🌶️)<br />
+		{% endfor %}
+	</div>
+{% endblock %}
