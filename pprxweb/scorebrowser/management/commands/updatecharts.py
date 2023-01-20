@@ -32,9 +32,9 @@ class Command(BaseCommand):
 				song.removed = True
 			song.save()
 
-			ratings = fetched_song['ratings'][1:5]
+			ratings = fetched_song['ratings'][:5]
 			for difficulty, rating in enumerate(ratings):
-				if rating == 0:
+				if rating <= 1:
 					continue
 				if (difficulty != 3) and (rating < 14) and (rating != max(ratings)):
 					continue
