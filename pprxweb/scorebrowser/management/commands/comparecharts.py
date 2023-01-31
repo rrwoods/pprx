@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from scorebrowser.models import *
@@ -17,8 +18,8 @@ query = """
 		x.chart_id=%s and
 		y.chart_id=%s and
 		x.player_id=y.player_id and
-		xscore<999000 and xscore>800000 and
-		yscore<999000 and yscore>800000
+		x.score<999000 and x.score>800000 and
+		y.score<999000 and y.score>800000
 """
 
 def report(start, done, remaining):

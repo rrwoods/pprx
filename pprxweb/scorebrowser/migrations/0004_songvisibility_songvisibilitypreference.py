@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SongVisibility',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
+                ('id', models.IntegerField(primary_key=True, serialize=False)),
                 ('name', models.TextField()),
             ],
         ),

@@ -7,7 +7,7 @@ class Version(models.Model):
 
 
 class Song(models.Model):
-    id = models.TextField(primary_key=True)
+    id = models.CharField(primary_key=True, max_length=32)
     version = models.ForeignKey(Version, on_delete=models.CASCADE, default=1)
     title = models.TextField()
     removed = models.BooleanField(default=False)
@@ -17,7 +17,7 @@ class Song(models.Model):
 
 
 class Difficulty(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.IntegerField(primary_key=True)
     name = models.TextField()
 
     class Meta:
@@ -31,7 +31,6 @@ class Chart(models.Model):
     rating = models.IntegerField()
     spice = models.FloatField(blank=True, null=True)
     raw_spice = models.FloatField(blank=True, null=True)
-    popular = models.IntegerField(blank=True, null=True)
 
     class Meta:
         db_table = 'charts'
@@ -94,7 +93,7 @@ class User(models.Model):
 
 
 class SongVisibility(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.IntegerField(primary_key=True)
     name = models.TextField()
 
 

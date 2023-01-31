@@ -19,7 +19,6 @@ class Migration(migrations.Migration):
                 ('rating', models.IntegerField()),
                 ('spice', models.FloatField(blank=True, null=True)),
                 ('raw_spice', models.FloatField(blank=True, null=True)),
-                ('popular', models.IntegerField(blank=True, null=True)),
             ],
             options={
                 'db_table': 'charts',
@@ -28,7 +27,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Difficulty',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
+                ('id', models.IntegerField(primary_key=True, serialize=False)),
                 ('name', models.TextField()),
             ],
             options={
@@ -38,7 +37,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Song',
             fields=[
-                ('id', models.TextField(primary_key=True, serialize=False)),
+                ('id', models.CharField(primary_key=True, max_length=32, serialize=False)),
                 ('title', models.TextField()),
             ],
             options={
