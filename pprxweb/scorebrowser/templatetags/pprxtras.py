@@ -11,3 +11,7 @@ def difficulty(n):
 @register.simple_tag(takes_context=True)
 def abs_url(context, view_name):
 	return context['request'].build_absolute_uri(reverse(view_name))
+
+@register.filter(name='dict_key')
+def dict_key(d, k):
+	return d[k]

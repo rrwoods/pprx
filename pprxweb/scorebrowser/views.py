@@ -18,51 +18,37 @@ def charts(request):
 def get_user(request):
 	return User.objects.filter(player_id=request.session['player_id']).first()
 
-def update_visibility(request):
+def update_unlock(request):
 	if request.method != 'POST':
 		return
 
 	user = get_user(request)
-	[song_id, cabinet, preference] = request.POST['preference'].split('-')
+	task_id = int(request.POST['taskId'])
 	posted_value = request.POST.get("pref_value", None)
-	current_preference = SongVisibilityPreference.objects.filter(user__id=user.id).filter(song__id=song_id).first()
-	if preference == 'hidec':
-		if cabinet == 'white':
-			current_preference.hide_challenge_white = (posted_value is not None)
-		elif cabinet == 'gold':
-			current_preference.hide_challenge_gold = (posted_value is not None)
+	if (posted_value):
+		UserUnlock.objects.create(user=user, task_id=task_id)
 	else:
-		if cabinet == 'white':
-			current_preference.white_visibility_id = posted_value
-		elif cabinet == 'gold':
-			current_preference.gold_visibility_id = posted_value
-	current_preference.save()
+		UserUnlock.objects.filter(user=user, task_id=task_id).delete()
+	return HttpResponse("Updated unlock status.")
 
-	return HttpResponse("Preference saved.")
-
-def create_default_visibility(user, song):
-	return SongVisibilityPreference(
-		user=user,
-		song=song,
-		hide_challenge_white=False,
-		hide_challenge_gold=False,
-		white_visibility_id=0,
-		gold_visibility_id=0,
-	)
-
-def visibility(request):
+def unlocks(request):
 	user = get_user(request)
-	preferences = SongVisibilityPreference.objects.filter(user__id=user.id).all()
-	visibility_names = [v.name for v in SongVisibility.objects.order_by('id')]
 
-	preferences_dto = []
-	for song in Song.objects.filter(removed=False).order_by('version_id', Lower('title')):
-		preference = preferences.filter(song__id=song.id).first()
-		if preference is None:
-			preference = create_default_visibility(user, song)
-			preference.save()
-		preferences_dto.append(preference)
-	return render(request, 'scorebrowser/visibility.html', {'preferences': preferences_dto, 'visibility_names': visibility_names})
+	events = UnlockEvent.objects.all().filter(completable=True).order_by('ordering')
+	tasks = {}
+	userUnlocks = []
+	for event in events:
+		eventTasks = UnlockTask.objects.filter(event=event).order_by('ordering')
+		tasks[event.id] = eventTasks
+		for task in eventTasks:
+			if len(UserUnlock.objects.filter(user=user, task=task)) > 0:
+				userUnlocks.append(task.id)
+	unlockData = {
+		'events': events,
+		'tasks': tasks,
+		'userUnlocks': userUnlocks,
+	}
+	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
 def goals(request):
 	user = get_user(request)
@@ -138,25 +124,43 @@ def scores(request):
 	if scores_response.status_code != 200:
 		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
 
-	preferences = SongVisibilityPreference.objects.filter(user__id=user.id).all()
 	target_quality = None
 	if user.goal_benchmark:
 		target_quality = user.goal_benchmark.chart.spice - math.log2((1000001 - user.goal_score)/1000000)
 
+	VISIBLE = 0
+	EXTRA = 1
+	HIDDEN = 2
+
 	scores_data = []
 	scores_lookup = {'{}-{}'.format(score['song_id'], score['difficulty']): score['score'] for score in scores_response.json()}
+	cabinets = Cabinet.objects.all()
+	cabinet_vis = {}
+	cabinet_vis_target = 0
+	cab_names = []
+	for cabinet in cabinets:
+		cabinet_vis[cabinet.id] = str(cabinet_vis_target)
+		cab_names.append({'id': cabinet_vis_target, 'name': cabinet.name})
+		cabinet_vis_target += 1
 	for chart in Chart.objects.filter(song__removed=False):
-		visibility = preferences.filter(song__id=chart.song.id).first()
-		if visibility is None:
-			visibility = create_default_visibility(user, chart.song)
-
-		white_visibility = visibility.white_visibility_id
-		gold_visibility = visibility.gold_visibility_id
-		if (chart.difficulty.id == 4):
-			if visibility.hide_challenge_white:
-				white_visibility = 2
-			if visibility.hide_challenge_gold:
-				gold_visibility = 2
+		entry = {}
+		for cabinet in cabinets:
+			if chart.song.version.id > cabinet.version.id:
+				entry[cabinet_vis[cabinet.id]] = HIDDEN
+				continue
+			
+			extra = False
+			locked = False
+			requirements = ChartUnlock.objects.filter(chart=chart, version=cabinet.version)
+			for r in requirements:
+				extra = extra or r.extra
+				locked = locked or (len(UserUnlock.objects.filter(user=user, task=r.task)) == 0)
+			if not locked:
+				entry[cabinet_vis[cabinet.id]] = VISIBLE
+			elif extra:
+				entry[cabinet_vis[cabinet.id]] = EXTRA
+			else:
+				entry[cabinet_vis[cabinet.id]] = HIDDEN
 
 		spice = round(chart.spice, 2) if chart.spice else None
 
@@ -177,7 +181,6 @@ def scores(request):
 			quality = round(chart.spice - math.log2((1000001 - score)/1000000), 2)
 		goal = math.ceil(goal/10) * 10 if target_quality else None
 
-		entry = {}
 		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
 		entry['song_name'] = chart.song.title
 		entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name }
@@ -186,8 +189,6 @@ def scores(request):
 		entry['score'] = score
 		entry['quality'] = quality
 		entry['goal'] = goal
-		entry['white_visibility'] = white_visibility
-		entry['gold_visibility'] = gold_visibility
 		scores_data.append(entry)
 
-	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data)})
+	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names})

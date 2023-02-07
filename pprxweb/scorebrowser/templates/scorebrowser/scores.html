@@ -13,8 +13,9 @@
 {% block content %}
 	Cabinet:
 	<select id="cabinet-select">
-		<option value="white">White</option>
-		<option value="gold">Gold</option>
+		{% for cabinet in cabinets %}
+			<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
+		{% endfor %}
 	</select>
 
 	Level:

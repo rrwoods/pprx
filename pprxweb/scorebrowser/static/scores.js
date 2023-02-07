@@ -1,20 +1,14 @@
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-	if ($('#cabinet-select').find(':selected').val() === 'white') {
-		if (data[0] == 2) {
-			return false
-		}
-	} else {
-		if (data[1] == 2) {
-			return false
-		}
-	}
-
-	var level_select = $('#level-select').find(':selected').val()
-	if ((level_select != 0) && (level_select != data[5])) {
+	if (parseInt(data[parseInt($('#cabinet-select').find(':selected').val())]) === 2) {
 		return false
 	}
 
-	var score = parseFloat(data[7])
+	var level_select = $('#level-select').find(':selected').val()
+	if ((level_select != 0) && (level_select != data[6])) {
+		return false
+	}
+
+	var score = parseFloat(data[8])
 
 	var min_score = $('#min-score').val()
 	if ($.isNumeric(min_score) && (score < parseFloat(min_score))) {
@@ -27,7 +21,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
-	var goal_met = score >= parseFloat(data[9])
+	var goal_met = score >= parseFloat(data[10])
 	if (hide_met_goals && goal_met) {
 		return false
 	}
@@ -41,8 +35,9 @@ $(document).ready(function () {
 		data: scores,
 		responsive: true,
 		columns: [
-			{ data: 'white_visibility', visible: false },
-			{ data: 'gold_visibility', visible: false },
+			{ data: '0', visible: false },
+			{ data: '1', visible: false },
+			{ data: '2', visible: false },
 			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
 			{ data: 'song_name', title: 'Song' },
 			{ data: 'difficulty', title: 'Difficulty', render: { display: 'name', sort: 'id', type: 'id' } },
@@ -65,33 +60,18 @@ $(document).ready(function () {
 			} },
 		],
 		createdRow: function(row, data, index) {
-			if ($('#cabinet-select').find(':selected').val() === 'white') {
-				if (data.white_visibility === 1) {
-					$(row).addClass('extra-exclusive')
-				}
-			}
-			else {
-				if (data.gold_visibility === 1) {
-					$(row).addClass('extra-exclusive')
-				}
+			if (parseInt(data[$('#cabinet-select').find(':selected').val()]) === 1) {
+				$(row).addClass('extra-exclusive')
 			}
 		},
 	})
 
 	function applyRowClasses(table) {
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
-			if ($('#cabinet-select').find(':selected').val() === 'white') {
-				if (this.data().white_visibility === 1) {
-					$(this.node()).addClass('extra-exclusive')
-				} else {
-					$(this.node()).removeClass('extra-exclusive')
-				}
+			if (parseInt(this.data()[$('#cabinet-select').find(':selected').val()]) === 1) {
+				$(this.node()).addClass('extra-exclusive')
 			} else {
-				if (this.data().gold_visibility === 1) {
-					$(this.node()).addClass('extra-exclusive')
-				} else {
-					$(this.node()).removeClass('extra-exclusive')
-				}
+				$(this.node()).removeClass('extra-exclusive')
 			}
 		})
 	}

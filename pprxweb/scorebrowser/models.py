@@ -92,16 +92,36 @@ class User(models.Model):
     goal_benchmark = models.ForeignKey(Benchmark, on_delete=models.PROTECT, null=True, default=None)
 
 
-class SongVisibility(models.Model):
-    id = models.IntegerField(primary_key=True)
+class Cabinet(models.Model):
+    id = models.AutoField(primary_key=True)
+    version = models.ForeignKey(Version, on_delete=models.CASCADE)
+    color = models.IntegerField()
     name = models.TextField()
 
 
-class SongVisibilityPreference(models.Model):
+class UnlockEvent(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.TextField()
+    ordering = models.IntegerField()
+    completable = models.BooleanField(default=True)
+
+
+class UnlockTask(models.Model):
+    id = models.AutoField(primary_key=True)
+    event = models.ForeignKey(UnlockEvent, on_delete=models.CASCADE)
+    name = models.TextField()
+    ordering = models.IntegerField()
+
+
+class ChartUnlock(models.Model):
+    id = models.AutoField(primary_key=True)
+    version = models.ForeignKey(Version, on_delete=models.CASCADE)
+    task = models.ForeignKey(UnlockTask, on_delete=models.CASCADE)
+    chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
+    extra = models.BooleanField(default=False)
+
+
+class UserUnlock(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    song = models.ForeignKey(Song, on_delete=models.CASCADE)
-    hide_challenge_white = models.BooleanField(default=False)
-    hide_challenge_gold = models.BooleanField(default=False)
-    white_visibility = models.ForeignKey(SongVisibility, related_name='white', on_delete=models.CASCADE, default=0)
-    gold_visibility = models.ForeignKey(SongVisibility, related_name='gold', on_delete=models.CASCADE, default=0)
+    task = models.ForeignKey(UnlockTask, on_delete=models.CASCADE)
