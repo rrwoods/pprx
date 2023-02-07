@@ -4,11 +4,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var level_select = $('#level-select').find(':selected').val()
-	if ((level_select != 0) && (level_select != data[6])) {
+	if ((level_select != 0) && (level_select != data[7])) {
 		return false
 	}
 
-	var score = parseFloat(data[8])
+	var score = parseFloat(data[9])
 
 	var min_score = $('#min-score').val()
 	if ($.isNumeric(min_score) && (score < parseFloat(min_score))) {
@@ -21,7 +21,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
-	var goal_met = score >= parseFloat(data[10])
+	var goal_met = score >= parseFloat(data[11])
 	if (hide_met_goals && goal_met) {
 		return false
 	}
@@ -38,6 +38,7 @@ $(document).ready(function () {
 			{ data: '0', visible: false },
 			{ data: '1', visible: false },
 			{ data: '2', visible: false },
+			{ data: '3', visible: false },
 			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
 			{ data: 'song_name', title: 'Song' },
 			{ data: 'difficulty', title: 'Difficulty', render: { display: 'name', sort: 'id', type: 'id' } },
