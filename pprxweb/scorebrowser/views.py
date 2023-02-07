@@ -75,6 +75,16 @@ def set_goal(request):
 
 	return HttpResponse('Set goal.')
 
+def check_locks(song_id, song_locks, cabinet):
+	if song_id in song_locks:
+		for lock in song_locks[song_id]:
+			version_match = (lock.version is None) or (lock.version == cabinet.version)
+			region_match = (lock.region is None) or (lock.region == cabinet.region)
+			model_match = (lock.model is None) or (lock.model == cabinet.model)
+			if version_match and region_match and model_match:
+				return True
+	return False
+
 def scores(request):
 	user = None
 	if 'code' in request.GET:
@@ -138,6 +148,11 @@ def scores(request):
 	cabinet_vis = {}
 	cabinet_vis_target = 0
 	cab_names = []
+	song_locks = {}
+	for lock in SongLock.objects.all():
+		if lock.song.id not in song_locks:
+			song_locks[lock.song.id] = []
+		song_locks[lock.song.id].append(lock)
 	for cabinet in cabinets:
 		cabinet_vis[cabinet.id] = str(cabinet_vis_target)
 		cab_names.append({'id': cabinet_vis_target, 'name': cabinet.name})
@@ -146,6 +161,10 @@ def scores(request):
 		entry = {}
 		for cabinet in cabinets:
 			if chart.song.version.id > cabinet.version.id:
+				entry[cabinet_vis[cabinet.id]] = HIDDEN
+				continue
+
+			if check_locks(chart.song.id, song_locks, cabinet):
 				entry[cabinet_vis[cabinet.id]] = HIDDEN
 				continue
 			

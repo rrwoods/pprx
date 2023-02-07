@@ -92,10 +92,29 @@ class User(models.Model):
     goal_benchmark = models.ForeignKey(Benchmark, on_delete=models.PROTECT, null=True, default=None)
 
 
+class Region(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.TextField()
+
+
+class CabinetModel(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.TextField()
+
+
+class SongLock(models.Model):
+    id = models.AutoField(primary_key=True)
+    version = models.ForeignKey(Version, on_delete=models.CASCADE, null=True, default=None)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, null=True, default=None)
+    model = models.ForeignKey(CabinetModel, on_delete=models.CASCADE, null=True, default=None)
+    song = models.ForeignKey(Song, on_delete=models.CASCADE)
+
+
 class Cabinet(models.Model):
     id = models.AutoField(primary_key=True)
     version = models.ForeignKey(Version, on_delete=models.CASCADE)
-    color = models.IntegerField()
+    region = models.ForeignKey(Region, on_delete=models.CASCADE)
+    model = models.ForeignKey(CabinetModel, on_delete=models.CASCADE)
     name = models.TextField()
 
 
