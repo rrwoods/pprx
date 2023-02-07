@@ -18,6 +18,31 @@ def charts(request):
 def get_user(request):
 	return User.objects.filter(player_id=request.session['player_id']).first()
 
+def logged_in(request):
+	if 'code' not in request.GET:
+		return HttpResponse("Couldn't log in, unknown error :/")
+
+	auth_response = requests.post('https://3icecream.com/oauth/token', data={
+		'client_id': settings.CLIENT_ID,
+		'client_secret': settings.CLIENT_SECRET,
+		'grant_type': 'authorization_code',
+		'code': request.GET.get('code'),
+		'redirect_uri': request.build_absolute_uri(reverse('logged_in')),
+	})
+	if auth_response.status_code != 200:
+		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(auth_response.status_code, auth_response.text))
+
+	player_id = request.GET.get('player_id')
+	request.session['player_id'] = player_id
+	user = User.objects.filter(player_id=player_id).first()
+	if user is None:
+		user = User(player_id=player_id)
+	response_json = auth_response.json()
+	user.access_token = response_json['access_token']
+	user.refresh_token = response_json['refresh_token']
+	user.save()
+	return render(request, 'scorebrowser/loggedin.html')
+
 def update_unlock(request):
 	if request.method != 'POST':
 		return
