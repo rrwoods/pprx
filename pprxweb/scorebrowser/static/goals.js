@@ -14,7 +14,7 @@ $(document).ready(function () {
 			spice = parseFloat($(this).attr('data-spice'))
 			target = 1000001 - (15625 * Math.pow(2, 6 + spice - targetQuality))
 			target = Math.ceil(target/10) * 10
-			// todo- clamp to 0 - 1000000
+			target = Math.min(Math.max(target, 0), 1000000)
 			$(this).text(target.toLocaleString('en-US'))
 		})
 	}
