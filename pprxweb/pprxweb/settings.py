@@ -71,15 +71,7 @@ WSGI_APPLICATION = 'pprxweb.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if False: # true for aws w/sqlite
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'pprx.db',
-        }
-    }
-    ALLOWED_HOSTS = ['pprx-dev.us-west-2.elasticbeanstalk.com']
-elif 'RDS_HOSTNAME' in os.environ:
+if 'RDS_HOSTNAME' in os.environ:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -96,6 +88,7 @@ elif 'RDS_HOSTNAME' in os.environ:
     }
     ALLOWED_HOSTS = [
         'pprx-dev.us-west-2.elasticbeanstalk.com',
+        'pprx.gg',
     ]
 else:
     DATABASES = {
