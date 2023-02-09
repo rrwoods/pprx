@@ -169,19 +169,39 @@ def scores(request):
 
 	scores_data = []
 	scores_lookup = {'{}-{}'.format(score['song_id'], score['difficulty']): score['score'] for score in scores_response.json()}
-	cabinets = Cabinet.objects.all()
-	cabinet_vis = {}
-	cabinet_vis_target = 0
-	cab_names = []
+
 	song_locks = {}
 	for lock in SongLock.objects.all():
 		if lock.song.id not in song_locks:
 			song_locks[lock.song.id] = []
 		song_locks[lock.song.id].append(lock)
+
+	cabinets = Cabinet.objects.all()
+	cabinet_vis = {}
+	cabinet_vis_target = 0
+	cab_names = []
+	cab_versions = set()
 	for cabinet in cabinets:
 		cabinet_vis[cabinet.id] = str(cabinet_vis_target)
 		cab_names.append({'id': cabinet_vis_target, 'name': cabinet.name})
 		cabinet_vis_target += 1
+		cab_versions.add(cabinet.version.id)
+
+	# {version id: {chart id: [requirements]}}
+	chart_unlocks = {v: {} for v in cab_versions}
+	for chart_unlock in ChartUnlock.objects.all():
+		if chart_unlock.version.id not in cab_versions:
+			continue
+		if chart_unlock.chart.id not in chart_unlocks[chart_unlock.version.id]:
+			chart_unlocks[chart_unlock.version.id][chart_unlock.chart.id] = []
+		chart_unlocks[chart_unlock.version.id][chart_unlock.chart.id].append(chart_unlock)
+
+	# set of task ids this user has completed
+	user_unlocks = set(u.task.id for u in UserUnlock.objects.filter(user=user))
+	
+	default_spice = {b.chart.rating: round(b.chart.spice, 2) for b in Benchmark.objects.filter(description='easiest')}
+	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in Benchmark.objects.filter(description='hardest')}
+
 	for chart in Chart.objects.filter(song__removed=False):
 		entry = {}
 		for cabinet in cabinets:
@@ -195,10 +215,11 @@ def scores(request):
 			
 			extra = False
 			locked = False
-			requirements = ChartUnlock.objects.filter(chart=chart, version=cabinet.version)
-			for r in requirements:
-				extra = extra or r.extra
-				locked = locked or (len(UserUnlock.objects.filter(user=user, task=r.task)) == 0)
+			if chart.id in chart_unlocks[cabinet.version.id]:
+				requirements = chart_unlocks[cabinet.version.id][chart.id]
+				for r in requirements:
+					extra = extra or r.extra
+					locked = locked or (r.task.id not in user_unlocks)
 			if not locked:
 				entry[cabinet_vis[cabinet.id]] = VISIBLE
 			elif extra:
@@ -215,11 +236,9 @@ def scores(request):
 		goal = None
 		if spice is None:
 			try:
-				spice = round(Benchmark.objects.filter(description='easiest').filter(rating=chart.rating).first().chart.spice, 2)
-				highest_spice = Benchmark.objects.filter(description='hardest').filter(rating=chart.rating).first().chart.spice
-				goal = 1000001 - 15625*math.pow(2, 6 + highest_spice - target_quality) if target_quality else None
+				spice = default_spice[chart.rating]
+				goal = default_goals[chart.rating]
 			except:
-				print(chart.song.title)
 		else:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
 			quality = round(chart.spice - math.log2((1000001 - score)/1000000), 2)
