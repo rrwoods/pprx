@@ -239,6 +239,7 @@ def scores(request):
 				spice = default_spice[chart.rating]
 				goal = default_goals[chart.rating]
 			except:
+				print(chart.song.title)
 		else:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
 			quality = round(chart.spice - math.log2((1000001 - score)/1000000), 2)
