@@ -4,8 +4,9 @@ def forward(apps, schema_editor):
 	User = apps.get_model("scorebrowser", "User")
 	updated_users = []
 	for user in User.objects.all():
-		user.goal_chart = user.goal_benchmark.chart
-		updated_users.append(user)
+		if user.goal_benchmark:
+			user.goal_chart = user.goal_benchmark.chart
+			updated_users.append(user)
 	User.objects.bulk_update(updated_users, ['goal_chart'])
 
 def backward(apps, schema_editor):
