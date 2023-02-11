@@ -3,6 +3,7 @@ from django.db.models.functions import Lower
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from .models import *
 import json
 import math
@@ -75,28 +76,56 @@ def unlocks(request):
 	}
 	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
+@ensure_csrf_cookie
 def goals(request):
 	user = get_user(request)
-	benchmarks = Benchmark.objects.filter(rating__gte=13).order_by('chart__spice')
-	return render(request, 'scorebrowser/goals.html', {'benchmarks': benchmarks, 'goal_score': user.goal_score, 'goal_benchmark': user.goal_benchmark_id})
+	target_quality = None
+	if user.goal_chart:
+		target_quality = user.goal_chart.spice - math.log2((1000001 - user.goal_score)/1000000)
 
+	charts_data = []
+	for chart in Chart.objects.filter(song__removed=False):
+		if not chart.spice:
+			continue
+
+		if target_quality:
+			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
+
+		entry = {}
+		entry['chart_id'] = chart.id
+		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
+		entry['song_name'] = chart.song.title
+		entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name }
+		entry['rating'] = chart.rating
+		entry['spice'] = chart.spice
+		entry['goal'] = math.ceil(goal/10) * 10 if target_quality else None
+		charts_data.append(entry)
+
+	return render(request, 'scorebrowser/goals.html', {'charts': json.dumps(charts_data)})
+
+@csrf_exempt
 def set_goal(request):
 	if request.method != 'POST':
 		return
 
 	user = get_user(request)
-	benchmark_value = request.POST['benchmark_value']
-	if request.POST['benchmark_type'] == 'score':
-		try:
-			user.goal_score = int(benchmark_value)
-			if user.goal_benchmark == None:
-				user.goal_benchmark = Benchmark.objects.order_by('chart__spice').first()
-			user.save()
-		except ValueError:
-			pass
-	else:
-		user.goal_benchmark_id = int(benchmark_value)
-		user.save()
+	requestBody = json.loads(request.body)
+	user.goal_score = requestBody['target_score']
+	user.goal_chart_id = requestBody['chart_id']
+	user.save()
+
+	# benchmark_value = request.POST['benchmark_value']
+	# if request.POST['benchmark_type'] == 'score':
+	# 	try:
+	# 		user.goal_score = int(benchmark_value)
+	# 		if user.goal_benchmark == None:
+	# 			user.goal_benchmark = Benchmark.objects.order_by('chart__spice').first()
+	# 		user.save()
+	# 	except ValueError:
+	# 		pass
+	# else:
+	# 	user.goal_benchmark_id = int(benchmark_value)
+	# 	user.save()
 
 	return HttpResponse('Set goal.')
 
@@ -160,8 +189,8 @@ def scores(request):
 		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
 
 	target_quality = None
-	if user.goal_benchmark:
-		target_quality = user.goal_benchmark.chart.spice - math.log2((1000001 - user.goal_score)/1000000)
+	if user.goal_chart:
+		target_quality = user.goal_chart.spice - math.log2((1000001 - user.goal_score)/1000000)
 
 	VISIBLE = 0
 	EXTRA = 1
@@ -199,7 +228,7 @@ def scores(request):
 	# set of task ids this user has completed
 	user_unlocks = set(u.task.id for u in UserUnlock.objects.filter(user=user))
 	
-	default_spice = {b.chart.rating: round(b.chart.spice, 2) for b in Benchmark.objects.filter(description='easiest')}
+	default_spice = {b.chart.rating: b.chart.spice for b in Benchmark.objects.filter(description='easiest')}
 	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in Benchmark.objects.filter(description='hardest')}
 
 	for chart in Chart.objects.filter(song__removed=False):
@@ -227,7 +256,7 @@ def scores(request):
 			else:
 				entry[cabinet_vis[cabinet.id]] = HIDDEN
 
-		spice = round(chart.spice, 2) if chart.spice else None
+		spice = chart.spice
 
 		k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
 		score = scores_lookup[k] if k in scores_lookup else 0
@@ -242,7 +271,7 @@ def scores(request):
 				print(chart.song.title)
 		else:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			quality = round(chart.spice - math.log2((1000001 - score)/1000000), 2)
+			quality = chart.spice - math.log2((1000001 - score)/1000000)
 		goal = sorted((0, math.ceil(goal/10) * 10, 1000000))[1] if target_quality else None
 
 		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }

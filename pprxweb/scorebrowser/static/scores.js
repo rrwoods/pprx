@@ -43,22 +43,32 @@ $(document).ready(function () {
 			{ data: 'song_name', title: 'Song' },
 			{ data: 'difficulty', title: 'Difficulty', render: { display: 'name', sort: 'id', type: 'id' } },
 			{ data: 'rating', title: 'Level' },
-			{ data: 'spice', title: 'Spice', render: DataTable.render.number('', '.', 2), createdCell: function(td, cellData, rowData, row, col) {
-				if (!rowData.quality) {
-					$(td).addClass('autospice')
+			{
+				data: 'spice',
+				title: 'Spice',
+				render: DataTable.render.number('', '.', 2),
+				createdCell: function(td, cellData, rowData, row, col) {
+					if (!rowData.quality) {
+						$(td).addClass('autospice')
+					}
 				}
-			} },
+			},
 			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
 			{ data: 'quality', title: 'Quality', render: DataTable.render.number('', '.', 2) },
-			{ data: 'goal', title: 'Goal', render: DataTable.render.number(',', '.', 0), createdCell: function(td, cellData, rowData, row, col) {
-				if (!cellData) {
-					return
+			{
+				data: 'goal',
+				title: 'Goal',
+				render: DataTable.render.number(',', '.', 0),
+				createdCell: function(td, cellData, rowData, row, col) {
+					if (!cellData) {
+						return
+					}
+					if (rowData.score < cellData) {
+						return
+					}
+					$(td).addClass('met-goal')
 				}
-				if (rowData.score < cellData) {
-					return
-				}
-				$(td).addClass('met-goal')
-			} },
+			},
 		],
 		createdRow: function(row, data, index) {
 			if (parseInt(data[$('#cabinet-select').find(':selected').val()]) === 1) {

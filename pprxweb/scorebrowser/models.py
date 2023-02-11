@@ -90,6 +90,7 @@ class User(models.Model):
     refresh_token = models.TextField(null=True)
     goal_score = models.IntegerField(default=0)
     goal_benchmark = models.ForeignKey(Benchmark, on_delete=models.PROTECT, null=True, default=None)
+    goal_chart = models.ForeignKey(Chart, on_delete=models.CASCADE, null=True, default=None)
 
 
 class Region(models.Model):

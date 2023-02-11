@@ -4,9 +4,7 @@ def forward(apps, schema_editor):
 	UnlockEvent = apps.get_model("scorebrowser", "UnlockEvent")
 	UnlockTask = apps.get_model("scorebrowser", "UnlockTask")
 	ChartUnlock = apps.get_model("scorebrowser", "ChartUnlock")
-	Song = apps.get_model("scorebrowser", "Song")
 	Chart = apps.get_model("scorebrowser", "Chart")
-	Difficulty = apps.get_model("scorebrowser", "Difficulty")
 
 	def findChart(title, difficulty_id):
 		return Chart.objects.filter(song__title=title, difficulty_id=difficulty_id).first()
@@ -25,6 +23,9 @@ def forward(apps, schema_editor):
 	ChartUnlock.objects.create(version_id=19, task=bagChallengeSucksTask, chart=findChart("bag", 4))
 
 def backward(apps, schema_editor):
+	UnlockEvent = apps.get_model("scorebrowser", "UnlockEvent")
+	UnlockTask = apps.get_model("scorebrowser", "UnlockTask")
+
 	UnlockTask.objects.filter(name="Challenge charts I forgot before").delete()
 	UnlockEvent.objects.filter(name="bag Challenge should not exist").delete()
 
