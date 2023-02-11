@@ -40,12 +40,23 @@ $(document).ready(function () {
 			{ data: '2', visible: false },
 			{ data: '3', visible: false },
 			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
-			{ data: 'song_name', title: 'Song' },
-			{ data: 'difficulty', title: 'Difficulty', render: { display: 'name', sort: 'id', type: 'id' } },
-			{ data: 'rating', title: 'Level' },
+			{ data: 'song_name', title: 'Song', className: 'border-right' },
+			{
+				data: 'difficulty',
+				title: 'Difficulty',
+				//render: { display: 'name', sort: 'rating', type: 'id' }
+				render: function(data, type, row, meta) {
+					if (type === 'display') {
+						return data.name + ' ' + data.rating
+					}
+					return data.rating
+				}
+			},
+			{ data: 'rating', visible: false },
 			{
 				data: 'spice',
 				title: 'Spice',
+				className: 'border-right',
 				render: DataTable.render.number('', '.', 2),
 				createdCell: function(td, cellData, rowData, row, col) {
 					if (!rowData.quality) {
@@ -54,7 +65,7 @@ $(document).ready(function () {
 				}
 			},
 			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
-			{ data: 'quality', title: 'Quality', render: DataTable.render.number('', '.', 2) },
+			{ data: 'quality', title: 'Quality', className: 'border-right', render: DataTable.render.number('', '.', 2) },
 			{
 				data: 'goal',
 				title: 'Goal',
