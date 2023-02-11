@@ -9,6 +9,10 @@
 {% block content %}
 	<span id="saved-pref" hidden=true></span>
 
+	<p>Each checkbox on this page is one unlock "task" -- a course trial completion, an extra savior chart unlock, or a special event milestone.  Check the boxes of all of the ones you have completed!</p>
+
+	<p>Extra savior unlocks are game-version-specific.  Don't check off every A20 PLUS extra savior just because you play on A3 -- only check off the ones you have actually unlocked on A20 PLUS.</p>
+
 	{% for event in events %}
 		<h4>{{ event.name }}</h4>
 		{% for task in tasks|dict_key:event.id %}
