@@ -17,10 +17,9 @@ class Command(BaseCommand):
 		if response.status_code != 200:
 			raise CommandError("Received {} response from songdata.js.\n\n{}".format(response.status_code, response.content))
 
+		# TODO : this suffix is variable length now; find some method of doing this that parses the .js more properly
 		prefix = b'var ALL_SONG_DATA='
-		suffix = b';'
-		if (not response.content.startswith(prefix)) or (not response.content.endswith(suffix)):
-			raise CommandError("Unexpected response content from songdata.js.\n\n{}".format(response.content))
+		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210];const SONG_DATA_LAST_UPDATED_unixms=1676298786814;'
 
 		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
 			song = Song.objects.filter(id=fetched_song['song_id']).first()
