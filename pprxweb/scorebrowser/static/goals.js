@@ -53,6 +53,7 @@ $(document).ready(function () {
 		if (isNaN(newGoal)) {
 			return
 		}
+		newGoal = Math.min(999000, Math.max(0, newGoal))
 
 		targetQuality = row.spice - Math.log2((1000001 - newGoal)/1000000)
 		chartsTable.rows().every(function(rowIdx, tableLoop, rowLoop) {

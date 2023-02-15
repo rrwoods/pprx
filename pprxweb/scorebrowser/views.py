@@ -100,6 +100,7 @@ def goals(request):
 
 		if target_quality:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
+			goal = sorted([0, goal, 999000])[1]
 
 		entry = {}
 		entry['chart_id'] = chart.id
