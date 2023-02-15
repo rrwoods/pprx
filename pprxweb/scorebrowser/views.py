@@ -20,6 +20,8 @@ def charts(request):
 	return render(request, 'scorebrowser/charts.html', {'charts': charts})
 
 def get_user(request):
+	if 'player_id' not in request.session:
+		return None
 	return User.objects.filter(player_id=request.session['player_id']).first()
 
 def logged_in(request):
@@ -62,6 +64,8 @@ def update_unlock(request):
 
 def unlocks(request):
 	user = get_user(request)
+	if not user:
+		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
 
 	events = UnlockEvent.objects.all().filter(completable=True).order_by('ordering')
 	tasks = {}
@@ -82,6 +86,9 @@ def unlocks(request):
 @ensure_csrf_cookie
 def goals(request):
 	user = get_user(request)
+	if not user:
+		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
+
 	target_quality = None
 	if user.goal_chart:
 		target_quality = user.goal_chart.spice - math.log2((1000001 - user.goal_score)/1000000)
@@ -166,6 +173,9 @@ def scores(request):
 		user.save()
 	else:
 		user = get_user(request)
+
+	if not user:
+		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
 	
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
