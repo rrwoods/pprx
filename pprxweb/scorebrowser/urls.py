@@ -10,4 +10,6 @@ urlpatterns = [
 	path('update_unlock', views.update_unlock, name='update_unlock'),
 	path('goals', views.goals, name='goals'),
 	path('set_goal', views.set_goal, name='set_goal'),
+
+	path('hello', views.hello, name='hello'),
 ]

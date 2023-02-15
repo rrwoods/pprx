@@ -10,9 +10,14 @@
 	</head>
 	<body>
 		<div class="navbar-main">
-			<span class="navbar-link"><a href="{% url 'unlocks' %}">Unlocks</a></span>
-			<span class="navbar-link"><a href="{% url 'goals' %}">Set quality goal</a></span>
-			<span class="navbar-link"><a href="{% url 'scores' %}">Browse scores</a></span>
+			<span class>
+				<span class="navbar-link"><a href="{% url 'unlocks' %}">Unlocks</a></span>
+				<span class="navbar-link"><a href="{% url 'goals' %}">Set quality goal</a></span>
+				<span class="navbar-link"><a href="{% url 'scores' %}">Browse scores</a></span>
+			</span>
+			<span class="navbar-extra">
+				<span class="navbar-link"><a href="{% url 'hello' %}">What even is all this?</a></span>
+			</span>
 		</div>
 		{% block content %}{% endblock %}
 	</body>

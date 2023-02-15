@@ -9,6 +9,9 @@ import json
 import math
 import requests
 
+def hello(request):
+	return render(request, 'scorebrowser/hello.html')
+
 def landing(request):
 	return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': 'player_id' not in request.session})
 
