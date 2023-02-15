@@ -49,11 +49,16 @@ $(document).ready(function () {
 			return
 		}
 
+		newGoal = parseInt(newGoal.replace(',', ''))
+		if (isNaN(newGoal)) {
+			return
+		}
+
 		targetQuality = row.spice - Math.log2((1000001 - newGoal)/1000000)
 		chartsTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
 			d = this.data()
 			d.goal = 1000001 - 15625*Math.pow(2, 6 + d.spice - targetQuality)
-			d.goal = Math.min(1000000, Math.max(0, Math.ceil(d.goal/10) * 10))
+			d.goal = Math.min(999000, Math.max(0, Math.ceil(d.goal/10) * 10))
 			this.invalidate()
 		})
 		chartsTable.draw()

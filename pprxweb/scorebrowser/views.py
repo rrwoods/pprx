@@ -176,7 +176,7 @@ def scores(request):
 
 	if not user:
 		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
-	
+
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
 		if user.refresh_token is None:
@@ -284,8 +284,8 @@ def scores(request):
 				print(chart.song.title)
 		else:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			quality = chart.spice - math.log2((1000001 - score)/1000000)
-		goal = sorted((0, math.ceil(goal/10) * 10, 1000000))[1] if target_quality else None
+			quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
+		goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
 
 		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
 		entry['song_name'] = chart.song.title
