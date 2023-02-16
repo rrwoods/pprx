@@ -91,7 +91,8 @@ def goals(request):
 
 	target_quality = None
 	if user.goal_chart:
-		target_quality = user.goal_chart.spice - math.log2((1000001 - user.goal_score)/1000000)
+		goal_score = sorted([0, user.goal_score, 999000])[1]
+		target_quality = user.goal_chart.spice - math.log2((1000001 - goal_score)/1000000)
 
 	charts_data = []
 	for chart in Chart.objects.filter(song__removed=False):
@@ -204,6 +205,7 @@ def scores(request):
 
 	target_quality = None
 	if user.goal_chart:
+		goal_score = sorted([0, user.goal_score, 999000])[1]
 		target_quality = user.goal_chart.spice - math.log2((1000001 - user.goal_score)/1000000)
 
 	VISIBLE = 0
