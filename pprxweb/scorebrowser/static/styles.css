@@ -43,3 +43,7 @@
 table.highlight-hovered-row tr:hover td {
 	background-color: lightblue;
 }
+
+.tooltip {
+	text-decoration: underline black dotted;
+}

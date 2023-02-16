@@ -88,6 +88,14 @@ $(document).ready(function () {
 		},
 	})
 
+	spiceHeader = scoresTable.column(8).header()
+	$(spiceHeader).addClass('tooltip')
+	$(spiceHeader).attr('title', 'How hard a chart is, relative to all other charts (not just of the same rating).')
+
+	qualityHeader = scoresTable.column(10).header()
+	$(qualityHeader).addClass('tooltip')
+	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.')
+
 	function applyRowClasses(table) {
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
 			if (parseInt(this.data()[$('#cabinet-select').find(':selected').val()]) === 1) {
