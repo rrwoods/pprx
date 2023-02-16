@@ -41,6 +41,7 @@ class Command(BaseCommand):
 		# the spice fudging is based on the Emerald V rankings in LIFE4 5.0, which has a requirement of 990k 16 floor
 		# but, as i expect those thresholds would change if a harder chart came along, i want to do the same -- instantly
 		# for this reason these are hand-selected; if an actually-harder one came along later i wouldn't want to pick it instead.
+		# FUTURE RICK: and, in fact, this has happened: Lindwurm is harder than P20, but wasn't around when these were made :)
 		hardest16id = Chart.objects.filter(song__title='New York EVOLVED (Type A)', difficulty_id=3).first().id
 		hardest17id = Chart.objects.filter(song__title='Pluto The First', difficulty_id=3).first().id
 		hardest18id = Chart.objects.filter(song__title='POSSESSION (20th Anniversary Mix)', difficulty_id=4).first().id
