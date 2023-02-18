@@ -12,8 +12,14 @@ import requests
 def hello(request):
 	return render(request, 'scorebrowser/hello.html')
 
+def render_landing(request, fresh_user):
+	if fresh_user:
+		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID})
+	else:
+		return render(request, 'scorebrowser/loggedin.html')
+
 def landing(request):
-	return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': 'player_id' not in request.session})
+	return render_landing(request, 'player_id' not in request.session)
 
 def charts(request):
 	charts = Chart.objects.exclude(spice=None).order_by('-spice')
@@ -65,7 +71,7 @@ def update_unlock(request):
 def unlocks(request):
 	user = get_user(request)
 	if not user:
-		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
+		return render_landing(request, True)
 
 	events = UnlockEvent.objects.all().filter(completable=True).order_by('ordering')
 	tasks = {}
@@ -87,7 +93,7 @@ def unlocks(request):
 def goals(request):
 	user = get_user(request)
 	if not user:
-		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
+		return render_landing(request, True)
 
 	target_quality = None
 	if user.goal_chart:
@@ -177,12 +183,12 @@ def scores(request):
 		user = get_user(request)
 
 	if not user:
-		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
+		return render_landing(request, True)
 
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
 		if user.refresh_token is None:
-			return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
+			return render_landing(request, True)
 		refresh_response = requests.post('https://3icecream.com/oauth/token', data={
 			'client_id': settings.CLIENT_ID,
 			'client_secret': settings.CLIENT_SECRET,
@@ -192,7 +198,7 @@ def scores(request):
 			'redirect_uri': request.build_absolute_uri(reverse('scores')),
 		})
 		if refresh_response.status_code != 200:
-			return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID, 'fresh_user': True})
+			return render_landing(request, True)
 		response_json = refresh_response.json()
 		user.access_token = response_json['access_token']
 		user.refresh_token = response_json['refresh_token']
