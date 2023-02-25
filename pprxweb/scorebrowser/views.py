@@ -219,7 +219,18 @@ def scores(request):
 	HIDDEN = 2
 
 	scores_data = []
-	scores_lookup = {'{}-{}'.format(score['song_id'], score['difficulty']): score['score'] for score in scores_response.json()}
+	scores_lookup = {}
+	duplicate_song_ids = ['01lbO69qQiP691ll6DIiqPbIdd9O806o', 'dll9D90dq1O09oObO66Pl8l9I9l0PbPP']
+	for score in scores_response.json():
+		song_id = score['song_id']
+		difficulty = score['difficulty']
+		score = score['score']
+		if song_id in duplicate_song_ids:
+			song_id = duplicate_song_ids[0]
+		key = '{}-{}'.format(song_id, difficulty)
+		if (key in scores_lookup) and (scores_lookup[key] >= score):
+			continue
+		scores_lookup[key] = score
 
 	song_locks = {}
 	for lock in SongLock.objects.all():
@@ -254,6 +265,9 @@ def scores(request):
 	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in Benchmark.objects.filter(description='hardest')}
 
 	for chart in Chart.objects.filter(song__removed=False):
+		if chart.song.id in duplicate_song_ids[1:]:
+			continue
+		
 		entry = {}
 		for cabinet in cabinets:
 			if chart.song.version.id > cabinet.version.id:
