@@ -94,7 +94,7 @@ $(document).ready(function () {
 
 	qualityHeader = scoresTable.column(10).header()
 	$(qualityHeader).addClass('tooltip')
-	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.')
+	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.  Points beyond 999,000 do not contribute to quality rating, and goals will never be over 999,000.')
 
 	function applyRowClasses(table) {
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
