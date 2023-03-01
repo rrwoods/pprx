@@ -267,7 +267,7 @@ def scores(request):
 	for chart in Chart.objects.filter(song__removed=False):
 		if chart.song.id in duplicate_song_ids[1:]:
 			continue
-		
+
 		entry = {}
 		for cabinet in cabinets:
 			if chart.song.version.id > cabinet.version.id:
@@ -299,7 +299,9 @@ def scores(request):
 
 		quality = None
 		goal = None
+		autospiced = False
 		if spice is None:
+			autospiced = True
 			try:
 				spice = default_spice[chart.rating]
 				goal = default_goals[chart.rating]
@@ -307,7 +309,8 @@ def scores(request):
 				print(chart.song.title)
 		else:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
+			if score > 0:
+				quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
 		goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
 
 		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
@@ -318,6 +321,7 @@ def scores(request):
 		entry['score'] = score
 		entry['quality'] = quality
 		entry['goal'] = goal
+		entry['autospiced'] = autospiced
 		scores_data.append(entry)
 
 	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names})

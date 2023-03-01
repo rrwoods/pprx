@@ -59,7 +59,7 @@ $(document).ready(function () {
 				className: 'border-right',
 				render: DataTable.render.number('', '.', 2),
 				createdCell: function(td, cellData, rowData, row, col) {
-					if (!rowData.quality) {
+					if (rowData.autospiced) {
 						$(td).addClass('autospice')
 					}
 				}
@@ -80,6 +80,7 @@ $(document).ready(function () {
 					$(td).addClass('met-goal')
 				}
 			},
+			{ data: 'autospiced', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			if (parseInt(data[$('#cabinet-select').find(':selected').val()]) === 1) {
