@@ -48,7 +48,17 @@ $(document).ready(function () {
 			// 4:
 			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
 			// 5:
-			{ data: 'song_name', title: 'Song', className: 'border-right' },
+			{ 
+				data: 'song_name',
+				title: 'Song',
+				className: 'border-right',
+				render: function(data, type, row, meta) {
+					if (type === "display") {
+						return `<a target="_blank" href=https://3icecream.com/ddr/song_details/${data.id}>${data.title}</a>`
+					}
+					return data.title
+				}
+			},
 			// 6:
 			{
 				data: 'difficulty',
@@ -56,7 +66,7 @@ $(document).ready(function () {
 				//render: { display: 'name', sort: 'rating', type: 'id' }
 				render: function(data, type, row, meta) {
 					if (type === 'display') {
-						return data.name + ' ' + data.rating
+						return `<a target="_blank" href="https://3icecream.com/ren/chart?songId=${row.song_name.id}&diff=${data.id}">${data.name} ${data.rating}</a>`
 					}
 					return data.rating
 				}

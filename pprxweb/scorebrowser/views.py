@@ -269,7 +269,7 @@ def scores(request):
 		goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
 
 		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
-		entry['song_name'] = chart.song.title
+		entry['song_name'] = { 'id': chart.song.id, 'title': chart.song.title }
 		entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name, 'rating': chart.rating }
 		entry['rating'] = chart.rating
 		entry['spice'] = spice
