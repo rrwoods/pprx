@@ -69,18 +69,20 @@ $(document).ready(function () {
 			{
 				data: 'goal',
 				title: 'Goal',
-				render: DataTable.render.number(',', '.', 0),
-				createdCell: function(td, cellData, rowData, row, col) {
-					if (!cellData) {
-						return
+				render: function(data, type, row, meta) {
+					styles = ""
+					text = "None (Click to set)"
+					if (data !== null) {
+						text = data.toLocaleString('en-US')
+						if (row.score >= data) {
+							styles = ' class="met-goal"'
+						}
 					}
-					if (rowData.score < cellData) {
-						return
-					}
-					$(td).addClass('met-goal')
-				}
+					return `<button${styles}>${text}</button>`
+				},
 			},
 			{ data: 'autospiced', visible: false },
+			{ data: 'chart_id', visible: false},
 		],
 		createdRow: function(row, data, index) {
 			if (parseInt(data[$('#cabinet-select').find(':selected').val()]) === 1) {
@@ -106,6 +108,35 @@ $(document).ready(function () {
 			}
 		})
 	}
+
+	$('#scores').on('click', 'button', function() {
+		row = scoresTable.row($(this).parents('tr')).data()
+		newGoal = prompt(`Set goal for ${row.song_name} ${row.difficulty.name} -- this will recalibrate all other goal scores!`, row.goal || 0)
+		if (!newGoal) {
+			return
+		}
+
+		newGoal = parseInt(newGoal.replace(',', ''))
+		if (isNaN(newGoal)) {
+			return
+		}
+		newGoal = Math.min(999000, Math.max(1, newGoal)) - 1
+
+		targetQuality = row.spice - Math.log2((1000001 - newGoal)/1000000)
+		scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
+			d = this.data()
+			d.goal = 1000001 - 15625*Math.pow(2, 6 + d.spice - targetQuality)
+			d.goal = Math.min(999000, Math.max(0, Math.ceil(d.goal/10) * 10))
+			this.invalidate()
+		})
+		scoresTable.draw()
+
+		$.ajax({
+			url: '/scorebrowser/set_goal',
+			type: 'POST',
+			data: JSON.stringify({'chart_id': row.chart_id, 'target_score': newGoal})
+		})
+	})
 
 	$('#cabinet-select').change(function() {
 		scoresTable.draw()

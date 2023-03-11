@@ -89,38 +89,6 @@ def unlocks(request):
 	}
 	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
-@ensure_csrf_cookie
-def goals(request):
-	user = get_user(request)
-	if not user:
-		return render_landing(request, True)
-
-	target_quality = None
-	if user.goal_chart:
-		goal_score = sorted([0, user.goal_score, 999000])[1]
-		target_quality = user.goal_chart.spice - math.log2((1000001 - goal_score)/1000000)
-
-	charts_data = []
-	for chart in Chart.objects.filter(song__removed=False):
-		if not chart.spice:
-			continue
-
-		if target_quality:
-			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			goal = sorted([0, goal, 999000])[1]
-
-		entry = {}
-		entry['chart_id'] = chart.id
-		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
-		entry['song_name'] = chart.song.title
-		entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name }
-		entry['rating'] = chart.rating
-		entry['spice'] = chart.spice
-		entry['goal'] = math.ceil(goal/10) * 10 if target_quality else None
-		charts_data.append(entry)
-
-	return render(request, 'scorebrowser/goals.html', {'charts': json.dumps(charts_data)})
-
 @csrf_exempt
 def set_goal(request):
 	if request.method != 'POST':
@@ -131,19 +99,6 @@ def set_goal(request):
 	user.goal_score = requestBody['target_score']
 	user.goal_chart_id = requestBody['chart_id']
 	user.save()
-
-	# benchmark_value = request.POST['benchmark_value']
-	# if request.POST['benchmark_type'] == 'score':
-	# 	try:
-	# 		user.goal_score = int(benchmark_value)
-	# 		if user.goal_benchmark == None:
-	# 			user.goal_benchmark = Benchmark.objects.order_by('chart__spice').first()
-	# 		user.save()
-	# 	except ValueError:
-	# 		pass
-	# else:
-	# 	user.goal_benchmark_id = int(benchmark_value)
-	# 	user.save()
 
 	return HttpResponse('Set goal.')
 
@@ -322,6 +277,7 @@ def scores(request):
 		entry['quality'] = quality
 		entry['goal'] = goal
 		entry['autospiced'] = autospiced
+		entry['chart_id'] = chart.id
 		scores_data.append(entry)
 
 	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names})
