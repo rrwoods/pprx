@@ -278,6 +278,7 @@ def scores(request):
 		entry['goal'] = goal
 		entry['autospiced'] = autospiced
 		entry['chart_id'] = chart.id
+		entry['distance'] = goal - score
 		scores_data.append(entry)
 
 	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names})

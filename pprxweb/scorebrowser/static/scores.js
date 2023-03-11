@@ -70,6 +70,10 @@ $(document).ready(function () {
 				data: 'goal',
 				title: 'Goal',
 				render: function(data, type, row, meta) {
+					if (type == "sort" || type == "type" || type == "filter") {
+						return data
+					}
+
 					styles = ""
 					text = "None (Click to set)"
 					if (data !== null) {
@@ -80,6 +84,20 @@ $(document).ready(function () {
 					}
 					return `<button${styles}>${text}</button>`
 				},
+			},
+			{
+				data: 'distance',
+				title: 'Dist.',
+				render: function(data, type, row, meta) {
+					if (type == "sort" || type == "type" || type == "filter") {
+						return data
+					}
+
+					if (data <= 0) {
+						return ""
+					}
+					return "+" + data.toLocaleString('en-US')
+				}
 			},
 			{ data: 'autospiced', visible: false },
 			{ data: 'chart_id', visible: false},
@@ -127,6 +145,7 @@ $(document).ready(function () {
 			d = this.data()
 			d.goal = 1000001 - 15625*Math.pow(2, 6 + d.spice - targetQuality)
 			d.goal = Math.min(999000, Math.max(0, Math.ceil(d.goal/10) * 10))
+			d.distance = d.goal - d.score
 			this.invalidate()
 		})
 		scoresTable.draw()
