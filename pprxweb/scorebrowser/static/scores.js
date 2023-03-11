@@ -8,6 +8,12 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
+	console.log(data)
+	var hide_autospice = $('#hide-autospice').is(':checked')
+	if (hide_autospice && (data[13] === "true")) {
+		return false
+	}
+
 	var score = parseFloat(data[9])
 
 	var min_score = $('#min-score').val()
@@ -39,8 +45,11 @@ $(document).ready(function () {
 			{ data: '1', visible: false },
 			{ data: '2', visible: false },
 			{ data: '3', visible: false },
+			// 4:
 			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
+			// 5:
 			{ data: 'song_name', title: 'Song', className: 'border-right' },
+			// 6:
 			{
 				data: 'difficulty',
 				title: 'Difficulty',
@@ -52,7 +61,9 @@ $(document).ready(function () {
 					return data.rating
 				}
 			},
+			// 7:
 			{ data: 'rating', visible: false },
+			// 8:
 			{
 				data: 'spice',
 				title: 'Spice',
@@ -64,8 +75,11 @@ $(document).ready(function () {
 					}
 				}
 			},
+			// 9:
 			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
+			// 10:
 			{ data: 'quality', title: 'Quality', className: 'border-right', render: DataTable.render.number('', '.', 2) },
+			// 11:
 			{
 				data: 'goal',
 				title: 'Goal',
@@ -85,6 +99,7 @@ $(document).ready(function () {
 					return `<button${styles}>${text}</button>`
 				},
 			},
+			// 12:
 			{
 				data: 'distance',
 				title: 'Dist.',
@@ -99,7 +114,9 @@ $(document).ready(function () {
 					return "+" + data.toLocaleString('en-US')
 				}
 			},
+			// 13:
 			{ data: 'autospiced', visible: false },
+			// 14:
 			{ data: 'chart_id', visible: false},
 		],
 		createdRow: function(row, data, index) {
