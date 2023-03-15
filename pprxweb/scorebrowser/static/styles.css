@@ -40,7 +40,11 @@
 	background-color: pink !important;
 }
 
-table.highlight-hovered-row tr:hover td {
+table#scores.dataTable tbody tr:hover {
+	background-color: lightblue;
+}
+
+table#scores.dataTable tbody tr:hover > .sorting_1 {
 	background-color: lightblue;
 }
 
