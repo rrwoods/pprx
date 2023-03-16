@@ -27,7 +27,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
-	var goal_met = score >= parseFloat(data[11])
+	var goal_met = (score >= parseFloat(data[11])) && (score > 0)
 	if (hide_met_goals && goal_met) {
 		return false
 	}
@@ -98,11 +98,11 @@ $(document).ready(function () {
 						return data
 					}
 
-					styles = ""
+					styles = ' class="unmet-goal"'
 					text = "None (Click to set)"
 					if (data !== null) {
 						text = data.toLocaleString('en-US')
-						if (row.score >= data) {
+						if ((row.score >= data) && (row.score > 0)) {
 							styles = ' class="met-goal"'
 						}
 					}

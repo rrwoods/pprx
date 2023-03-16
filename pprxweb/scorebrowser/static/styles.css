@@ -31,9 +31,12 @@
 }
 
 .met-goal {
-	color: lightgray;
-	text-decoration: line-through;
-	text-decoration-color: red;
+	color: seagreen;
+	font-style: italic;
+}
+
+.unmet-goal {
+	font-weight: bold;
 }
 
 .extra-exclusive {
