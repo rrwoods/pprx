@@ -7,6 +7,7 @@ urlpatterns = [
 	path('charts', views.charts, name='charts'),
 	path('scores', views.scores, name='scores'),
 	path('unlocks', views.unlocks, name='unlocks'),
+	path('set_region', views.set_region, name='set_region'),
 	path('update_unlock', views.update_unlock, name='update_unlock'),
 	path('update_unlock_event', views.update_unlock_event, name='update_unlock_event'),
 	path('set_goal', views.set_goal, name='set_goal'),

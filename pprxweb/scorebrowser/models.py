@@ -81,21 +81,25 @@ class Benchmark(models.Model):
     chart = models.ForeignKey(Chart, on_delete=models.PROTECT, null=True)
 
 
+class Region(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.TextField()
+
+def default_region():
+    return Region.objects.get(name="North America").id
+
+
 # the player_id field here is a 3icecream player ID -- it is *not* a reference to a Player model object.
 # the Player model object is used in spice rating computation and is not related to a logged-in User in any way.
 class User(models.Model):
     id = models.AutoField(primary_key=True)
     player_id = models.TextField()
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)
     access_token = models.TextField(null=True)
     refresh_token = models.TextField(null=True)
     goal_score = models.IntegerField(default=0)
     goal_benchmark = models.ForeignKey(Benchmark, on_delete=models.PROTECT, null=True, default=None)
     goal_chart = models.ForeignKey(Chart, on_delete=models.CASCADE, null=True, default=None)
-
-
-class Region(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.TextField()
 
 
 class CabinetModel(models.Model):
@@ -117,6 +121,7 @@ class Cabinet(models.Model):
     region = models.ForeignKey(Region, on_delete=models.CASCADE)
     model = models.ForeignKey(CabinetModel, on_delete=models.CASCADE)
     name = models.TextField()
+    gold = models.BooleanField(default=False)
 
 
 class UnlockEvent(models.Model):
