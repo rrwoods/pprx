@@ -1,5 +1,9 @@
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-	if (parseInt(data[parseInt($('#cabinet-select').find(':selected').val())]) === 2) {
+	visibility = parseInt(data[parseInt($('#cabinet-select').find(':selected').val())])
+	if (visibility === 3) {
+		return false
+	}
+	if ((visibility === 2) && !($('#show-locked').is(':checked'))) {
 		return false
 	}
 
@@ -135,8 +139,11 @@ $(document).ready(function () {
 			{ data: 'chart_id', visible: false},
 		],
 		createdRow: function(row, data, index) {
-			if (parseInt(data[$('#cabinet-select').find(':selected').val()]) === 1) {
+			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
+			if (visibility === 1) {
 				$(row).addClass('extra-exclusive')
+			} else if (visibility === 2) {
+				$(row).addClass('locked-chart')
 			}
 		},
 	})

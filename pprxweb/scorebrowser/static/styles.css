@@ -43,12 +43,17 @@
 	background-color: pink !important;
 }
 
+.locked-chart, .locked-chart a {
+	background-color: black !important;
+	color: white !important;
+}
+
 table#scores.dataTable tbody tr:hover {
-	background-color: lightblue;
+	background-color: lightblue !important;
 }
 
 table#scores.dataTable tbody tr:hover > .sorting_1 {
-	background-color: lightblue;
+	background-color: lightblue !important;
 }
 
 .tooltip {
