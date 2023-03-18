@@ -97,13 +97,28 @@ $(document).ready(function () {
 			// 8:
 			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
 			// 9:
-			{ data: 'quality', title: 'Quality', className: 'border-right', render: DataTable.render.number('', '.', 2) },
+			{
+				data: 'quality',
+				title: 'Quality',
+				className: 'border-right',
+				render: function(data, type, row, meta) {
+					if (type === "sort" || type === "type" || type === "filter") {
+						return data
+					}
+
+					if (!data) {
+						return ''
+					}
+					quality = data.toFixed(2)
+					return `${quality} (#${row.rank})`					
+				}
+			},
 			// 10:
 			{
 				data: 'goal',
 				title: 'Goal',
 				render: function(data, type, row, meta) {
-					if (type == "sort" || type == "type" || type == "filter") {
+					if (type === "sort" || type === "type" || type === "filter") {
 						return data
 					}
 
@@ -123,7 +138,7 @@ $(document).ready(function () {
 				data: 'distance',
 				title: 'Dist.',
 				render: function(data, type, row, meta) {
-					if (type == "sort" || type == "type" || type == "filter") {
+					if (type === "sort" || type === "type" || type === "filter") {
 						return data
 					}
 
@@ -137,6 +152,8 @@ $(document).ready(function () {
 			{ data: 'autospiced', visible: false },
 			// 13:
 			{ data: 'chart_id', visible: false},
+			// 14:
+			{ data: 'rank', visible: false},
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
@@ -146,22 +163,29 @@ $(document).ready(function () {
 				$(row).addClass('locked-chart')
 			}
 		},
+		order: [[14, 'asc']],
 	})
 
-	spiceHeader = scoresTable.column(8).header()
+	spiceHeader = scoresTable.column(7).header()
 	$(spiceHeader).addClass('tooltip')
 	$(spiceHeader).attr('title', 'How hard a chart is, relative to all other charts (not just of the same rating).')
 
-	qualityHeader = scoresTable.column(10).header()
+	qualityHeader = scoresTable.column(9).header()
 	$(qualityHeader).addClass('tooltip')
 	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.  Points beyond 999,000 do not contribute to quality rating, and goals will never be over 999,000.')
 
 	function applyRowClasses(table) {
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
-			if (parseInt(this.data()[$('#cabinet-select').find(':selected').val()]) === 1) {
+			visibility = parseInt(this.data()[$('#cabinet-select').find(':selected').val()])
+			if (visibility === 1) {
 				$(this.node()).addClass('extra-exclusive')
-			} else {
+				$(this.node()).removeClass('locked-chart')				
+			} else if (visibility === 2) {
 				$(this.node()).removeClass('extra-exclusive')
+				$(this.node()).addClass('locked-chart')				
+			} else {
+				$(this.node()).removeClass('extra-exclusive')				
+				$(this.node()).removeClass('locked-chart')				
 			}
 		})
 	}

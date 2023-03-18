@@ -330,4 +330,8 @@ def scores(request):
 		entry['distance'] = goal - score
 		scores_data.append(entry)
 
+	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)
+	for i, entry in enumerate(scores_data):
+		entry['rank'] = i + 1
+
 	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names, 'versions': version_names})
