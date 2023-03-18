@@ -207,7 +207,8 @@ def scores(request):
 
 	VISIBLE = 0
 	EXTRA = 1
-	HIDDEN = 2
+	LOCKED = 2
+	UNAVAILABLE = 3
 
 	scores_data = []
 	scores_lookup = {}
@@ -265,29 +266,33 @@ def scores(request):
 		for i, cabinet in enumerate(cabinets):
 			cab_vis_id = str(i)
 			if chart.song.version.id > cabinet.version.id:
-				entry[cab_vis_id] = HIDDEN
+				entry[cab_vis_id] = UNAVAILABLE
 				continue
 
 			if check_locks(chart.song.id, song_locks, cabinet):
-				entry[cab_vis_id] = HIDDEN
+				entry[cab_vis_id] = UNAVAILABLE
 				continue
 			
 			extra = False
 			locked = False
+			completable = True
 			if chart.id in chart_unlocks[cabinet.version.id]:
 				requirements = chart_unlocks[cabinet.version.id][chart.id]
 				for r in requirements:
 					extra = extra or r.extra
 					locked = locked or (r.task.id not in user_unlocks)
+					completable = completable and r.task.event.completable
 			if not locked:
 				entry[cab_vis_id] = VISIBLE
 			elif extra:
 				entry[cab_vis_id] = EXTRA
+			elif completable:
+				entry[cab_vis_id] = LOCKED
 			else:
-				entry[cab_vis_id] = HIDDEN
+				entry[cab_vis_id] = UNAVAILABLE
 
 		if entry["0"] == VISIBLE:
-			entry["2"] = HIDDEN
+			entry["2"] = UNAVAILABLE
 		else:
 			entry["2"] = entry["1"]
 
