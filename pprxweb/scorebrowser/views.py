@@ -229,6 +229,7 @@ def scores(request):
 			song_locks[lock.song.id] = []
 		song_locks[lock.song.id].append(lock)
 
+	version_names = [{'id': v.id, 'name': v.name} for v in Version.objects.all().order_by('id')]
 	cab_names = [
 		{'id': 0, 'name': 'White'},
 		{'id': 1, 'name': 'Gold'},
@@ -324,4 +325,4 @@ def scores(request):
 		entry['distance'] = goal - score
 		scores_data.append(entry)
 
-	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names})
+	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names, 'versions': version_names})
