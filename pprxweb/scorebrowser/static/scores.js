@@ -3,8 +3,10 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	var level_select = $('#level-select').find(':selected').val()
-	if ((level_select != 0) && (level_select != data[6])) {
+	var level_min = parseInt($('#level-min').find(':selected').val())
+	var level_max = parseInt($('#level-max').find(':selected').val())
+	var level = parseInt(data[6])
+	if ((level < level_min) || (level > level_max)) {
 		return false
 	}
 
@@ -187,7 +189,29 @@ $(document).ready(function () {
 		applyRowClasses(scoresTable)
 	})
 
+	$('#level-select').change(function() {
+		$(this).hide()
+		level = $(this).find(':selected').val()
+		$(`#level-min option[value="${level}"]`).prop('selected', true)
+		$(`#level-max option[value="${level}"]`).prop('selected', true)
+		$('#level-range').show()
+		scoresTable.draw()
+	})
+
 	$('.select-filter').change(function() {
+		elementId = $(this).attr('id')
+		selected = parseInt($(this).find(':selected').val())
+		if (elementId == 'level-min') {
+			max = parseInt($('#level-max').find(':selected').val())
+			if (max < selected) {
+				$(`#level-max option[value="${selected}"]`).prop('selected', true)
+			}
+		} else if (elementId == 'level-max') {
+			min = parseInt($('#level-min').find(':selected').val())
+			if (min > selected) {
+				$(`#level-min option[value="${selected}"]`).prop('selected', true)
+			}
+		}
 		scoresTable.draw()
 	})
 
