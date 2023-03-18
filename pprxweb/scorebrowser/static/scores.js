@@ -168,7 +168,7 @@ $(document).ready(function () {
 
 	spiceHeader = scoresTable.column(7).header()
 	$(spiceHeader).addClass('tooltip')
-	$(spiceHeader).attr('title', 'How hard a chart is, relative to all other charts (not just of the same rating).')
+	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).  If there's not enough data to accurately spice a song yet, it gets automatically assigned the lowest spice for its level for sorting purposes, and your goal will be the lowest for that level.")
 
 	qualityHeader = scoresTable.column(9).header()
 	$(qualityHeader).addClass('tooltip')
