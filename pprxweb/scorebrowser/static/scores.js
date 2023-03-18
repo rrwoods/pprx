@@ -3,6 +3,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
+	var selected_version = $('#version-select').find(':selected').val()
+	if ((selected_version !== "0") && (selected_version !== data[3])) {
+		return false
+	}
+
 	var level_min = parseInt($('#level-min').find(':selected').val())
 	var level_max = parseInt($('#level-max').find(':selected').val())
 	var level = parseInt(data[6])
@@ -46,7 +51,7 @@ $(document).ready(function () {
 			{ data: '1', visible: false },
 			{ data: '2', visible: false },
 			// 3:
-			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
+			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id', filter: 'id' } },
 			// 4:
 			{ 
 				data: 'song_name',

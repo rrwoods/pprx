@@ -19,6 +19,14 @@
 		{% endfor %}
 	</select>
 
+	Version:
+	<select id="version-select" class="select-filter">
+		<option selected value=0>All</option>
+		{% for version in versions %}
+			<option value="{{ version.id }}">{{ version.name }}</option>
+		{% endfor %}
+	</select>
+
 	Level:
 	<select id="level-select">
 		<option selected value=0>All</option>
