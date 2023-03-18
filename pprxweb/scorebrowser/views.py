@@ -68,6 +68,30 @@ def update_unlock(request):
 		UserUnlock.objects.filter(user=user, task_id=task_id).delete()
 	return HttpResponse("Updated unlock status.")
 
+@csrf_exempt
+def update_unlock_event(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	
+	request_body = json.loads(request.body)
+	event_id = request_body['event_id']
+	unlock = request_body['unlock']
+
+	user_unlocks = UserUnlock.objects.filter(user=user, task__event__id=event_id)
+	if (unlock):
+		already_unlocked = [u.task.id for u in user_unlocks]
+		tasks = UnlockTask.objects.filter(event_id=event_id)
+		for task in tasks:
+			if task.id in already_unlocked:
+				continue
+			UserUnlock.objects.create(user=user, task=task)
+	else:
+		user_unlocks.delete()
+	return HttpResponse("Updated unlock status.")
+
+
 def unlocks(request):
 	user = get_user(request)
 	if not user:
