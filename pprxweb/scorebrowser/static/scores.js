@@ -4,17 +4,16 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var level_select = $('#level-select').find(':selected').val()
-	if ((level_select != 0) && (level_select != data[7])) {
+	if ((level_select != 0) && (level_select != data[6])) {
 		return false
 	}
 
-	console.log(data)
 	var hide_autospice = $('#hide-autospice').is(':checked')
-	if (hide_autospice && (data[13] === "true")) {
+	if (hide_autospice && (data[12] === "true")) {
 		return false
 	}
 
-	var score = parseFloat(data[9])
+	var score = parseFloat(data[8])
 
 	var min_score = $('#min-score').val()
 	if ($.isNumeric(min_score) && (score < parseFloat(min_score))) {
@@ -27,7 +26,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
-	var goal_met = (score >= parseFloat(data[11])) && (score > 0)
+	var goal_met = (score >= parseFloat(data[10])) && (score > 0)
 	if (hide_met_goals && goal_met) {
 		return false
 	}
@@ -44,10 +43,9 @@ $(document).ready(function () {
 			{ data: '0', visible: false },
 			{ data: '1', visible: false },
 			{ data: '2', visible: false },
-			{ data: '3', visible: false },
-			// 4:
+			// 3:
 			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id' } },
-			// 5:
+			// 4:
 			{ 
 				data: 'song_name',
 				title: 'Song',
@@ -59,7 +57,7 @@ $(document).ready(function () {
 					return data.title
 				}
 			},
-			// 6:
+			// 5:
 			{
 				data: 'difficulty',
 				title: 'Difficulty',
@@ -71,9 +69,9 @@ $(document).ready(function () {
 					return data.rating
 				}
 			},
-			// 7:
+			// 6:
 			{ data: 'rating', visible: false },
-			// 8:
+			// 7:
 			{
 				data: 'spice',
 				title: 'Spice',
@@ -85,11 +83,11 @@ $(document).ready(function () {
 					}
 				}
 			},
-			// 9:
+			// 8:
 			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
-			// 10:
+			// 9:
 			{ data: 'quality', title: 'Quality', className: 'border-right', render: DataTable.render.number('', '.', 2) },
-			// 11:
+			// 10:
 			{
 				data: 'goal',
 				title: 'Goal',
@@ -109,7 +107,7 @@ $(document).ready(function () {
 					return `<button${styles}>${text}</button>`
 				},
 			},
-			// 12:
+			// 11:
 			{
 				data: 'distance',
 				title: 'Dist.',
@@ -124,9 +122,9 @@ $(document).ready(function () {
 					return "+" + data.toLocaleString('en-US')
 				}
 			},
-			// 13:
+			// 12:
 			{ data: 'autospiced', visible: false },
-			// 14:
+			// 13:
 			{ data: 'chart_id', visible: false},
 		],
 		createdRow: function(row, data, index) {

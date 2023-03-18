@@ -55,6 +55,16 @@ def logged_in(request):
 	user.save()
 	return render(request, 'scorebrowser/loggedin.html')
 
+def set_region(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	selected_region_id = int(request.POST['region'])
+	user.region_id = selected_region_id
+	user.save()
+	return HttpResponse("Updated region.")
+
 def update_unlock(request):
 	if request.method != 'POST':
 		return
@@ -110,6 +120,8 @@ def unlocks(request):
 		'events': events,
 		'tasks': tasks,
 		'userUnlocks': userUnlocks,
+		'selectedRegionId': user.region.id,
+		'regions': Region.objects.all().order_by('id')
 	}
 	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
@@ -217,16 +229,17 @@ def scores(request):
 			song_locks[lock.song.id] = []
 		song_locks[lock.song.id].append(lock)
 
-	cabinets = Cabinet.objects.all()
-	cabinet_vis = {}
-	cabinet_vis_target = 0
-	cab_names = []
-	cab_versions = set()
-	for cabinet in cabinets:
-		cabinet_vis[cabinet.id] = str(cabinet_vis_target)
-		cab_names.append({'id': cabinet_vis_target, 'name': cabinet.name})
-		cabinet_vis_target += 1
-		cab_versions.add(cabinet.version.id)
+	cab_names = [
+		{'id': 0, 'name': 'White'},
+		{'id': 1, 'name': 'Gold'},
+		{'id': 2, 'name': 'Gold only'},
+	]
+
+	all_cabinets = Cabinet.objects.all()
+	white_cab = all_cabinets.filter(gold=False, region=user.region).first()
+	gold_cab = all_cabinets.filter(gold=True).first()
+	cabinets = [white_cab, gold_cab]
+	cab_versions = set(c.version.id for c in cabinets)
 
 	# {version id: {chart id: [requirements]}}
 	chart_unlocks = {v: {} for v in cab_versions}
@@ -248,13 +261,14 @@ def scores(request):
 			continue
 
 		entry = {}
-		for cabinet in cabinets:
+		for i, cabinet in enumerate(cabinets):
+			cab_vis_id = str(i)
 			if chart.song.version.id > cabinet.version.id:
-				entry[cabinet_vis[cabinet.id]] = HIDDEN
+				entry[cab_vis_id] = HIDDEN
 				continue
 
 			if check_locks(chart.song.id, song_locks, cabinet):
-				entry[cabinet_vis[cabinet.id]] = HIDDEN
+				entry[cab_vis_id] = HIDDEN
 				continue
 			
 			extra = False
@@ -265,11 +279,16 @@ def scores(request):
 					extra = extra or r.extra
 					locked = locked or (r.task.id not in user_unlocks)
 			if not locked:
-				entry[cabinet_vis[cabinet.id]] = VISIBLE
+				entry[cab_vis_id] = VISIBLE
 			elif extra:
-				entry[cabinet_vis[cabinet.id]] = EXTRA
+				entry[cab_vis_id] = EXTRA
 			else:
-				entry[cabinet_vis[cabinet.id]] = HIDDEN
+				entry[cab_vis_id] = HIDDEN
+
+		if entry["0"] == VISIBLE:
+			entry["2"] = HIDDEN
+		else:
+			entry["2"] = entry["1"]
 
 		spice = chart.spice
 
