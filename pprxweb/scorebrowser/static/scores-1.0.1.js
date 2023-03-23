@@ -1,4 +1,10 @@
+var userHidChartIds = []
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+	if (userHidChartIds.includes(parseInt(data[14]))) {
+		return false
+	}
+
 	visibility = parseInt(data[parseInt($('#cabinet-select').find(':selected').val())])
 	if (visibility === 3) {
 		return false
@@ -14,17 +20,17 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 
 	var level_min = parseInt($('#level-min').find(':selected').val())
 	var level_max = parseInt($('#level-max').find(':selected').val())
-	var level = parseInt(data[6])
+	var level = parseInt(data[7])
 	if ((level < level_min) || (level > level_max)) {
 		return false
 	}
 
 	var hide_autospice = $('#hide-autospice').is(':checked')
-	if (hide_autospice && (data[12] === "true")) {
+	if (hide_autospice && (data[13] === "true")) {
 		return false
 	}
 
-	var score = parseFloat(data[8])
+	var score = parseFloat(data[9])
 
 	var min_score = $('#min-score').val()
 	if ($.isNumeric(min_score) && (score < parseFloat(min_score))) {
@@ -37,7 +43,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
-	var goal_met = (score >= parseFloat(data[10])) && (score > 0)
+	var goal_met = (score >= parseFloat(data[11])) && (score > 0)
 	if (hide_met_goals && goal_met) {
 		return false
 	}
@@ -51,12 +57,23 @@ $(document).ready(function () {
 		data: scores,
 		responsive: true,
 		columns: [
-			{ data: '0', visible: false },
-			{ data: '1', visible: false },
-			{ data: '2', visible: false },
-			// 3:
-			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id', filter: 'id' } },
+			{ data: '0', visible: false }, // white visibility
+			{ data: '1', visible: false }, // gold visibility
+			{ data: '2', visible: false }, // gold-only visibility
+			{
+				data: null,
+				title: '',
+				orderable: false,
+				render: function(data, type, row, meta) {
+					if (type !== "display") {
+						return 0
+					}
+					return '<button class="hide-button">X</button>'
+				}
+			},
 			// 4:
+			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id', filter: 'id' } },
+			// 5:
 			{ 
 				data: 'song_name',
 				title: 'Song',
@@ -68,7 +85,7 @@ $(document).ready(function () {
 					return data.title
 				}
 			},
-			// 5:
+			// 6:
 			{
 				data: 'difficulty',
 				title: 'Difficulty',
@@ -80,9 +97,9 @@ $(document).ready(function () {
 					return data.rating
 				}
 			},
-			// 6:
-			{ data: 'rating', visible: false },
 			// 7:
+			{ data: 'rating', visible: false },
+			// 8:
 			{
 				data: 'spice',
 				title: 'Spice',
@@ -94,9 +111,9 @@ $(document).ready(function () {
 					}
 				}
 			},
-			// 8:
-			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
 			// 9:
+			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
+			// 10:
 			{
 				data: 'quality',
 				title: 'Quality',
@@ -113,7 +130,7 @@ $(document).ready(function () {
 					return `${quality} (#${row.rank})`					
 				}
 			},
-			// 10:
+			// 11:
 			{
 				data: 'goal',
 				title: 'Goal',
@@ -122,18 +139,18 @@ $(document).ready(function () {
 						return data
 					}
 
-					styles = ' class="unmet-goal"'
+					styles = ' class="unmet goal"'
 					text = "None (Click to set)"
 					if (data !== null) {
 						text = data.toLocaleString('en-US')
 						if ((row.score >= data) && (row.score > 0)) {
-							styles = ' class="met-goal"'
+							styles = ' class="met goal"'
 						}
 					}
 					return `<button${styles}>${text}</button>`
 				},
 			},
-			// 11:
+			// 12:
 			{
 				data: 'distance',
 				title: 'Dist.',
@@ -148,11 +165,11 @@ $(document).ready(function () {
 					return "+" + data.toLocaleString('en-US')
 				}
 			},
-			// 12:
-			{ data: 'autospiced', visible: false },
 			// 13:
-			{ data: 'chart_id', visible: false},
+			{ data: 'autospiced', visible: false },
 			// 14:
+			{ data: 'chart_id', visible: false},
+			// 15:
 			{ data: 'rank', visible: false},
 		],
 		createdRow: function(row, data, index) {
@@ -163,14 +180,14 @@ $(document).ready(function () {
 				$(row).addClass('locked-chart')
 			}
 		},
-		order: [[14, 'asc']],
+		order: [[15, 'asc']],
 	})
 
-	spiceHeader = scoresTable.column(7).header()
+	spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
 	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).  If there's not enough data to accurately spice a song yet, it gets automatically assigned the lowest spice for its level for sorting purposes, and your goal will be the lowest for that level.")
 
-	qualityHeader = scoresTable.column(9).header()
+	qualityHeader = scoresTable.column(10).header()
 	$(qualityHeader).addClass('tooltip')
 	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.  Points beyond 999,000 do not contribute to quality rating, and goals will never be over 999,000.')
 
@@ -190,9 +207,9 @@ $(document).ready(function () {
 		})
 	}
 
-	$('#scores').on('click', 'button', function() {
+	$('#scores').on('click', 'button.goal', function() {
 		row = scoresTable.row($(this).parents('tr')).data()
-		newGoal = prompt(`Set goal for ${row.song_name} ${row.difficulty.name} -- this will recalibrate all other goal scores!`, row.goal || 0)
+		newGoal = prompt(`Set goal for ${row.song_name.title} ${row.difficulty.name} -- this will recalibrate all other goal scores!`, row.goal || 0)
 		if (!newGoal) {
 			return
 		}
@@ -218,6 +235,12 @@ $(document).ready(function () {
 			type: 'POST',
 			data: JSON.stringify({'chart_id': row.chart_id, 'target_score': newGoal})
 		})
+	})
+
+	$('#scores').on('click', 'button.hide-button', function() {
+		row = scoresTable.row($(this).parents('tr')).data()
+		userHidChartIds.push(row.chart_id)
+		scoresTable.draw()
 	})
 
 	$('#cabinet-select').change(function() {

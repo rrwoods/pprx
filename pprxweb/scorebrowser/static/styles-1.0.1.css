@@ -30,12 +30,12 @@
 	font-style: italic;
 }
 
-.met-goal {
+.met {
 	color: seagreen;
 	font-style: italic;
 }
 
-.unmet-goal {
+.unmet {
 	font-weight: bold;
 }
 
