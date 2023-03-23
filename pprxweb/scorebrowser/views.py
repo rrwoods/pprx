@@ -327,7 +327,7 @@ def scores(request):
 		entry['goal'] = goal
 		entry['autospiced'] = autospiced
 		entry['chart_id'] = chart.id
-		entry['distance'] = goal - score
+		entry['distance'] = (goal - score) if goal else 0
 		scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)
