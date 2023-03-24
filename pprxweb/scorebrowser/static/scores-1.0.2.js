@@ -241,6 +241,16 @@ $(document).ready(function () {
 		row = scoresTable.row($(this).parents('tr')).data()
 		userHidChartIds.push(row.chart_id)
 		scoresTable.draw()
+
+		s = (userHidChartIds.length > 1) ? 's' : ''
+		$('button.unhide-button').text(`Unhide ${userHidChartIds.length} manually-hidden chart${s}`)
+		$('p.unhide-container').show()
+	})
+
+	$('button.unhide-button').click(function () {
+		$('p.unhide-container').hide()
+		userHidChartIds = []
+		scoresTable.draw()
 	})
 
 	$('#cabinet-select').change(function() {

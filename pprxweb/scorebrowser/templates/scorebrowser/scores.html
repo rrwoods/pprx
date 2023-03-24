@@ -5,48 +5,33 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.0.1.js' %}"></script>
+	<script src="{% static 'scores-1.0.2.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
 {% block content %}
 	<p>Charts with a <span class="extra-exclusive">pink background</span> are only available on Extra Stage on your selected cabinet.</p>
 
-	Cabinet:
-	<select id="cabinet-select">
-		{% for cabinet in cabinets %}
-			<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
-		{% endfor %}
-	</select>
+	<p>
+		Cabinet:
+		<select id="cabinet-select">
+			{% for cabinet in cabinets %}
+				<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
+			{% endfor %}
+		</select>
 
-	Version:
-	<select id="version-select" class="select-filter">
-		<option selected value=0>All</option>
-		{% for version in versions %}
-			<option value="{{ version.id }}">{{ version.name }}</option>
-		{% endfor %}
-	</select>
+		Version:
+		<select id="version-select" class="select-filter">
+			<option selected value=0>All</option>
+			{% for version in versions %}
+				<option value="{{ version.id }}">{{ version.name }}</option>
+			{% endfor %}
+		</select>
 
-	Level:
-	<select id="level-select">
-		<option selected value=0>All</option>
-		<option value=7>7</option>
-		<option value=8>8</option>
-		<option value=9>9</option>
-		<option value=10>10</option>
-		<option value=11>11</option>
-		<option value=12>12</option>
-		<option value=13>13</option>
-		<option value=14>14</option>
-		<option value=15>15</option>
-		<option value=16>16</option>
-		<option value=17>17</option>
-		<option value=18>18</option>
-		<option value=19>19</option>
-	</select>
-	<span id="level-range" hidden>
-		<select id="level-min" class="select-filter">
-			<option selected value=7>7</option>
+		Level:
+		<select id="level-select">
+			<option selected value=0>All</option>
+			<option value=7>7</option>
 			<option value=8>8</option>
 			<option value=9>9</option>
 			<option value=10>10</option>
@@ -60,42 +45,63 @@
 			<option value=18>18</option>
 			<option value=19>19</option>
 		</select>
+		<span id="level-range" hidden>
+			<select id="level-min" class="select-filter">
+				<option selected value=7>7</option>
+				<option value=8>8</option>
+				<option value=9>9</option>
+				<option value=10>10</option>
+				<option value=11>11</option>
+				<option value=12>12</option>
+				<option value=13>13</option>
+				<option value=14>14</option>
+				<option value=15>15</option>
+				<option value=16>16</option>
+				<option value=17>17</option>
+				<option value=18>18</option>
+				<option value=19>19</option>
+			</select>
+			to
+			<select id="level-max" class="select-filter">
+				<option value=7>7</option>
+				<option value=8>8</option>
+				<option value=9>9</option>
+				<option value=10>10</option>
+				<option value=11>11</option>
+				<option value=12>12</option>
+				<option value=13>13</option>
+				<option value=14>14</option>
+				<option value=15>15</option>
+				<option value=16>16</option>
+				<option value=17>17</option>
+				<option value=18>18</option>
+				<option selected value=19>19</option>
+			</select>
+		</span>
+	</p>
+
+	<p>
+		Show locked charts:
+		<input type="checkbox" id="show-locked" class="select-filter">
+
+		Hide auto-spiced songs:
+		<input type="checkbox" id="hide-autospice" class="select-filter">
+	</p>
+
+	<p>
+		Score:
+		<input type="text" id="min-score" class="text-filter score-input">
 		to
-		<select id="level-max" class="select-filter">
-			<option value=7>7</option>
-			<option value=8>8</option>
-			<option value=9>9</option>
-			<option value=10>10</option>
-			<option value=11>11</option>
-			<option value=12>12</option>
-			<option value=13>13</option>
-			<option value=14>14</option>
-			<option value=15>15</option>
-			<option value=16>16</option>
-			<option value=17>17</option>
-			<option value=18>18</option>
-			<option selected value=19>19</option>
-		</select>
-	</span>
+		<input type="text" id="max-score" class="text-filter score-input">
 
-	<br/>
-
-	Show locked charts:
-	<input type="checkbox" id="show-locked" class="select-filter">
-
-	Hide auto-spiced songs:
-	<input type="checkbox" id="hide-autospice" class="select-filter">
-	
-	<br/>
-
-	Score:
-	<input type="text" id="min-score" class="text-filter score-input">
-	to
-	<input type="text" id="max-score" class="text-filter score-input">
-
-	Hide met goals:
-	<input type="checkbox" id="hide-met-goals" class="select-filter">
+		Hide met goals:
+		<input type="checkbox" id="hide-met-goals" class="select-filter">
+	</p>
 
 	<div style="display: none" id="jsonData" data-json="{{ scores }}"></div>
 	<table id="scores" class="row-border hover" width="100%"></table>
+
+	<p class="unhide-container" hidden>
+		<button class="unhide-button">Unhide manually-hidden charts</button>
+	</p>
 {% endblock %}
