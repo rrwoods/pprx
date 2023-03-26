@@ -240,7 +240,7 @@ $(document).ready(function () {
 	$('#scores').on('click', 'button.hide-button', function() {
 		row = scoresTable.row($(this).parents('tr')).data()
 		userHidChartIds.push(row.chart_id)
-		scoresTable.draw()
+		scoresTable.draw(false)
 
 		s = (userHidChartIds.length > 1) ? 's' : ''
 		$('button.unhide-button').text(`Unhide ${userHidChartIds.length} manually-hidden chart${s}`)
@@ -250,7 +250,7 @@ $(document).ready(function () {
 	$('button.unhide-button').click(function () {
 		$('p.unhide-container').hide()
 		userHidChartIds = []
-		scoresTable.draw()
+		scoresTable.draw(false)
 	})
 
 	$('#cabinet-select').change(function() {
