@@ -191,6 +191,8 @@ $(document).ready(function () {
 	$(qualityHeader).addClass('tooltip')
 	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.  Points beyond 999,000 do not contribute to quality rating, and goals will never be over 999,000.')
 
+	updateAverages()
+
 	function applyRowClasses(table) {
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
 			visibility = parseInt(this.data()[$('#cabinet-select').find(':selected').val()])
@@ -205,6 +207,12 @@ $(document).ready(function () {
 				$(this.node()).removeClass('locked-chart')				
 			}
 		})
+	}
+
+	function updateAverages() {
+		$('.averages').hide()
+		cab = $('#cabinet-select').find(':selected').val()
+		$(`#${cab}-averages`).show()
 	}
 
 	$('#scores').on('click', 'button.goal', function() {
@@ -256,6 +264,7 @@ $(document).ready(function () {
 	$('#cabinet-select').change(function() {
 		scoresTable.draw()
 		applyRowClasses(scoresTable)
+		updateAverages()
 	})
 
 	$('#level-select').change(function() {

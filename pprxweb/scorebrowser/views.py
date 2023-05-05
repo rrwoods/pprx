@@ -258,6 +258,8 @@ def scores(request):
 	default_spice = {b.chart.rating: b.chart.spice for b in Benchmark.objects.filter(description='easiest')}
 	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in Benchmark.objects.filter(description='hardest')}
 
+	scores_by_diff = {cab: {diff: [] for diff in range(14, 20)} for cab in range(3)}
+
 	for chart in Chart.objects.filter(song__removed=False):
 		if chart.song.id in duplicate_song_ids[1:]:
 			continue
@@ -301,6 +303,11 @@ def scores(request):
 		k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
 		score = scores_lookup[k] if k in scores_lookup else 0
 
+		if chart.rating >= 14:
+			for cab in range(3):
+				if entry[str(cab)] < LOCKED:
+					scores_by_diff[cab][chart.rating].append(score)
+
 		quality = None
 		goal = None
 		autospiced = False
@@ -334,4 +341,11 @@ def scores(request):
 	for i, entry in enumerate(scores_data):
 		entry['rank'] = i + 1
 
-	return render(request, 'scorebrowser/scores.html', {'scores': json.dumps(scores_data), 'cabinets': cab_names, 'versions': version_names})
+	averages = {str(cab): {diff: int(sum(scores_by_diff[cab][diff])/len(scores_by_diff[cab][diff])) for diff in range(14, 20)} for cab in range(3)}
+
+	return render(request, 'scorebrowser/scores.html', {
+		'scores': json.dumps(scores_data),
+		'cabinets': cab_names,
+		'versions': version_names,
+		'averages': averages,
+	})
