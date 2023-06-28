@@ -29,6 +29,13 @@ class Command(BaseCommand):
 			if (not song.removed) and (('deleted' in fetched_song) or (fetched_song['song_id'] in DELETED_SONGS)):
 				print("Song {} is now removed".format(song.title))
 				song.removed = True
+
+			for sanbai_k, db_k in [('alternate_name', 'alternate_title'), ('romanized_name', 'romanized_title'), ('searchable_name', 'searchable_title')]:
+				v = fetched_song.get(sanbai_k, '')
+				if v != getattr(song, db_k):
+					setattr(song, db_k, v)
+					print("Song {} has {} = {}".format(song.title, db_k, v))
+
 			song.save()
 
 			ratings = fetched_song['ratings'][:5]

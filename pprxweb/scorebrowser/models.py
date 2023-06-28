@@ -9,7 +9,12 @@ class Version(models.Model):
 class Song(models.Model):
     id = models.CharField(primary_key=True, max_length=32)
     version = models.ForeignKey(Version, on_delete=models.CASCADE, default=1)
+    
     title = models.TextField()
+    searchable_title = models.TextField(default="")
+    romanized_title = models.TextField(default="")
+    alternate_title = models.TextField(default="")
+    
     removed = models.BooleanField(default=False)
 
     class Meta:

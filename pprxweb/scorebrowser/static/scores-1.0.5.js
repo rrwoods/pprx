@@ -60,10 +60,12 @@ $(document).ready(function () {
 			{ data: '0', visible: false }, // white visibility
 			{ data: '1', visible: false }, // gold visibility
 			{ data: '2', visible: false }, // gold-only visibility
+			// 3: (hide button)
 			{
 				data: null,
 				title: '',
 				orderable: false,
+				searchable: false,
 				render: function(data, type, row, meta) {
 					if (type !== "display") {
 						return 0
@@ -89,7 +91,7 @@ $(document).ready(function () {
 			{
 				data: 'difficulty',
 				title: 'Difficulty',
-				//render: { display: 'name', sort: 'rating', type: 'id' }
+				searchable: false,
 				render: function(data, type, row, meta) {
 					if (type === 'display') {
 						return `<a target="_blank" href="https://3icecream.com/ren/chart?songId=${row.song_name.id}&diff=${data.id}">${data.name} ${data.rating}</a>`
@@ -168,9 +170,15 @@ $(document).ready(function () {
 			// 13:
 			{ data: 'autospiced', visible: false },
 			// 14:
-			{ data: 'chart_id', visible: false},
+			{ data: 'chart_id', visible: false, searchable: false },
 			// 15:
-			{ data: 'rank', visible: false},
+			{ data: 'rank', visible: false },
+			// 16:
+			{ data: 'alternate_title', visible: false },
+			// 17:
+			{ data: 'romanized_title', visible: false },
+			// 18:
+			{ data: 'searchable_title', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])

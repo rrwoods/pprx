@@ -326,6 +326,9 @@ def scores(request):
 
 		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
 		entry['song_name'] = { 'id': chart.song.id, 'title': chart.song.title }
+		entry['alternate_title'] = chart.song.alternate_title
+		entry['romanized_title'] = chart.song.romanized_title
+		entry['searchable_title'] = chart.song.searchable_title
 		entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name, 'rating': chart.rating }
 		entry['rating'] = chart.rating
 		entry['spice'] = spice
