@@ -84,6 +84,9 @@ $(document).ready(function () {
 					if (type === "display") {
 						return `<a target="_blank" href=https://3icecream.com/ddr/song_details/${data.id}>${data.title}</a>`
 					}
+					if (type === "sort") {
+						return data.sort_key
+					}
 					return data.title
 				}
 			},
