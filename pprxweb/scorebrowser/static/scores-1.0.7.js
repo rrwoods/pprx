@@ -173,7 +173,7 @@ $(document).ready(function () {
 			// 13:
 			{ data: 'autospiced', visible: false },
 			// 14:
-			{ data: 'chart_id', visible: false, searchable: false },
+			{ data: 'chart_id', visible: false },
 			// 15:
 			{ data: 'rank', visible: false },
 			// 16:
