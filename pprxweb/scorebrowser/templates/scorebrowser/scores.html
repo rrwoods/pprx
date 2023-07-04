@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.0.8.js' %}"></script>
+	<script src="{% static 'scores-1.0.9.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -115,6 +115,8 @@
 	<p class="unhide-container" hidden>
 		<button class="unhide-button">Unhide manually-hidden charts</button>
 	</p>
+
+	<p id="goals-summary"></p>
 
 	{% for cab, avgs in averages.items %}
 		<p id="{{ cab }}-averages" class="averages" hidden>

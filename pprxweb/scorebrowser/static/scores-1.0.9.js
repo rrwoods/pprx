@@ -1,6 +1,9 @@
 var userHidChartIds = []
 var minTimestamp = 0
 
+var metGoals = 0
+var totalGoals = 0
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (userHidChartIds.includes(parseInt(data[14]))) {
 		return false
@@ -47,10 +50,14 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
+	totalGoals++
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
 	var goal_met = (score >= parseFloat(data[11])) && (score > 0)
-	if (hide_met_goals && goal_met) {
-		return false
+	if (goal_met) {
+		metGoals++
+		if (hide_met_goals) {
+			return false
+		}
 	}
 
 	return true
@@ -201,6 +208,19 @@ $(document).ready(function () {
 		order: [[15, 'asc']],
 	})
 
+	function setGoalSummary() {
+		$("#goals-summary").text(`${metGoals} goals met, ${totalGoals - metGoals} remaining`)
+	}
+
+	setGoalSummary()
+
+	function redrawTable(paging) {
+		metGoals = 0
+		totalGoals = 0
+		scoresTable.draw(paging)
+		setGoalSummary()
+	}
+
 	spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
 	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).  If there's not enough data to accurately spice a song yet, it gets automatically assigned the lowest spice for its level for sorting purposes, and your goal will be the lowest for that level.")
@@ -254,7 +274,7 @@ $(document).ready(function () {
 			d.distance = d.goal - d.score
 			this.invalidate()
 		})
-		scoresTable.draw()
+		redrawTable(true)
 
 		$.ajax({
 			url: '/scorebrowser/set_goal',
@@ -266,7 +286,7 @@ $(document).ready(function () {
 	$('#scores').on('click', 'button.hide-button', function() {
 		row = scoresTable.row($(this).parents('tr')).data()
 		userHidChartIds.push(row.chart_id)
-		scoresTable.draw(false)
+		redrawTable(false)
 
 		s = (userHidChartIds.length > 1) ? 's' : ''
 		$('button.unhide-button').text(`Unhide ${userHidChartIds.length} manually-hidden chart${s}`)
@@ -276,11 +296,11 @@ $(document).ready(function () {
 	$('button.unhide-button').click(function () {
 		$('p.unhide-container').hide()
 		userHidChartIds = []
-		scoresTable.draw(false)
+		redrawTable(false)
 	})
 
 	$('#cabinet-select').change(function() {
-		scoresTable.draw()
+		redrawTable(true)
 		applyRowClasses(scoresTable)
 		updateAverages()
 	})
@@ -291,7 +311,7 @@ $(document).ready(function () {
 		$(`#level-min option[value="${level}"]`).prop('selected', true)
 		$(`#level-max option[value="${level}"]`).prop('selected', true)
 		$('#level-range').show()
-		scoresTable.draw()
+		redrawTable(true)
 	})
 
 	function updateTimeRange() {
@@ -325,7 +345,7 @@ $(document).ready(function () {
 		} else if (elementId == 'time-type') {
 			updateTimeRange()
 		}
-		scoresTable.draw()
+		redrawTable(true)
 	})
 
 	$('.text-filter').keyup(function() {
@@ -333,6 +353,6 @@ $(document).ready(function () {
 		if (elementId === 'time-range') {
 			updateTimeRange()
 		}
-		scoresTable.draw()
+		redrawTable(true)
 	})
 })
