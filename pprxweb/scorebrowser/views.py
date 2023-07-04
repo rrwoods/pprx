@@ -289,13 +289,14 @@ def scores(request):
 	for score in scores_response.json():
 		song_id = score['song_id']
 		difficulty = score['difficulty']
+		timestamp = score['time_played'] or score['time_uploaded']
 		score = score['score']
 		if song_id in duplicate_song_ids:
 			song_id = duplicate_song_ids[0]
 		key = '{}-{}'.format(song_id, difficulty)
-		if (key in scores_lookup) and (scores_lookup[key] >= score):
+		if (key in scores_lookup) and (scores_lookup[key][0] >= score):
 			continue
-		scores_lookup[key] = score
+		scores_lookup[key] = (score, timestamp)
 
 	song_locks = {}
 	for lock in SongLock.objects.all():
@@ -374,7 +375,7 @@ def scores(request):
 		spice = chart.spice
 
 		k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
-		score = scores_lookup[k] if k in scores_lookup else 0
+		score, timestamp = scores_lookup[k] if (k in scores_lookup) else (0, 0)
 
 		if chart.rating >= 14:
 			for cab in range(3):
@@ -411,6 +412,7 @@ def scores(request):
 		entry['autospiced'] = autospiced
 		entry['chart_id'] = chart.id
 		entry['distance'] = (goal - score) if goal else 0
+		entry['timestamp'] = timestamp
 		scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)

@@ -1,7 +1,12 @@
 var userHidChartIds = []
+var minTimestamp = 0
 
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (userHidChartIds.includes(parseInt(data[14]))) {
+		return false
+	}
+
+	if (parseInt(data[19]) < minTimestamp) {
 		return false
 	}
 
@@ -182,6 +187,8 @@ $(document).ready(function () {
 			{ data: 'romanized_title', visible: false },
 			// 18:
 			{ data: 'searchable_title', visible: false },
+			// 19:
+			{ data: 'timestamp', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
@@ -287,6 +294,21 @@ $(document).ready(function () {
 		scoresTable.draw()
 	})
 
+	function updateTimeRange() {
+		timeText = $('#time-range').val()
+		if (!$.isNumeric(timeText)) {
+			minTimestamp = 0
+			return
+		}
+		seconds = Math.floor(parseFloat(timeText) * 60 * 60)
+		if ($('#time-type').val() !== 'hours') {
+			seconds *= 24
+		}
+
+		now = Math.floor(Date.now()/1000)
+		minTimestamp = now - seconds
+	}
+
 	$('.select-filter').change(function() {
 		elementId = $(this).attr('id')
 		selected = parseInt($(this).find(':selected').val())
@@ -300,11 +322,17 @@ $(document).ready(function () {
 			if (min > selected) {
 				$(`#level-min option[value="${selected}"]`).prop('selected', true)
 			}
+		} else if (elementId == 'time-type') {
+			updateTimeRange()
 		}
 		scoresTable.draw()
 	})
 
 	$('.text-filter').keyup(function() {
+		elementId = $(this).attr('id')
+		if (elementId === 'time-range') {
+			updateTimeRange()
+		}
 		scoresTable.draw()
 	})
 })

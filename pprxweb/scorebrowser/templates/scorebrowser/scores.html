@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.0.7.js' %}"></script>
+	<script src="{% static 'scores-1.0.8.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -88,6 +88,15 @@
 
 		Hide auto-spiced songs:
 		<input type="checkbox" id="hide-autospice" class="select-filter">
+	</p>
+
+	<p>
+		Scores from last
+		<input type="text" id="time-range" class="text-filter">
+		<select id="time-type" class="select-filter">
+			<option selected value='hours'>hours</option>
+			<option value='days'>days</option>
+		</select>
 	</p>
 
 	<p>
