@@ -419,7 +419,7 @@ def scores(request):
 	for i, entry in enumerate(scores_data):
 		entry['rank'] = i + 1
 
-	averages = {str(cab): {diff: int(sum(scores_by_diff[cab][diff])/len(scores_by_diff[cab][diff])) for diff in range(14, 20)} for cab in range(3)}
+	averages = {str(cab): {diff: int(sum(scores_by_diff[cab][diff])/max(len(scores_by_diff[cab][diff]), 1)) for diff in range(14, 20)} for cab in range(3)}
 
 	return render(request, 'scorebrowser/scores.html', {
 		'scores': json.dumps(scores_data),

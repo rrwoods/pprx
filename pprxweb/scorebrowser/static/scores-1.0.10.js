@@ -5,11 +5,11 @@ var metGoals = 0
 var totalGoals = 0
 
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-	if (userHidChartIds.includes(parseInt(data[14]))) {
+	if (userHidChartIds.includes(parseInt(data[15]))) {
 		return false
 	}
 
-	if (parseInt(data[19]) < minTimestamp) {
+	if (parseInt(data[11]) < minTimestamp) {
 		return false
 	}
 
@@ -34,7 +34,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var hide_autospice = $('#hide-autospice').is(':checked')
-	if (hide_autospice && (data[13] === "true")) {
+	if (hide_autospice && (data[14] === "true")) {
 		return false
 	}
 
@@ -52,7 +52,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 
 	totalGoals++
 	var hide_met_goals = $('#hide-met-goals').is(':checked')
-	var goal_met = (score >= parseFloat(data[11])) && (score > 0)
+	var goal_met = (score >= parseFloat(data[12])) && (score > 0)
 	if (goal_met) {
 		metGoals++
 		if (hide_met_goals) {
@@ -63,7 +63,55 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	return true
 })
 
+$.fn.dataTableExt.oSort['nonzero-number-asc'] = function(a, b) {
+	if (a === 0) {
+		return 1
+	}
+	if (b === 0) {
+		return -1
+	}
+	return Math.sign(a - b)
+}
+
+$.fn.dataTableExt.oSort['nonzero-number-desc'] = function(a, b) {
+	if (a === 0) {
+		return 1
+	}
+	if (b === 0) {
+		return -1
+	}
+	return Math.sign(b - a)
+}
+
 $(document).ready(function () {
+	function formatAge(timestamp) {
+		if (timestamp === 0) {
+			return ''
+		}
+
+		const ageFormatter = new Intl.RelativeTimeFormat(undefined, {numeric: 'auto', style: 'narrow'})
+		const divisions = [
+			{ maxAmt: 99, divAmt: 60, name: 'seconds' },
+			{ maxAmt: 99, divAmt: 60, name: 'minutes' },
+			{ maxAmt: 72, divAmt: 24, name: 'hours' },
+			{ maxAmt: 30, divAmt: 7, name: 'days' },
+			{ maxAmt: 8, divAmt: 4.34525, name: 'weeks' },
+			{ maxAmt: 24, divAmt: 12, name: 'months' },
+			{ maxAmt: Number.POSITIVE_INFINITY, divAmt: null, name: 'years' },
+		]
+
+		var duration = timestamp - loadTimestamp
+		for (let i = 0; i < divisions.length; i++) {
+			const division = divisions[i]
+			if (Math.abs(duration) < division.maxAmt) {
+				return ageFormatter.format(Math.round(duration), division.name)
+			}
+			duration /= division.divAmt
+		}
+	}
+
+	const loadTimestamp = Math.floor(Date.now()/1000)
+
 	var scores = JSON.parse($('#jsonData').attr('data-json'))
 	var scoresTable = $('#scores').DataTable({
 		data: scores,
@@ -134,7 +182,6 @@ $(document).ready(function () {
 			{
 				data: 'quality',
 				title: 'Quality',
-				className: 'border-right',
 				render: function(data, type, row, meta) {
 					if (type === "sort" || type === "type" || type === "filter") {
 						return data
@@ -148,6 +195,20 @@ $(document).ready(function () {
 				}
 			},
 			// 11:
+			{
+				data: 'timestamp',
+				title: 'Age',
+				className: 'border-right',
+				type: 'nonzero-number',
+				render: function(data, type, row, meta) {
+					if (type === "sort" || type === "type" || type === "filter") {
+						return data
+					}
+
+					return formatAge(data)
+				},
+			},
+			// 12:
 			{
 				data: 'goal',
 				title: 'Goal',
@@ -167,7 +228,7 @@ $(document).ready(function () {
 					return `<button${styles}>${text}</button>`
 				},
 			},
-			// 12:
+			// 13:
 			{
 				data: 'distance',
 				title: 'Dist.',
@@ -182,20 +243,18 @@ $(document).ready(function () {
 					return "+" + data.toLocaleString('en-US')
 				}
 			},
-			// 13:
-			{ data: 'autospiced', visible: false },
 			// 14:
-			{ data: 'chart_id', visible: false },
+			{ data: 'autospiced', visible: false },
 			// 15:
-			{ data: 'rank', visible: false },
+			{ data: 'chart_id', visible: false },
 			// 16:
-			{ data: 'alternate_title', visible: false },
+			{ data: 'rank', visible: false },
 			// 17:
-			{ data: 'romanized_title', visible: false },
+			{ data: 'alternate_title', visible: false },
 			// 18:
-			{ data: 'searchable_title', visible: false },
+			{ data: 'romanized_title', visible: false },
 			// 19:
-			{ data: 'timestamp', visible: false },
+			{ data: 'searchable_title', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
@@ -205,7 +264,7 @@ $(document).ready(function () {
 				$(row).addClass('locked-chart')
 			}
 		},
-		order: [[15, 'asc']],
+		order: [[16, 'asc']],
 	})
 
 	function setGoalSummary() {
@@ -325,8 +384,7 @@ $(document).ready(function () {
 			seconds *= 24
 		}
 
-		now = Math.floor(Date.now()/1000)
-		minTimestamp = now - seconds
+		minTimestamp = loadTimestamp - seconds
 	}
 
 	$('.select-filter').change(function() {
