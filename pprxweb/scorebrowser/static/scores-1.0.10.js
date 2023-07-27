@@ -22,7 +22,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var selected_version = $('#version-select').find(':selected').val()
-	if ((selected_version !== "0") && (selected_version !== data[3])) {
+	if ((selected_version !== "0") && (selected_version !== data[4])) {
 		return false
 	}
 
