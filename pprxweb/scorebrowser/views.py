@@ -349,23 +349,16 @@ def scores(request):
 				entry[cab_vis_id] = UNAVAILABLE
 				continue
 			
-			extra = False
-			locked = False
-			completable = True
+			chart_vis = VISIBLE
 			if chart.id in chart_unlocks[cabinet.version.id]:
 				requirements = chart_unlocks[cabinet.version.id][chart.id]
 				for r in requirements:
-					extra = extra or r.extra
-					locked = locked or (r.task.id not in user_unlocks)
-					completable = completable and r.task.event.completable
-			if not locked:
-				entry[cab_vis_id] = VISIBLE
-			elif extra:
-				entry[cab_vis_id] = EXTRA
-			elif completable:
-				entry[cab_vis_id] = LOCKED
-			else:
-				entry[cab_vis_id] = UNAVAILABLE
+					if (not r.extra) and (not r.task.event.completable):
+						chart_vis = UNAVAILABLE
+						break
+					if (r.task.id not in user_unlocks):
+						chart_vis = max(chart_vis, (EXTRA if r.extra else LOCKED))
+			entry[cab_vis_id] = chart_vis
 
 		if entry["0"] == VISIBLE:
 			entry["2"] = UNAVAILABLE
