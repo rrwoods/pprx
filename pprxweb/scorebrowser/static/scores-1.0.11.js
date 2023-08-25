@@ -21,9 +21,13 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	var selected_version = $('#version-select').find(':selected').val()
-	if ((selected_version !== "0") && (selected_version !== data[4])) {
-		return false
+	var version_min = parseInt($('#version-min').find(':selected').val())
+	if (version_min !== 0) {
+		var version_max = parseInt($('#version-max').find(':selected').val())
+		var version = parseInt(data[4])
+		if ((version < version_min) || (version > version_max)) {
+			return false
+		}
 	}
 
 	var level_min = parseInt($('#level-min').find(':selected').val())
@@ -373,6 +377,15 @@ $(document).ready(function () {
 		redrawTable(true)
 	})
 
+	$('#version-select').change(function() {
+		$(this).hide()
+		versionId = $(this).find(':selected').val()
+		$(`#version-min option[value="${versionId}"]`).prop('selected', true)
+		$(`#version-max option[value="${versionId}"]`).prop('selected', true)
+		$('#version-range').show()
+		redrawTable(true)
+	})
+
 	function updateTimeRange() {
 		timeText = $('#time-range').val()
 		if (!$.isNumeric(timeText)) {
@@ -399,6 +412,16 @@ $(document).ready(function () {
 			min = parseInt($('#level-min').find(':selected').val())
 			if (min > selected) {
 				$(`#level-min option[value="${selected}"]`).prop('selected', true)
+			}
+		} else if (elementId == 'version-min') {
+			max = parseInt($('#version-max').find(':selected').val())
+			if (max < selected) {
+				$(`#version-max option[value="${selected}"]`).prop('selected', true)
+			}
+		} else if (elementId == 'version-max') {
+			min = parseInt($('#version-min').find(':selected').val())
+			if (min > selected) {
+				$(`#version-min option[value="${selected}"]`).prop('selected', true)
 			}
 		} else if (elementId == 'time-type') {
 			updateTimeRange()
