@@ -360,7 +360,7 @@ def scores(request):
 						chart_vis = max(chart_vis, (EXTRA if r.extra else LOCKED))
 			entry[cab_vis_id] = chart_vis
 
-		if entry["0"] == VISIBLE:
+		if entry["0"] <= entry["1"]:
 			entry["2"] = UNAVAILABLE
 		else:
 			entry["2"] = entry["1"]
