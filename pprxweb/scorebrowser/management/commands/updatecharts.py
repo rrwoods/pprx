@@ -40,17 +40,22 @@ class Command(BaseCommand):
 
 			ratings = fetched_song['ratings'][:5]
 			for difficulty, rating in enumerate(ratings):
+				if rating == 0:
+					continue
+				
+				tracked = True
 				if rating <= 1:
-					continue
-				if (difficulty != 3) and (rating < 14) and (rating != max(ratings)):
-					continue
+					tracked = False
+				elif (difficulty != 3) and (rating < 14) and (rating != max(ratings)):
+					tracked = False
 
 				chart = Chart.objects.filter(song__id=song.id).filter(difficulty__id=difficulty).first()
 				if chart is None:
-					print("Creating chart {} -- {} -- {}".format(song.title, difficulty, rating))
-					chart = Chart(song_id=song.id, difficulty_id=difficulty, rating=rating)
+					print("Creating {}chart {} -- {} -- {}".format(("" if tracked else "untracked "), song.title, difficulty, rating))
+					chart = Chart(song_id=song.id, difficulty_id=difficulty, rating=rating, tracked=tracked)
 					chart.save()
 				elif chart.rating != rating:
 					print("Updating chart rating {} -- {} from {} to {}".format(song.title, difficulty, chart.rating, rating))
 					chart.rating = rating
+					chart.tracked = tracked   # a 13->14 or 14->13 rerate might require this!
 					chart.save()

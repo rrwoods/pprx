@@ -12,7 +12,7 @@ class Command(BaseCommand):
 		popular_charts = {min_rating-1: [], max_rating+1: []}
 		unpopular_charts = {min_rating-1: [], max_rating+1: []}
 		for rating in range(min_rating, max_rating + 1):
-			charts = Chart.objects.filter(rating=rating)
+			charts = Chart.objects.filter(rating=rating, tracked=True)
 			chart_popularity = []
 			for chart in charts:
 				# skip duplicate B4U Acyolyte -- it should have no scores against it

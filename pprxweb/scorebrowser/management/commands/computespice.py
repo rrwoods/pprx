@@ -15,7 +15,7 @@ class Command(BaseCommand):
 				pairs[pair.y_chart_id] = []
 			pairs[pair.y_chart_id].append(pair)
 
-		current = {c.id: c.rating for c in Chart.objects.all()}
+		current = {c.id: c.rating for c in Chart.objects.filter(tracked=True)}
 		reps = 500
 		for i in range(reps):
 			print('{} iterations remaining'.format(reps-i))

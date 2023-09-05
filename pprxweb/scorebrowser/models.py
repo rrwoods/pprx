@@ -35,6 +35,7 @@ class Chart(models.Model):
     difficulty = models.ForeignKey(Difficulty, on_delete=models.CASCADE)
     rating = models.IntegerField()
     spice = models.FloatField(blank=True, null=True)
+    tracked = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'charts'

@@ -4,6 +4,8 @@ var minTimestamp = 0
 var metGoals = 0
 var totalGoals = 0
 
+var allCharts = null
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (userHidChartIds.includes(parseInt(data[15]))) {
 		return false
@@ -34,6 +36,20 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	var level_max = parseInt($('#level-max').find(':selected').val())
 	var level = parseInt(data[7])
 	if ((level < level_min) || (level > level_max)) {
+		return false
+	}
+
+	var song_level_min = parseInt($('#song-level-min').find(':selected').val())
+	var song_level_max = parseInt($('#song-level-max').find(':selected').val())
+	song_level_met = false
+	song_levels = allCharts[data[20]]
+	for (var i = 0; i < song_levels.length; i++) {
+		if ((song_levels[i] >= song_level_min) && (song_levels[i] <= song_level_max)) {
+			song_level_met = true
+			break
+		}
+	}
+	if (!song_level_met) {
 		return false
 	}
 
@@ -116,6 +132,9 @@ $(document).ready(function () {
 
 	const loadTimestamp = Math.floor(Date.now()/1000)
 
+	allCharts = JSON.parse($('#all-charts').attr('data-json'))
+	console.log(allCharts)
+
 	var scores = JSON.parse($('#jsonData').attr('data-json'))
 	var scoresTable = $('#scores').DataTable({
 		data: scores,
@@ -146,7 +165,7 @@ $(document).ready(function () {
 				className: 'border-right',
 				render: function(data, type, row, meta) {
 					if (type === "display") {
-						return `<a target="_blank" href=https://3icecream.com/ddr/song_details/${data.id}>${data.title}</a>`
+						return `<a target="_blank" href=https://3icecream.com/ddr/song_details/${row.song_id}>${data.title}</a>`
 					}
 					if (type === "sort") {
 						return data.sort_key
@@ -161,7 +180,7 @@ $(document).ready(function () {
 				searchable: false,
 				render: function(data, type, row, meta) {
 					if (type === 'display') {
-						return `<a target="_blank" href="https://3icecream.com/ren/chart?songId=${row.song_name.id}&diff=${data.id}">${data.name} ${data.rating}</a>`
+						return `<a target="_blank" href="https://3icecream.com/ren/chart?songId=${row.song_id}&diff=${data.id}">${data.name} ${data.rating}</a>`
 					}
 					return data.rating
 				}
@@ -259,6 +278,8 @@ $(document).ready(function () {
 			{ data: 'romanized_title', visible: false },
 			// 19:
 			{ data: 'searchable_title', visible: false },
+			// 20:
+			{ data: 'song_id', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
@@ -377,6 +398,15 @@ $(document).ready(function () {
 		redrawTable(true)
 	})
 
+	$('#song-level-select').change(function() {
+		$(this).hide()
+		level = $(this).find(':selected').val()
+		$(`#song-level-min option[value="${level}"]`).prop('selected', true)
+		$(`#song-level-max option[value="${level}"]`).prop('selected', true)
+		$('#song-level-range').show()
+		redrawTable(true)
+	})
+
 	$('#version-select').change(function() {
 		$(this).hide()
 		versionId = $(this).find(':selected').val()
@@ -412,6 +442,17 @@ $(document).ready(function () {
 			min = parseInt($('#level-min').find(':selected').val())
 			if (min > selected) {
 				$(`#level-min option[value="${selected}"]`).prop('selected', true)
+			}
+		}
+		else if (elementId == 'song-level-min') {
+			max = parseInt($('#song-level-max').find(':selected').val())
+			if (max < selected) {
+				$(`#song-level-max option[value="${selected}"]`).prop('selected', true)
+			}
+		} else if (elementId == 'song-level-max') {
+			min = parseInt($('#song-level-min').find(':selected').val())
+			if (min > selected) {
+				$(`#song-level-min option[value="${selected}"]`).prop('selected', true)
 			}
 		} else if (elementId == 'version-min') {
 			max = parseInt($('#version-max').find(':selected').val())

@@ -334,6 +334,9 @@ def scores(request):
 
 	scores_by_diff = {cab: {diff: [] for diff in range(14, 20)} for cab in range(3)}
 
+	# {song_id: [ratings]}
+	all_charts = {}
+
 	for chart in Chart.objects.filter(song__removed=False):
 		if chart.song.id in duplicate_song_ids[1:]:
 			continue
@@ -365,48 +368,54 @@ def scores(request):
 		else:
 			entry["2"] = entry["1"]
 
-		spice = chart.spice
+		if chart.song.id not in all_charts:
+			all_charts[chart.song.id] = [-1, -1, -1, -1, -1]
+		all_charts[chart.song.id][chart.difficulty.id] = chart.rating
 
-		k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
-		score, timestamp = scores_lookup[k] if (k in scores_lookup) else (0, 0)
+		if chart.tracked:
+			spice = chart.spice
 
-		if chart.rating >= 14:
-			for cab in range(3):
-				if entry[str(cab)] < LOCKED:
-					scores_by_diff[cab][chart.rating].append(score)
+			k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
+			score, timestamp = scores_lookup[k] if (k in scores_lookup) else (0, 0)
 
-		quality = None
-		goal = None
-		autospiced = False
-		if spice is None:
-			autospiced = True
-			try:
-				spice = default_spice[chart.rating]
-				goal = default_goals[chart.rating]
-			except:
-				print(chart.song.title)
-		else:
-			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			if score > 0:
-				quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
-		goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
+			if chart.rating >= 14:
+				for cab in range(3):
+					if entry[str(cab)] < LOCKED:
+						scores_by_diff[cab][chart.rating].append(score)
 
-		entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
-		entry['song_name'] = { 'id': chart.song.id, 'title': chart.song.title, 'sort_key': sort_key(chart.song.searchable_title or chart.song.title) }
-		entry['alternate_title'] = chart.song.alternate_title
-		entry['romanized_title'] = chart.song.romanized_title
-		entry['searchable_title'] = chart.song.searchable_title
-		entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name, 'rating': chart.rating }
-		entry['rating'] = chart.rating
-		entry['spice'] = spice
-		entry['score'] = score
-		entry['quality'] = quality
-		entry['goal'] = goal
-		entry['autospiced'] = autospiced
-		entry['chart_id'] = chart.id
-		entry['distance'] = (goal - score) if goal else 0
-		entry['timestamp'] = timestamp
-		scores_data.append(entry)
+			quality = None
+			goal = None
+			autospiced = False
+			if spice is None:
+				autospiced = True
+				try:
+					spice = default_spice[chart.rating]
+					goal = default_goals[chart.rating]
+				except:
+					print(chart.song.title)
+			else:
+				goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
+				if score > 0:
+					quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
+			goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
+
+			entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
+			entry['song_id'] = chart.song.id
+			entry['song_name'] = { 'title': chart.song.title, 'sort_key': sort_key(chart.song.searchable_title or chart.song.title) }
+			entry['alternate_title'] = chart.song.alternate_title
+			entry['romanized_title'] = chart.song.romanized_title
+			entry['searchable_title'] = chart.song.searchable_title
+			entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name, 'rating': chart.rating }
+			entry['rating'] = chart.rating
+			entry['spice'] = spice
+			entry['score'] = score
+			entry['quality'] = quality
+			entry['goal'] = goal
+			entry['autospiced'] = autospiced
+			entry['chart_id'] = chart.id
+			entry['distance'] = (goal - score) if goal else 0
+			entry['timestamp'] = timestamp
+			scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)
 	for i, entry in enumerate(scores_data):
@@ -419,4 +428,5 @@ def scores(request):
 		'cabinets': cab_names,
 		'versions': version_names,
 		'averages': averages,
+		'all_charts': json.dumps(all_charts),
 	})

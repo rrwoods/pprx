@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.0.11.js' %}"></script>
+	<script src="{% static 'scores-1.0.12.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -44,7 +44,7 @@
 			</select>
 		</span>
 
-		Level:
+		Chart level:
 		<select id="level-select">
 			<option selected value=0>All</option>
 			<option value=7>7</option>
@@ -94,6 +94,75 @@
 				<option selected value=19>19</option>
 			</select>
 		</span>
+
+		Song has level:
+		<select id="song-level-select">
+			<option selected value=0>All</option>
+			<option value=1>1</option>
+			<option value=2>2</option>
+			<option value=3>3</option>
+			<option value=4>4</option>
+			<option value=5>5</option>
+			<option value=6>6</option>
+			<option value=7>7</option>
+			<option value=8>8</option>
+			<option value=9>9</option>
+			<option value=10>10</option>
+			<option value=11>11</option>
+			<option value=12>12</option>
+			<option value=13>13</option>
+			<option value=14>14</option>
+			<option value=15>15</option>
+			<option value=16>16</option>
+			<option value=17>17</option>
+			<option value=18>18</option>
+			<option value=19>19</option>
+		</select>
+		<span id="song-level-range" hidden>
+			<select id="song-level-min" class="select-filter">
+				<option selected value=1>1</option>
+				<option value=2>2</option>
+				<option value=3>3</option>
+				<option value=4>4</option>
+				<option value=5>5</option>
+				<option value=6>6</option>
+				<option value=7>7</option>
+				<option value=8>8</option>
+				<option value=9>9</option>
+				<option value=10>10</option>
+				<option value=11>11</option>
+				<option value=12>12</option>
+				<option value=13>13</option>
+				<option value=14>14</option>
+				<option value=15>15</option>
+				<option value=16>16</option>
+				<option value=17>17</option>
+				<option value=18>18</option>
+				<option value=19>19</option>
+			</select>
+			to
+			<select id="song-level-max" class="select-filter">
+				<option value=1>1</option>
+				<option value=2>2</option>
+				<option value=3>3</option>
+				<option value=4>4</option>
+				<option value=5>5</option>
+				<option value=6>6</option>
+				<option value=7>7</option>
+				<option value=8>8</option>
+				<option value=9>9</option>
+				<option value=10>10</option>
+				<option value=11>11</option>
+				<option value=12>12</option>
+				<option value=13>13</option>
+				<option value=14>14</option>
+				<option value=15>15</option>
+				<option value=16>16</option>
+				<option value=17>17</option>
+				<option value=18>18</option>
+				<option selected value=19>19</option>
+			</select>
+		</span>
 	</p>
 
 	<p>
@@ -124,6 +193,7 @@
 	</p>
 
 	<div style="display: none" id="jsonData" data-json="{{ scores }}"></div>
+	<div style="display: none" id="all-charts" data-json="{{ all_charts }}"></div>
 	<table id="scores" class="row-border hover" width="100%"></table>
 
 	<p class="unhide-container" hidden>
