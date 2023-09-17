@@ -1,6 +1,8 @@
 var userHidChartIds = []
 var minTimestamp = 0
 
+var songLevelStart = 0
+
 var metGoals = 0
 var totalGoals = 0
 
@@ -43,7 +45,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	var song_level_max = parseInt($('#song-level-max').find(':selected').val())
 	song_level_met = false
 	song_levels = allCharts[data[20]]
-	for (var i = 0; i < song_levels.length; i++) {
+	for (var i = songLevelStart; i < song_levels.length; i++) {
 		if ((song_levels[i] >= song_level_min) && (song_levels[i] <= song_level_max)) {
 			song_level_met = true
 			break
@@ -454,6 +456,8 @@ $(document).ready(function () {
 			if (min > selected) {
 				$(`#song-level-min option[value="${selected}"]`).prop('selected', true)
 			}
+		} else if (elementId == 'song-beginner') {
+			songLevelStart = $(`#song-beginner`).is(':checked') ? 0 : 1
 		} else if (elementId == 'version-min') {
 			max = parseInt($('#version-max').find(':selected').val())
 			if (max < selected) {

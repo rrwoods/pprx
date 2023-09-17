@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.0.12.js' %}"></script>
+	<script src="{% static 'scores-1.0.13.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -162,6 +162,8 @@
 				<option value=18>18</option>
 				<option selected value=19>19</option>
 			</select>
+			Include beginner
+			<input type="checkbox" id="song-beginner" class="select-filter" checked>
 		</span>
 	</p>
 
