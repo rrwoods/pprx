@@ -19,11 +19,17 @@ def forward(apps, schema_editor):
 		chart = findChart(title, difficulty_id)
 		task = UnlockTask.objects.create(event=event, name='{} ({} {})'.format(title, difficulty.name, chart.rating), ordering=taskOrdering)
 		ChartUnlock.objects.create(version_id=version_id, task=task, chart=chart, extra=True)
+		return chart
 
-	kac = UnlockEvent.objects.create(name='[A3] KONAMI Arcade Championship (2023) Entry Songs', ordering=222)
-	createExtraSavior(19, kac, "パーフェクトイーター", 3, 0) # not actually extra savior but its the easiest way.
-	createExtraSavior(19, kac, "I-W-U (I Want U)", 3, 10)
-	createExtraSavior(19, kac, "Sparkle Dreams", 3, 20)
+	kac = UnlockEvent.objects.filter(name='[A3] KONAMI Arcade Championship (2023) Entry Songs').first()
+	kac1 = createExtraSavior(19, kac, "mathematical good-bye", 2, 12)
+	kac2 = createExtraSavior(19, kac, "mathematical good-bye", 3, 13)
+	kac3 = createExtraSavior(19, kac, "ROCK THE PARTY", 3, 16)
+
+	entered = UnlockTask.objects.filter(name="Entered KAC 2023").first()
+	ChartUnlock.objects.create(version_id=19, task=entered, chart=kac1)
+	ChartUnlock.objects.create(version_id=19, task=entered, chart=kac2)
+	ChartUnlock.objects.create(version_id=19, task=entered, chart=kac3)
 
 
 def backward(apps, schema_editor):
@@ -31,6 +37,6 @@ def backward(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-	dependencies = [('scorebrowser', '0063_draw_the_savage_challenge')]
+	dependencies = [('scorebrowser', '0076_muteki_buffalo_challenge')]
 
 	operations = [migrations.RunPython(forward, backward)]
