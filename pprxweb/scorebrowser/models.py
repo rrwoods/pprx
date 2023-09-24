@@ -89,9 +89,10 @@ class Benchmark(models.Model):
 class Region(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.TextField()
+    user_default = models.BooleanField(default=False)
 
 def default_region():
-    return Region.objects.get(name="North America").id
+    return Region.objects.get(user_default=True).id
 
 
 # the player_id field here is a 3icecream player ID -- it is *not* a reference to a Player model object.
