@@ -1,3 +1,5 @@
+var romanizeTitles = false
+
 var userHidChartIds = []
 var minTimestamp = 0
 
@@ -106,6 +108,8 @@ $.fn.dataTableExt.oSort['nonzero-number-desc'] = function(a, b) {
 }
 
 $(document).ready(function () {
+	romanizeTitles = $("#romanize-titles").data("x") === "True"
+
 	function formatAge(timestamp) {
 		if (timestamp === 0) {
 			return ''
@@ -135,8 +139,6 @@ $(document).ready(function () {
 	const loadTimestamp = Math.floor(Date.now()/1000)
 
 	allCharts = JSON.parse($('#all-charts').attr('data-json'))
-	console.log(allCharts)
-
 	var scores = JSON.parse($('#jsonData').attr('data-json'))
 	var scoresTable = $('#scores').DataTable({
 		data: scores,
@@ -167,7 +169,10 @@ $(document).ready(function () {
 				className: 'border-right',
 				render: function(data, type, row, meta) {
 					if (type === "display") {
-						return `<a target="_blank" href=https://3icecream.com/ddr/song_details/${row.song_id}>${data.title}</a>`
+						romanizeTitle = row.romanized_title && romanizeTitles
+						displayTitle = romanizeTitle ? row.romanized_title : data.title
+						displayClass = romanizeTitle ? 'class="romanized-title"' : ""
+						return `<a target="_blank" ${displayClass} href=https://3icecream.com/ddr/song_details/${row.song_id}>${displayTitle}</a>`
 					}
 					if (type === "sort") {
 						return data.sort_key

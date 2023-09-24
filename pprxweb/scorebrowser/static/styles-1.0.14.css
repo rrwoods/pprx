@@ -39,6 +39,10 @@
 	font-weight: bold;
 }
 
+.romanized-title {
+	font-family: monospace;
+}
+
 .extra-exclusive {
 	background-color: pink !important;
 }

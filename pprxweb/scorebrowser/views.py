@@ -65,6 +65,17 @@ def set_region(request):
 	user.save()
 	return HttpResponse("Updated region.")
 
+def set_romanized_titles(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	posted_value = request.POST.get("pref_value", False)
+	# this is not as insane as it looks, because htmx gives us "on" or False.
+	user.romanized_titles = True if posted_value else False
+	user.save()
+	return HttpResponse("Romanized titles " + ("on" if posted_value else "off"))
+
 def update_unlock(request):
 	if request.method != 'POST':
 		return
@@ -429,4 +440,5 @@ def scores(request):
 		'versions': version_names,
 		'averages': averages,
 		'all_charts': json.dumps(all_charts),
+		'romanized_titles': user.romanized_titles,
 	})

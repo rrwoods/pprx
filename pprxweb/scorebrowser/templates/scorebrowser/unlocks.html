@@ -10,6 +10,8 @@
 {% block content %}
 	<span id="saved-pref" hidden=true></span>
 
+	<h1>Preferences</h1>
+
 	<p><form method="POST">
 		Select your white cabinet region:
 		<select name="region" hx-post="{% url 'set_region' %}" hx-trigger="change" hx-target="#saved-pref">
@@ -19,6 +21,21 @@
 		</select>
 		{% csrf_token %}
 	</form></p>
+
+	<p><form method="POST">
+		<input
+			type="checkbox"
+			{% if romanized_titles %}checked{% endif %}
+			name="pref_value"
+			id="romanized_titles"
+			hx-post="{% url 'set_romanized_titles' %}"
+			hx-target="#saved-pref"
+		>
+		<label for="romanized_titles">Romanize Japanese titles</label>
+		{% csrf_token %}
+	</form></p>
+
+	<h1>Unlocks</h1>
 
 	<p>Each checkbox on this page is one unlock "task" -- a course trial completion, an extra savior chart unlock, or a special event milestone.  Check the boxes of all of the ones you have completed!</p>
 

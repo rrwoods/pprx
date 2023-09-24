@@ -105,6 +105,7 @@ class User(models.Model):
     refresh_token = models.TextField(null=True)
     goal_score = models.IntegerField(default=0)
     goal_chart = models.ForeignKey(Chart, on_delete=models.CASCADE, null=True, default=None)
+    romanized_titles = models.BooleanField(default=False)
 
 
 class CabinetModel(models.Model):
