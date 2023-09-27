@@ -132,7 +132,8 @@ def unlocks(request):
 		'tasks': tasks,
 		'userUnlocks': userUnlocks,
 		'selectedRegionId': user.region.id,
-		'regions': Region.objects.all().order_by('id')
+		'regions': Region.objects.all().order_by('id'),
+		'romanized_titles': user.romanized_titles,
 	}
 	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
