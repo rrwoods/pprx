@@ -10,6 +10,15 @@ var totalGoals = 0
 
 var allCharts = null
 
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (userHidChartIds.includes(parseInt(data[15]))) {
 		return false
@@ -147,7 +156,7 @@ $(document).ready(function () {
 			{ data: '0', visible: false }, // white visibility
 			{ data: '1', visible: false }, // gold visibility
 			{ data: '2', visible: false }, // gold-only visibility
-			// 3: (hide button)
+			// 3: (buttons)
 			{
 				data: null,
 				title: '',
@@ -157,7 +166,8 @@ $(document).ready(function () {
 					if (type !== "display") {
 						return 0
 					}
-					return '<button class="hide-button">X</button>'
+					notesIcon = row.notes ? '📋' : '✏️'
+					return `<button class="hide-button">X</button> <button class="notes-button">${notesIcon}</button>`
 				}
 			},
 			// 4:
@@ -287,6 +297,8 @@ $(document).ready(function () {
 			{ data: 'searchable_title', visible: false },
 			// 20:
 			{ data: 'song_id', visible: false },
+			// 21:
+			{ data: 'notes', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
@@ -382,6 +394,43 @@ $(document).ready(function () {
 		s = (userHidChartIds.length > 1) ? 's' : ''
 		$('button.unhide-button').text(`Unhide ${userHidChartIds.length} manually-hidden chart${s}`)
 		$('p.unhide-container').show()
+	})
+
+	$('#scores').on('click', 'button.notes-button', function() {
+		notesButton = $(this)
+		row = scoresTable.row(notesButton.parents('tr'))
+		if (row.child.isShown()) {
+			row.child.hide();
+		} else {
+			var notes = escapeHtml(row.data().notes)
+			var chart_id = row.data().chart_id
+			var notesBox = `Notes: <input type=text class="notes-field" id="notes-${chart_id}" data-chart=${chart_id} value="${notes}">`
+			row.child(notesBox).show()
+			
+			notesElement = $(`#notes-${chart_id}`)
+			notesElement.focus()
+			notesElement.select()
+			notesElement.focusout(function() {
+				var newNotes = notesElement.val()
+				if (notes === newNotes) {
+					return
+				}
+
+				notes = newNotes
+				row.data().notes = notes
+				notesIcon = notes ? '📋' : '✏️'
+				notesButton.text(notesIcon)
+
+				$.ajax({
+					type: "POST",
+					url: "/scorebrowser/set_chart_notes",
+					data: JSON.stringify({
+						chart_id: chart_id,
+						notes: notes,
+					}),
+				})
+			})
+		}
 	})
 
 	$('button.unhide-button').click(function () {

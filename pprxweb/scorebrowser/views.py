@@ -150,6 +150,28 @@ def set_goal(request):
 
 	return HttpResponse('Set goal.')
 
+@csrf_exempt
+def set_chart_notes(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	chart_id = requestBody["chart_id"]
+	notes = requestBody["notes"]
+	existingNotes = UserChartNotes.objects.filter(user=user, chart_id=chart_id).first()
+	if notes:
+		if existingNotes:
+			existingNotes.notes = notes
+			existingNotes.save()
+		else:
+			UserChartNotes.objects.create(user=user, chart_id=chart_id, notes=notes)
+	else:
+		if existingNotes:
+			existingNotes.delete()
+
+	return HttpResponse('Set chart notes.')
+
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
 		for lock in song_locks[song_id]:
@@ -234,6 +256,9 @@ def sort_key(searchable_title):
 
 
 def scores(request):
+	
+	#### USER RETRIEVAL ####
+
 	user = None
 	if 'code' in request.GET:
 		auth_response = requests.post('https://3icecream.com/oauth/token', data={
@@ -261,6 +286,8 @@ def scores(request):
 	if not user:
 		return render_landing(request, True)
 
+	#### 3ICECREAM SCORE RETRIEVAL ####
+
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
 		if user.refresh_token is None:
@@ -285,10 +312,18 @@ def scores(request):
 	if scores_response.status_code != 200:
 		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
 
+	#### TARGET QUALITY COMPUTATION ####
+
 	target_quality = None
 	if user.goal_chart:
 		goal_score = sorted([0, user.goal_score, 999000])[1]
 		target_quality = user.goal_chart.spice - math.log2((1000001 - goal_score)/1000000)
+
+	#### CHART NOTES RETRIEVAL ####
+
+	notes = {entry.chart_id: entry.notes for entry in UserChartNotes.objects.filter(user=user)}
+
+	#### UNLOCKS AND REGIONLOCK PROCESSING ####
 
 	VISIBLE = 0
 	EXTRA = 1
@@ -345,6 +380,8 @@ def scores(request):
 	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in Benchmark.objects.filter(description='hardest')}
 
 	scores_by_diff = {cab: {diff: [] for diff in range(14, 20)} for cab in range(3)}
+
+	#### DATATABLE ENTRY GENERATION ####
 
 	# {song_id: [ratings]}
 	all_charts = {}
@@ -427,6 +464,7 @@ def scores(request):
 			entry['chart_id'] = chart.id
 			entry['distance'] = (goal - score) if goal else 0
 			entry['timestamp'] = timestamp
+			entry['notes'] = notes[chart.id] if chart.id in notes else ''
 			scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)

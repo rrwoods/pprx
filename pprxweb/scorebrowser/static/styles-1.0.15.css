@@ -52,6 +52,10 @@
 	color: white !important;
 }
 
+.notes-field {
+	width: 95%;
+}
+
 table#scores.dataTable tbody tr:hover {
 	background-color: lightblue !important;
 }
