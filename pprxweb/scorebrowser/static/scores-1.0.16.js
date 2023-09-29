@@ -162,6 +162,7 @@ $(document).ready(function () {
 				title: '',
 				orderable: false,
 				searchable: false,
+				className: 'buttons-cell',
 				render: function(data, type, row, meta) {
 					if (type !== "display") {
 						return 0
