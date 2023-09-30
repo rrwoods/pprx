@@ -19,6 +19,10 @@
 	display: inline;
 }
 
+.scores-table {
+	white-space: nowrap;
+}
+
 .border-right {
 	border-right: 2px !important;
 	border-right-style: solid !important;
@@ -28,10 +32,6 @@
 .autospice {
 	color: gray;
 	font-style: italic;
-}
-
-.buttons-cell {
-	white-space: nowrap;
 }
 
 .met {
