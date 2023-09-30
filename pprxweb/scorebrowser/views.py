@@ -331,19 +331,21 @@ def scores(request):
 	UNAVAILABLE = 3
 
 	scores_data = []
+	# {'songid-difficulty': (score, timestamp, combo type)}
 	scores_lookup = {}
 	duplicate_song_ids = ['01lbO69qQiP691ll6DIiqPbIdd9O806o', 'dll9D90dq1O09oObO66Pl8l9I9l0PbPP']
 	for score in scores_response.json():
 		song_id = score['song_id']
 		difficulty = score['difficulty']
 		timestamp = score['time_played'] or score['time_uploaded']
+		lamp = score['lamp']
 		score = score['score']
 		if song_id in duplicate_song_ids:
 			song_id = duplicate_song_ids[0]
 		key = '{}-{}'.format(song_id, difficulty)
 		if (key in scores_lookup) and (scores_lookup[key][0] >= score):
 			continue
-		scores_lookup[key] = (score, timestamp)
+		scores_lookup[key] = (score, timestamp, lamp)
 
 	song_locks = {}
 	for lock in SongLock.objects.all():
@@ -425,7 +427,7 @@ def scores(request):
 			spice = chart.spice
 
 			k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
-			score, timestamp = scores_lookup[k] if (k in scores_lookup) else (0, 0)
+			score, timestamp, clearType = scores_lookup[k] if (k in scores_lookup) else (0, 0, 0)
 
 			if chart.rating >= 14:
 				for cab in range(3):
@@ -458,6 +460,7 @@ def scores(request):
 			entry['rating'] = chart.rating
 			entry['spice'] = spice
 			entry['score'] = score
+			entry['clear_type'] = clearType
 			entry['quality'] = quality
 			entry['goal'] = goal
 			entry['autospiced'] = autospiced

@@ -1,3 +1,13 @@
+const clearTypes = [
+	'<img src="/static/fail.png" class="clear-type">',
+	'',
+	'',
+	'<img src="/static/fc.webp" class="clear-type">',
+	'<img src="/static/gfc.webp" class="clear-type">',
+	'<img src="/static/pfc.webp" class="clear-type">',
+	'<img src="/static/mfc.webp" class="clear-type">',
+]
+
 var romanizeTitles = false
 
 var userHidChartIds = []
@@ -12,12 +22,12 @@ var allCharts = null
 
 function escapeHtml(unsafe) {
     return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
- }
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+}
 
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (userHidChartIds.includes(parseInt(data[15]))) {
@@ -218,7 +228,18 @@ $(document).ready(function () {
 				}
 			},
 			// 9:
-			{ data: 'score', title: 'Score', render: DataTable.render.number(',', '.', 0) },
+			{
+				data: 'score',
+				title: 'Score',
+				render: function(data, type, row, meta) {
+					if (type !== 'display') {
+						return data
+					}
+					var scoreText = data.toLocaleString('en-US')
+					var clearType = row.clear_type
+					return `${scoreText}${clearTypes[clearType]}`
+				}
+			},
 			// 10:
 			{
 				data: 'quality',
@@ -300,6 +321,8 @@ $(document).ready(function () {
 			{ data: 'song_id', visible: false },
 			// 21:
 			{ data: 'notes', visible: false },
+			// 22:
+			{ data: 'clear_type', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])

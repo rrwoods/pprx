@@ -43,6 +43,11 @@
 	font-weight: bold;
 }
 
+.clear-type {
+	height: 1em;
+	vertical-align: top;
+}
+
 .romanized-title {
 	font-family: monospace;
 }
