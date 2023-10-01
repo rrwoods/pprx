@@ -1,11 +1,11 @@
 const clearTypes = [
-	'<img src="/static/fail.png" class="clear-type">',
+	'<img src="/static/fail.png" class="inline-image">',
 	'',
 	'',
-	'<img src="/static/fc.webp" class="clear-type">',
-	'<img src="/static/gfc.webp" class="clear-type">',
-	'<img src="/static/pfc.webp" class="clear-type">',
-	'<img src="/static/mfc.webp" class="clear-type">',
+	'<img src="/static/fc.webp" class="inline-image">',
+	'<img src="/static/gfc.webp" class="inline-image">',
+	'<img src="/static/pfc.webp" class="inline-image">',
+	'<img src="/static/mfc.webp" class="inline-image">',
 ]
 
 var romanizeTitles = false
@@ -78,6 +78,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 
 	var hide_autospice = $('#hide-autospice').is(':checked')
 	if (hide_autospice && (data[14] === "true")) {
+		return false
+	}
+
+	var bookmarks_only = $('#bookmarks-only').is(':checked')
+	if (bookmarks_only && (data[23] === "false")) {
 		return false
 	}
 
@@ -173,12 +178,17 @@ $(document).ready(function () {
 				orderable: false,
 				searchable: false,
 				className: 'buttons-cell',
+				width: '1px',
 				render: function(data, type, row, meta) {
 					if (type !== "display") {
 						return 0
 					}
-					notesIcon = row.notes ? '📋' : '✏️'
-					return `<button class="hide-button">X</button> <button class="notes-button">${notesIcon}</button>`
+					var hideButton = '<button class="hide-button">X</button>'
+					var notesIcon = row.notes ? '📋' : '✏️'
+					var notesButton = `<button class="notes-button">${notesIcon}</button>`
+					var bookmarkFile = row.bookmarked ? 'saved.png' : 'save.png'
+					var bookmarkButton = `<button class="bookmark-button"><img src="/static/${bookmarkFile}" class="inline-image"></button>`
+					return `${hideButton} ${notesButton} ${bookmarkButton}`
 				}
 			},
 			// 4:
@@ -323,6 +333,8 @@ $(document).ready(function () {
 			{ data: 'notes', visible: false },
 			// 22:
 			{ data: 'clear_type', visible: false },
+			// 23:
+			{ data: 'bookmarked', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
@@ -421,8 +433,8 @@ $(document).ready(function () {
 	})
 
 	$('#scores').on('click', 'button.notes-button', function() {
-		notesButton = $(this)
-		row = scoresTable.row(notesButton.parents('tr'))
+		var notesButton = $(this)
+		var row = scoresTable.row(notesButton.parents('tr'))
 		if (row.child.isShown()) {
 			row.child.hide();
 		} else {
@@ -431,7 +443,7 @@ $(document).ready(function () {
 			var notesBox = `Notes: <input type=text class="notes-field" id="notes-${chart_id}" data-chart=${chart_id} value="${notes}">`
 			row.child(notesBox).show()
 			
-			notesElement = $(`#notes-${chart_id}`)
+			var notesElement = $(`#notes-${chart_id}`)
 			notesElement.focus()
 			notesElement.select()
 			notesElement.focusout(function() {
@@ -442,7 +454,7 @@ $(document).ready(function () {
 
 				notes = newNotes
 				row.data().notes = notes
-				notesIcon = notes ? '📋' : '✏️'
+				var notesIcon = notes ? '📋' : '✏️'
 				notesButton.text(notesIcon)
 
 				$.ajax({
@@ -455,6 +467,24 @@ $(document).ready(function () {
 				})
 			})
 		}
+	})
+
+	$('#scores').on('click', 'button.bookmark-button', function() {
+		var bookmarkButton = $(this)
+		var row = scoresTable.row(bookmarkButton.parents('tr'))
+		var rowData = row.data()
+		rowData.bookmarked = !(rowData.bookmarked)
+		var bookmarkFile = rowData.bookmarked ? 'saved.png' : 'save.png'
+		bookmarkButton.html(`<img src="/static/${bookmarkFile}" class="inline-image">`)
+		row.invalidate()
+		$.ajax({
+			type: "POST",
+			url: "/scorebrowser/set_chart_bookmark",
+			data: JSON.stringify({
+				chart_id: rowData.chart_id,
+				bookmark: rowData.bookmarked,
+			}),
+		})
 	})
 
 	$('button.unhide-button').click(function () {

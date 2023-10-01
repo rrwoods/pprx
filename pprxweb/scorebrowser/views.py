@@ -172,6 +172,23 @@ def set_chart_notes(request):
 
 	return HttpResponse('Set chart notes.')
 
+@csrf_exempt
+def set_chart_bookmark(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	chart_id = requestBody["chart_id"]
+	bookmark = requestBody["bookmark"]
+	print(requestBody)
+	if bookmark:
+		UserChartBookmarks.objects.create(user=user, chart_id=chart_id)
+	else:
+		UserChartBookmarks.objects.filter(user=user, chart_id=chart_id).delete()
+
+	return HttpResponse('Set/cleared chart bookmark.')
+
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
 		for lock in song_locks[song_id]:
@@ -319,9 +336,10 @@ def scores(request):
 		goal_score = sorted([0, user.goal_score, 999000])[1]
 		target_quality = user.goal_chart.spice - math.log2((1000001 - goal_score)/1000000)
 
-	#### CHART NOTES RETRIEVAL ####
+	#### CHART NOTES/BOOKMARKS RETRIEVAL ####
 
 	notes = {entry.chart_id: entry.notes for entry in UserChartNotes.objects.filter(user=user)}
+	bookmarks = [entry.chart_id for entry in UserChartBookmarks.objects.filter(user=user)]
 
 	#### UNLOCKS AND REGIONLOCK PROCESSING ####
 
@@ -468,6 +486,7 @@ def scores(request):
 			entry['distance'] = (goal - score) if goal else 0
 			entry['timestamp'] = timestamp
 			entry['notes'] = notes[chart.id] if chart.id in notes else ''
+			entry['bookmarked'] = chart.id in bookmarks
 			scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)

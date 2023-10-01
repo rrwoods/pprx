@@ -13,6 +13,7 @@ urlpatterns = [
 	path('update_unlock_event', views.update_unlock_event, name='update_unlock_event'),
 	path('set_goal', views.set_goal, name='set_goal'),
 	path('set_chart_notes', views.set_chart_notes, name='set_chart_notes'),
+	path('set_chart_bookmark', views.set_chart_bookmark, name='set_chart_bookmark'),
 
 	path('hello', views.hello, name='hello'),
 ]

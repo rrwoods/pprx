@@ -10,6 +10,11 @@
 	padding-right: 15px;
 }
 
+.inline-image {
+	height: 1em;
+	vertical-align: top;
+}
+
 .floating-image {
 	float: left;
 	padding: 0 20px 20px 0;
@@ -41,11 +46,6 @@
 
 .unmet {
 	font-weight: bold;
-}
-
-.clear-type {
-	height: 1em;
-	vertical-align: top;
 }
 
 .romanized-title {
