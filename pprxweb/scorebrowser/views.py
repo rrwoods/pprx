@@ -102,7 +102,7 @@ def update_unlock_event(request):
 
 	user_unlocks = UserUnlock.objects.filter(user=user, task__event__id=event_id)
 	if (unlock):
-		already_unlocked = [u.task.id for u in user_unlocks]
+		already_unlocked = [u.task_id for u in user_unlocks]
 		tasks = UnlockTask.objects.filter(event_id=event_id)
 		for task in tasks:
 			if task.id in already_unlocked:
@@ -118,20 +118,22 @@ def unlocks(request):
 	if not user:
 		return render_landing(request, True)
 
-	events = UnlockEvent.objects.all().filter(completable=True).order_by('ordering')
+	events = UnlockEvent.objects.filter(completable=True).order_by('ordering')
+	allTasks = UnlockTask.objects.all().order_by('ordering')
+	allUserUnlocks = UserUnlock.objects.filter(user=user)
 	tasks = {}
 	userUnlocks = []
 	for event in events:
-		eventTasks = UnlockTask.objects.filter(event=event).order_by('ordering')
+		eventTasks = [t for t in allTasks if t.event_id == event.id]
 		tasks[event.id] = eventTasks
 		for task in eventTasks:
-			if len(UserUnlock.objects.filter(user=user, task=task)) > 0:
+			if any(u.task_id == task.id for u in allUserUnlocks):
 				userUnlocks.append(task.id)
 	unlockData = {
 		'events': events,
 		'tasks': tasks,
 		'userUnlocks': userUnlocks,
-		'selectedRegionId': user.region.id,
+		'selectedRegionId': user.region_id,
 		'regions': Region.objects.all().order_by('id'),
 		'romanized_titles': user.romanized_titles,
 	}
@@ -192,9 +194,9 @@ def set_chart_bookmark(request):
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
 		for lock in song_locks[song_id]:
-			version_match = (lock.version is None) or (lock.version == cabinet.version)
-			region_match = (lock.region is None) or (lock.region == cabinet.region)
-			model_match = (lock.model is None) or (lock.model == cabinet.model)
+			version_match = (lock.version_id is None) or (lock.version_id == cabinet.version_id)
+			region_match = (lock.region_id is None) or (lock.region_id == cabinet.region_id)
+			model_match = (lock.model_id is None) or (lock.model_id == cabinet.model_id)
 			if version_match and region_match and model_match:
 				return True
 	return False
@@ -367,9 +369,9 @@ def scores(request):
 
 	song_locks = {}
 	for lock in SongLock.objects.all():
-		if lock.song.id not in song_locks:
-			song_locks[lock.song.id] = []
-		song_locks[lock.song.id].append(lock)
+		if lock.song_id not in song_locks:
+			song_locks[lock.song_id] = []
+		song_locks[lock.song_id].append(lock)
 
 	version_names = [{'id': v.id, 'name': v.name} for v in Version.objects.all().order_by('id')]
 	cab_names = [
@@ -379,25 +381,26 @@ def scores(request):
 	]
 
 	all_cabinets = Cabinet.objects.all()
-	white_cab = all_cabinets.filter(gold=False, region=user.region).first()
-	gold_cab = all_cabinets.filter(gold=True).first()
+	[white_cab] = [c for c in all_cabinets if (not c.gold and c.region_id == user.region_id)]
+	[gold_cab] = [c for c in all_cabinets if c.gold]
 	cabinets = [white_cab, gold_cab]
-	cab_versions = set(c.version.id for c in cabinets)
+	cab_versions = set(c.version_id for c in cabinets)
 
 	# {version id: {chart id: [requirements]}}
 	chart_unlocks = {v: {} for v in cab_versions}
-	for chart_unlock in ChartUnlock.objects.all():
-		if chart_unlock.version.id not in cab_versions:
+	for chart_unlock in ChartUnlock.objects.all().select_related("task__event"):
+		if chart_unlock.version_id not in cab_versions:
 			continue
-		if chart_unlock.chart.id not in chart_unlocks[chart_unlock.version.id]:
-			chart_unlocks[chart_unlock.version.id][chart_unlock.chart.id] = []
-		chart_unlocks[chart_unlock.version.id][chart_unlock.chart.id].append(chart_unlock)
+		if chart_unlock.chart_id not in chart_unlocks[chart_unlock.version_id]:
+			chart_unlocks[chart_unlock.version_id][chart_unlock.chart_id] = []
+		chart_unlocks[chart_unlock.version_id][chart_unlock.chart_id].append(chart_unlock)
 
 	# set of task ids this user has completed
-	user_unlocks = set(u.task.id for u in UserUnlock.objects.filter(user=user))
+	user_unlocks = set(u.task_id for u in UserUnlock.objects.filter(user=user))
 	
-	default_spice = {b.chart.rating: b.chart.spice for b in Benchmark.objects.filter(description='easiest')}
-	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in Benchmark.objects.filter(description='hardest')}
+	all_benchmarks = Benchmark.objects.all().select_related("chart")
+	default_spice = {b.chart.rating: b.chart.spice for b in all_benchmarks if b.description == 'easiest'}
+	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in all_benchmarks if b.description == 'hardest'}
 
 	scores_by_diff = {cab: {diff: [] for diff in range(14, 20)} for cab in range(3)}
 
@@ -406,29 +409,29 @@ def scores(request):
 	# {song_id: [ratings]}
 	all_charts = {}
 
-	for chart in Chart.objects.filter(song__removed=False):
-		if chart.song.id in duplicate_song_ids[1:]:
+	for chart in Chart.objects.filter(song__removed=False).select_related("song", "song__version", "difficulty"):
+		if chart.song_id in duplicate_song_ids[1:]:
 			continue
 
 		entry = {}
 		for i, cabinet in enumerate(cabinets):
 			cab_vis_id = str(i)
-			if chart.song.version.id > cabinet.version.id:
+			if chart.song.version_id > cabinet.version_id:
 				entry[cab_vis_id] = UNAVAILABLE
 				continue
 
-			if check_locks(chart.song.id, song_locks, cabinet):
+			if check_locks(chart.song_id, song_locks, cabinet):
 				entry[cab_vis_id] = UNAVAILABLE
 				continue
 			
 			chart_vis = VISIBLE
-			if chart.id in chart_unlocks[cabinet.version.id]:
-				requirements = chart_unlocks[cabinet.version.id][chart.id]
+			if chart.id in chart_unlocks[cabinet.version_id]:
+				requirements = chart_unlocks[cabinet.version_id][chart.id]
 				for r in requirements:
 					if (not r.extra) and (not r.task.event.completable):
 						chart_vis = UNAVAILABLE
 						break
-					if (r.task.id not in user_unlocks):
+					if (r.task_id not in user_unlocks):
 						chart_vis = max(chart_vis, (EXTRA if r.extra else LOCKED))
 			entry[cab_vis_id] = chart_vis
 
@@ -437,14 +440,14 @@ def scores(request):
 		else:
 			entry["2"] = entry["1"]
 
-		if chart.song.id not in all_charts:
-			all_charts[chart.song.id] = [-1, -1, -1, -1, -1]
-		all_charts[chart.song.id][chart.difficulty.id] = chart.rating
+		if chart.song_id not in all_charts:
+			all_charts[chart.song_id] = [-1, -1, -1, -1, -1]
+		all_charts[chart.song_id][chart.difficulty_id] = chart.rating
 
 		if chart.tracked:
 			spice = chart.spice
 
-			k = '{}-{}'.format(chart.song.id, chart.difficulty.id)
+			k = '{}-{}'.format(chart.song_id, chart.difficulty_id)
 			score, timestamp, clearType = scores_lookup[k] if (k in scores_lookup) else (0, 0, 0)
 
 			if chart.rating >= 14:
@@ -468,13 +471,13 @@ def scores(request):
 					quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
 			goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
 
-			entry['game_version'] = { 'id': chart.song.version.id, 'name': chart.song.version.name }
-			entry['song_id'] = chart.song.id
+			entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }
+			entry['song_id'] = chart.song_id
 			entry['song_name'] = { 'title': chart.song.title, 'sort_key': sort_key(chart.song.searchable_title or chart.song.title) }
 			entry['alternate_title'] = chart.song.alternate_title
 			entry['romanized_title'] = chart.song.romanized_title
 			entry['searchable_title'] = chart.song.searchable_title
-			entry['difficulty'] = { 'id': chart.difficulty.id, 'name': chart.difficulty.name, 'rating': chart.rating }
+			entry['difficulty'] = { 'id': chart.difficulty_id, 'name': chart.difficulty.name, 'rating': chart.rating }
 			entry['rating'] = chart.rating
 			entry['spice'] = spice
 			entry['score'] = score
