@@ -161,16 +161,12 @@ def set_chart_notes(request):
 	requestBody = json.loads(request.body)
 	chart_id = requestBody["chart_id"]
 	notes = requestBody["notes"]
-	existingNotes = UserChartNotes.objects.filter(user=user, chart_id=chart_id).first()
-	if notes:
-		if existingNotes:
-			existingNotes.notes = notes
-			existingNotes.save()
-		else:
-			UserChartNotes.objects.create(user=user, chart_id=chart_id, notes=notes)
-	else:
-		if existingNotes:
-			existingNotes.delete()
+
+	UserChartAux.objects.update_or_create(
+		user_id=user.id,
+		chart_id=chart_id,
+		defaults={'notes': notes},
+	)
 
 	return HttpResponse('Set chart notes.')
 
@@ -183,11 +179,16 @@ def set_chart_bookmark(request):
 	requestBody = json.loads(request.body)
 	chart_id = requestBody["chart_id"]
 	bookmark = requestBody["bookmark"]
-	print(requestBody)
 	if bookmark:
-		UserChartBookmarks.objects.create(user=user, chart_id=chart_id)
+		UserChartAux.objects.update_or_create(
+			user_id=user.id,
+			chart_id=chart_id,
+			defaults={'bookmark': True},
+		)
 	else:
-		UserChartBookmarks.objects.filter(user=user, chart_id=chart_id).delete()
+		existing = UserChartAux.objects.get(user=user, chart_id=chart_id)
+		existing.bookmark = False
+		existing.save()
 
 	return HttpResponse('Set/cleared chart bookmark.')
 
@@ -338,10 +339,9 @@ def scores(request):
 		goal_score = sorted([0, user.goal_score, 999000])[1]
 		target_quality = user.goal_chart.spice - math.log2((1000001 - goal_score)/1000000)
 
-	#### CHART NOTES/BOOKMARKS RETRIEVAL ####
+	#### PER-USER CHART DATA RETRIEVAL ####
 
-	notes = {entry.chart_id: entry.notes for entry in UserChartNotes.objects.filter(user=user)}
-	bookmarks = [entry.chart_id for entry in UserChartBookmarks.objects.filter(user=user)]
+	aux = {entry.chart_id: entry for entry in UserChartAux.objects.filter(user_id=user.id)}
 
 	#### UNLOCKS AND REGIONLOCK PROCESSING ####
 
@@ -488,8 +488,8 @@ def scores(request):
 			entry['chart_id'] = chart.id
 			entry['distance'] = (goal - score) if goal else 0
 			entry['timestamp'] = timestamp
-			entry['notes'] = notes[chart.id] if chart.id in notes else ''
-			entry['bookmarked'] = chart.id in bookmarks
+			entry['notes'] = aux[chart.id].notes if chart.id in aux else ''
+			entry['bookmarked'] = aux[chart.id].bookmark if chart.id in aux else False
 			scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)
