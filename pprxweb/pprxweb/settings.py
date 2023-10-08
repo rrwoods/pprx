@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import environ
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -100,21 +101,22 @@ else:
     }
     ALLOWED_HOSTS = []
 
-    LOGGING = {
-        'version': 1,
-        'handlers': {
-            'console': {
-                'level': 'DEBUG',
-                'class': 'logging.StreamHandler',
+    if 'runserver' in sys.argv:
+        LOGGING = {
+            'version': 1,
+            'handlers': {
+                'console': {
+                    'level': 'DEBUG',
+                    'class': 'logging.StreamHandler',
+                },
             },
-        },
-        'loggers': {
-            'django.db.backends': {
-                'level': 'DEBUG',
-                'handlers': ['console']
+            'loggers': {
+                'django.db.backends': {
+                    'level': 'DEBUG',
+                    'handlers': ['console']
+                }
             }
         }
-    }
 
 
 # Password validation
