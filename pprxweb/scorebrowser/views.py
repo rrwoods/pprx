@@ -179,18 +179,30 @@ def set_chart_bookmark(request):
 	requestBody = json.loads(request.body)
 	chart_id = requestBody["chart_id"]
 	bookmark = requestBody["bookmark"]
-	if bookmark:
-		UserChartAux.objects.update_or_create(
-			user_id=user.id,
-			chart_id=chart_id,
-			defaults={'bookmark': True},
-		)
-	else:
-		existing = UserChartAux.objects.get(user=user, chart_id=chart_id)
-		existing.bookmark = False
-		existing.save()
+	UserChartAux.objects.update_or_create(
+		user_id=user.id,
+		chart_id=chart_id,
+		defaults={'bookmark': bookmark},
+	)
 
 	return HttpResponse('Set/cleared chart bookmark.')
+
+@csrf_exempt
+def set_chart_life4(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	chart_id = requestBody["chart_id"]
+	life4_clear = requestBody["life4"]
+	UserChartAux.objects.update_or_create(
+		user_id=user.id,
+		chart_id=chart_id,
+		defaults={'life4_clear': life4_clear},
+	)
+
+	return HttpResponse('Set/cleared life4 clear.')	
 
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
@@ -409,7 +421,11 @@ def scores(request):
 	# {song_id: [ratings]}
 	all_charts = {}
 
-	for chart in Chart.objects.filter(song__removed=False).select_related("song", "song__version", "difficulty"):
+	chart_query = Chart.objects  \
+		.filter(song__removed=False)  \
+		.select_related("song", "song__version", "difficulty")
+
+	for chart in chart_query:
 		if chart.song_id in duplicate_song_ids[1:]:
 			continue
 
@@ -449,6 +465,8 @@ def scores(request):
 
 			k = '{}-{}'.format(chart.song_id, chart.difficulty_id)
 			score, timestamp, clearType = scores_lookup[k] if (k in scores_lookup) else (0, 0, 0)
+			if (clearType == 1) and (chart.id in aux) and (aux[chart.id].life4_clear):
+				clearType = 2
 
 			if chart.rating >= 14:
 				for cab in range(3):

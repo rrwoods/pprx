@@ -113,11 +113,11 @@ class UserChartAux(models.Model):
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
     bookmark = models.BooleanField(default=False)
     notes = models.TextField(default='')
+    life4_clear = models.BooleanField(default=False)
 
 class CabinetModel(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.TextField()
-
 
 class SongLock(models.Model):
     id = models.AutoField(primary_key=True)

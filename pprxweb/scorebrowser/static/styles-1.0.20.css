@@ -65,6 +65,10 @@
 	width: 95%;
 }
 
+.life4-clear {
+	accent-color: red;
+}
+
 table#scores.dataTable tbody tr:hover {
 	background-color: lightblue !important;
 }

@@ -1,7 +1,7 @@
 const clearTypes = [
 	'<img src="/static/fail.png" class="inline-image">',
-	'',
-	'',
+	'<input type="checkbox" class="life4-clear">',
+	'<input type="checkbox" class="life4-clear" checked>',
 	'<img src="/static/fc.webp" class="inline-image">',
 	'<img src="/static/gfc.webp" class="inline-image">',
 	'<img src="/static/pfc.webp" class="inline-image">',
@@ -524,6 +524,7 @@ $(document).ready(function () {
 		var row = scoresTable.row(bookmarkButton.parents('tr'))
 		var rowData = row.data()
 		rowData.bookmarked = !(rowData.bookmarked)
+		console.log(rowData.clear_type)
 		var bookmarkFile = rowData.bookmarked ? 'saved.png' : 'save.png'
 		bookmarkButton.html(`<img src="/static/${bookmarkFile}" class="inline-image">`)
 		row.invalidate()
@@ -533,6 +534,24 @@ $(document).ready(function () {
 			data: JSON.stringify({
 				chart_id: rowData.chart_id,
 				bookmark: rowData.bookmarked,
+			}),
+		})
+	})
+
+	$('#scores').on('change', 'input.life4-clear', function() {
+		var life4Box = $(this)
+		var checked = life4Box.is(':checked')
+		var row = scoresTable.row(life4Box.parents('tr'))
+		var rowData = row.data()
+		rowData.clear_type = checked ? 2 : 1
+		row.invalidate()
+
+		$.ajax({
+			type: "POST",
+			url: "/scorebrowser/set_chart_life4",
+			data: JSON.stringify({
+				chart_id: rowData.chart_id,
+				life4: checked,
 			}),
 		})
 	})

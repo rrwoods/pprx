@@ -14,6 +14,7 @@ urlpatterns = [
 	path('set_goal', views.set_goal, name='set_goal'),
 	path('set_chart_notes', views.set_chart_notes, name='set_chart_notes'),
 	path('set_chart_bookmark', views.set_chart_bookmark, name='set_chart_bookmark'),
+	path('set_chart_life4', views.set_chart_life4, name='set_chart_life4'),
 
 	path('hello', views.hello, name='hello'),
 ]
