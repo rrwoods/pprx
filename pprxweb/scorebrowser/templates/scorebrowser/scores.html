@@ -200,6 +200,44 @@
 	</p>
 
 	<p>
+		Clear type:
+		<select id="clear-type" class="select-filter">
+			<option value=-2>All</option>
+			<option value=-1>Unplayed</option>
+			<option value=0>Fail</option>
+			<option value=1>Pass</option>
+			<option value=2>LIFE4</option>
+			<option value=3>FC</option>
+			<option value=4>GFC</option>
+			<option value=5>PFC</option>
+			<option value=6>MFC</option>
+		</select>
+		<span id="clear-type-range" hidden>
+			<select id="clear-type-min" class="select-filter">
+				<option value=-1>Unplayed</option>
+				<option value=0>Fail</option>
+				<option value=1>Pass</option>
+				<option value=2>LIFE4</option>
+				<option value=3>FC</option>
+				<option value=4>GFC</option>
+				<option value=5>PFC</option>
+				<option value=6>MFC</option>
+			</select>
+			to
+			<select id="clear-type-max" class="select-filter">
+				<option value=-1>Unplayed</option>
+				<option value=0>Fail</option>
+				<option value=1>Pass</option>
+				<option value=2>LIFE4</option>
+				<option value=3>FC</option>
+				<option value=4>GFC</option>
+				<option value=5>PFC</option>
+				<option value=6>MFC</option>
+			</select>
+		</span>
+	</p>
+
+	<p>
 		<button id="reset-filters">Reset all filters</button>
 	</p>
 

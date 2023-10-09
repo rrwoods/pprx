@@ -28,6 +28,9 @@ var songLevelStart = 0
 var min_score = 0
 var max_score = 1000000
 
+var min_clear_type = -2
+var max_clear_type = 6
+
 var userHidChartIds = []
 var minTimestamp = 0
 
@@ -95,11 +98,18 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var score = parseFloat(data[9])
-
 	if (score < min_score) {
 		return false
 	}
 	if (score > max_score) {
+		return false
+	}
+
+	var clear_type = (score === 0) ? -1 : parseInt(data[22])
+	if (clear_type < min_clear_type) {
+		return false
+	}
+	if (clear_type > max_clear_type) {
 		return false
 	}
 
@@ -404,6 +414,12 @@ $(document).ready(function () {
 		max_score = 1000000
 		$('#max-score').val('')
 
+		min_clear_type = -2
+		max_clear_type = 6
+		$('#clear-type-range').hide()
+		$('#clear-type').val(-2)
+		$('#clear-type').show()
+
 		minTimestamp = 0
 		$('#time-range').val('')
 		$('#time-type').val('hours')
@@ -602,6 +618,17 @@ $(document).ready(function () {
 		redrawTable(true)
 	})
 
+	$('#clear-type').change(function() {
+		$(this).hide()
+		clearType = $(this).find(':selected').val()
+		min_clear_type = parseInt(clearType)
+		max_clear_type = parseInt(clearType)
+		$(`#clear-type-min option[value="${clearType}"]`).prop('selected', true)
+		$(`#clear-type-max option[value="${clearType}"]`).prop('selected', true)
+		$('#clear-type-range').show()
+		redrawTable(true)
+	})
+
 	function updateTimeRange() {
 		timeText = $('#time-range').val()
 		if (!$.isNumeric(timeText)) {
@@ -658,7 +685,19 @@ $(document).ready(function () {
 				$(`#version-min option[value="${selected}"]`).prop('selected', true)
 				versionMin = selected
 			}
-		} else if (elementId == 'time-type') {
+		} else if (elementId == 'clear-type-min') {
+			min_clear_type = selected
+			if (max_clear_type < selected) {
+				$(`#clear-type-max option[value="${selected}"]`).prop('selected', true)
+				max_clear_type = selected
+			}
+		} else if (elementId == 'clear-type-max') {
+			max_clear_type = selected
+			if (min_clear_type > selected) {
+				$(`#clear-type-min option[value="${selected}"]`).prop('selected', true)
+				min_clear_type = selected
+			}
+	    } else if (elementId == 'time-type') {
 			updateTimeRange()
 		} else if (elementId == 'show-locked') {
 			showLocked = $('#show-locked').is(':checked')
