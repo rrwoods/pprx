@@ -365,6 +365,52 @@ $(document).ready(function () {
 		setGoalSummary()
 	}
 
+	$('#reset-filters').click(function() {
+		showLocked = false
+		$('#show-locked').prop('checked', false)
+
+		hide_autospice = false
+		$('#hide-autospice').prop('checked', false)
+
+		bookmarks_only = false
+		$('#bookmarks-only').prop('checked', false)
+
+		hide_met_goals = false
+		$('#hide-met-goals').prop('checked', false)
+
+		version_min = 0
+		version_max = 100
+		$('#version-range').hide()
+		$('#version-select').val(0)
+		$('#version-select').show()
+
+		level_min = 0
+		level_max = 21
+		$('#level-range').hide()
+		$('#level-select').val(0)
+		$('#level-select').show()
+
+		song_level_min = 0
+		song_level_max = 21
+		songLevelStart = 0
+		$('#song-level-range').hide()
+		$('#song-level-select').val(0)
+		$('#song-level-select').show()
+		$('#song-beginner').prop('checked', true)
+
+		min_score = 0
+		$('#min-score').val('')
+
+		max_score = 1000000
+		$('#max-score').val('')
+
+		minTimestamp = 0
+		$('#time-range').val('')
+		$('#time-type').val('hours')
+
+		redrawTable()
+	})
+
 	spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
 	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).  If there's not enough data to accurately spice a song yet, it gets automatically assigned the lowest spice for its level for sorting purposes, and your goal will be the lowest for that level.")

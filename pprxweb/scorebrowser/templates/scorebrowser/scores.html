@@ -29,9 +29,6 @@
 				<option value="{{ version.id }}">{{ version.name }}</option>
 			{% endfor %}
 		</select>
-	</p>
-
-	<p>
 		<span id="version-range" hidden>
 			<select id="version-min" class="select-filter">
 				<option hidden selected value=0>All</option>
@@ -46,7 +43,9 @@
 				{% endfor %}
 			</select>
 		</span>
+	</p>
 
+	<p>
 		Chart level:
 		<select id="level-select">
 			<option selected value=0>All</option>
@@ -198,6 +197,10 @@
 
 		Hide met goals:
 		<input type="checkbox" id="hide-met-goals" class="select-filter">
+	</p>
+
+	<p>
+		<button id="reset-filters">Reset all filters</button>
 	</p>
 
 	<div style="display: none" id="romanize-titles" data-x="{{ romanized_titles }}"></div>
