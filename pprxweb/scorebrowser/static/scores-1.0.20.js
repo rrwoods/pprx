@@ -490,7 +490,7 @@ $(document).ready(function () {
 		} else {
 			var notes = escapeHtml(row.data().notes)
 			var chart_id = row.data().chart_id
-			var notesBox = `Notes: <input type=text class="notes-field" id="notes-${chart_id}" data-chart=${chart_id} value="${notes}">`
+			var notesBox = `Notes: <input type=text class="notes-field" id="notes-${chart_id}" data-chart=${chart_id} value="${notes}" maxLength="1000">`
 			row.child(notesBox).show()
 			
 			var notesElement = $(`#notes-${chart_id}`)
