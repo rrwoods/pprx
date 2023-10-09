@@ -9,11 +9,27 @@ const clearTypes = [
 ]
 
 var romanizeTitles = false
+var cabinetSelect = 0
+var showLocked = false
+var hide_autospice = false
+var bookmarks_only = false
+var hide_met_goals = false
+
+var version_min = 0
+var version_max = 100
+
+var level_min = 0
+var level_max = 21
+
+var song_level_min = 0
+var song_level_max = 21
+var songLevelStart = 0
+
+var min_score = 0
+var max_score = 1000000
 
 var userHidChartIds = []
 var minTimestamp = 0
-
-var songLevelStart = 0
 
 var metGoals = 0
 var totalGoals = 0
@@ -38,32 +54,26 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	visibility = parseInt(data[parseInt($('#cabinet-select').find(':selected').val())])
+	visibility = parseInt(data[cabinetSelect])
 	if (visibility === 3) {
 		return false
 	}
-	if ((visibility === 2) && !($('#show-locked').is(':checked'))) {
+	if ((visibility === 2) && !showLocked) {
 		return false
 	}
 
-	var version_min = parseInt($('#version-min').find(':selected').val())
 	if (version_min !== 0) {
-		var version_max = parseInt($('#version-max').find(':selected').val())
 		var version = parseInt(data[4])
 		if ((version < version_min) || (version > version_max)) {
 			return false
 		}
 	}
 
-	var level_min = parseInt($('#level-min').find(':selected').val())
-	var level_max = parseInt($('#level-max').find(':selected').val())
 	var level = parseInt(data[7])
 	if ((level < level_min) || (level > level_max)) {
 		return false
 	}
 
-	var song_level_min = parseInt($('#song-level-min').find(':selected').val())
-	var song_level_max = parseInt($('#song-level-max').find(':selected').val())
 	song_level_met = false
 	song_levels = allCharts[data[20]]
 	for (var i = songLevelStart; i < song_levels.length; i++) {
@@ -76,30 +86,24 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	var hide_autospice = $('#hide-autospice').is(':checked')
 	if (hide_autospice && (data[14] === "true")) {
 		return false
 	}
 
-	var bookmarks_only = $('#bookmarks-only').is(':checked')
 	if (bookmarks_only && (data[23] === "false")) {
 		return false
 	}
 
 	var score = parseFloat(data[9])
 
-	var min_score = $('#min-score').val()
-	if ($.isNumeric(min_score) && (score < parseFloat(min_score))) {
+	if (score < min_score) {
 		return false
 	}
-
-	var max_score = $('#max-score').val()
-	if ($.isNumeric(max_score) && (score >= parseFloat(max_score))) {
+	if (score > max_score) {
 		return false
 	}
 
 	totalGoals++
-	var hide_met_goals = $('#hide-met-goals').is(':checked')
 	var goal_met = (score >= parseFloat(data[12])) && (score > 0)
 	if (goal_met) {
 		metGoals++
@@ -133,6 +137,7 @@ $.fn.dataTableExt.oSort['nonzero-number-desc'] = function(a, b) {
 
 $(document).ready(function () {
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
+	cabinetSelect = parseInt($('#cabinet-select').find(':selected').val())
 
 	function formatAge(timestamp) {
 		if (timestamp === 0) {
@@ -337,7 +342,7 @@ $(document).ready(function () {
 			{ data: 'bookmarked', visible: false },
 		],
 		createdRow: function(row, data, index) {
-			visibility = parseInt(data[$('#cabinet-select').find(':selected').val()])
+			visibility = parseInt(data[cabinetSelect])
 			if (visibility === 1) {
 				$(row).addClass('extra-exclusive')
 			} else if (visibility === 2) {
@@ -372,7 +377,7 @@ $(document).ready(function () {
 
 	function applyRowClasses(table) {
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
-			visibility = parseInt(this.data()[$('#cabinet-select').find(':selected').val()])
+			visibility = parseInt(this.data()[cabinetSelect])
 			if (visibility === 1) {
 				$(this.node()).addClass('extra-exclusive')
 				$(this.node()).removeClass('locked-chart')				
@@ -388,8 +393,7 @@ $(document).ready(function () {
 
 	function updateAverages() {
 		$('.averages').hide()
-		cab = $('#cabinet-select').find(':selected').val()
-		$(`#${cab}-averages`).show()
+		$(`#${cabinetSelect}-averages`).show()
 	}
 
 	$('#scores').on('click', 'button.goal', function() {
@@ -494,6 +498,7 @@ $(document).ready(function () {
 	})
 
 	$('#cabinet-select').change(function() {
+		cabinetSelect = parseInt($('#cabinet-select').find(':selected').val())
 		redrawTable(true)
 		applyRowClasses(scoresTable)
 		updateAverages()
@@ -502,6 +507,8 @@ $(document).ready(function () {
 	$('#level-select').change(function() {
 		$(this).hide()
 		level = $(this).find(':selected').val()
+		level_min = parseInt(level)
+		level_max = parseInt(level)
 		$(`#level-min option[value="${level}"]`).prop('selected', true)
 		$(`#level-max option[value="${level}"]`).prop('selected', true)
 		$('#level-range').show()
@@ -511,6 +518,8 @@ $(document).ready(function () {
 	$('#song-level-select').change(function() {
 		$(this).hide()
 		level = $(this).find(':selected').val()
+		song_level_min = parseInt(level)
+		song_level_max = parseInt(level)
 		$(`#song-level-min option[value="${level}"]`).prop('selected', true)
 		$(`#song-level-max option[value="${level}"]`).prop('selected', true)
 		$('#song-level-range').show()
@@ -520,6 +529,8 @@ $(document).ready(function () {
 	$('#version-select').change(function() {
 		$(this).hide()
 		versionId = $(this).find(':selected').val()
+		versionMin = parseInt(versionId)
+		versionMax = parseInt(versionId)
 		$(`#version-min option[value="${versionId}"]`).prop('selected', true)
 		$(`#version-max option[value="${versionId}"]`).prop('selected', true)
 		$('#version-range').show()
@@ -544,41 +555,56 @@ $(document).ready(function () {
 		elementId = $(this).attr('id')
 		selected = parseInt($(this).find(':selected').val())
 		if (elementId == 'level-min') {
-			max = parseInt($('#level-max').find(':selected').val())
-			if (max < selected) {
+			level_min = selected
+			if (level_max < selected) {
 				$(`#level-max option[value="${selected}"]`).prop('selected', true)
+				level_max = selected
 			}
 		} else if (elementId == 'level-max') {
-			min = parseInt($('#level-min').find(':selected').val())
-			if (min > selected) {
+			level_max = selected
+			if (level_min > selected) {
 				$(`#level-min option[value="${selected}"]`).prop('selected', true)
+				level_min = selected
 			}
 		}
 		else if (elementId == 'song-level-min') {
-			max = parseInt($('#song-level-max').find(':selected').val())
-			if (max < selected) {
+			song_level_min = selected
+			if (song_level_max < selected) {
 				$(`#song-level-max option[value="${selected}"]`).prop('selected', true)
+				song_level_max = selected
 			}
 		} else if (elementId == 'song-level-max') {
-			min = parseInt($('#song-level-min').find(':selected').val())
-			if (min > selected) {
+			song_level_max = selected
+			if (song_level_min > selected) {
 				$(`#song-level-min option[value="${selected}"]`).prop('selected', true)
+				song_level_min = selected
 			}
 		} else if (elementId == 'song-beginner') {
 			songLevelStart = $(`#song-beginner`).is(':checked') ? 0 : 1
 		} else if (elementId == 'version-min') {
-			max = parseInt($('#version-max').find(':selected').val())
-			if (max < selected) {
+			versionMin = selected
+			if (versionMax < selected) {
 				$(`#version-max option[value="${selected}"]`).prop('selected', true)
+				versionMax = selected
 			}
 		} else if (elementId == 'version-max') {
-			min = parseInt($('#version-min').find(':selected').val())
-			if (min > selected) {
+			versionMax = selected
+			if (versionMin > selected) {
 				$(`#version-min option[value="${selected}"]`).prop('selected', true)
+				versionMin = selected
 			}
 		} else if (elementId == 'time-type') {
 			updateTimeRange()
+		} else if (elementId == 'show-locked') {
+			showLocked = $('#show-locked').is(':checked')
+		} else if (elementId == 'hide-autospice') {
+			hide_autospice = $('#hide-autospice').is(':checked')
+		} else if (elementId == 'bookmarks-only') {
+			bookmarks_only = $('#bookmarks-only').is(':checked')
+		} else if (elementId == 'hide-met-goals') {
+			hide_met_goals = $('#hide-met-goals').is(':checked')
 		}
+
 		redrawTable(true)
 	})
 
@@ -586,7 +612,14 @@ $(document).ready(function () {
 		elementId = $(this).attr('id')
 		if (elementId === 'time-range') {
 			updateTimeRange()
+		} else if (elementId === 'min-score') {
+			var entered = $('#min-score').val()
+			min_score = $.isNumeric(entered) ? parseFloat(entered) : 0
+		} else if (elementId === 'max-score') {
+			var entered = $('#max-score').val()
+			max_score = $.isNumeric(entered) ? parseFloat(entered) : 1000000
 		}
+
 		redrawTable(true)
 	})
 })
