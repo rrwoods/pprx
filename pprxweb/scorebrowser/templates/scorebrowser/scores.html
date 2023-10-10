@@ -3,7 +3,7 @@
 {% load pprxtras %}
 {% load humanize %}
 
-{% block title %}PPR X Score Browser{% endblock %}
+{% block title %}PPR X {{ pprxversion }} Score Browser{% endblock %}
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
@@ -170,7 +170,7 @@
 	</p>
 
 	<p>
-		Show locked charts:
+		Show <span class="locked-chart">locked</span> charts:
 		<input type="checkbox" id="show-locked" class="select-filter">
 
 		Hide auto-spiced songs:
