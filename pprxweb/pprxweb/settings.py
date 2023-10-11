@@ -11,12 +11,19 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+import json
 import environ
 import os
 import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# Load life4 rank requirements
+reqfile = open(os.path.join(BASE_DIR, 'rank-requirements.json'))
+RANK_REQUIREMENTS = json.loads(reqfile.read())
+reqfile.close()
 
 
 env = environ.Env()
