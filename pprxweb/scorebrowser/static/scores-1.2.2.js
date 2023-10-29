@@ -781,7 +781,7 @@ $(document).ready(function () {
 	}
 
 	function requirementDiv(text, checkable = false) {
-		var div = $('<div>')
+		var div = $('<div>', {class: 'requirement'})
 
 		var reqId = `req-${nextReqId()}`
 		var checkbox = $('<input>', {type: 'checkbox', id: reqId, disabled: !checkable})
@@ -806,14 +806,20 @@ $(document).ready(function () {
 		})
 		$('#rank-select').append(rank.option)
 
-		rank.div = $('<div>')
-		rank.div.hide()
+		rank.container = $('<div>')
+		rank.container.hide()
+
+		rank.main = $('<div>')
+		rank.subHeader = $('<p>')
+		rank.subHeader.text('Substitutions:')
+		rank.subs = $('<div>')
 
 		for (let level = 1; level < 20; level++) {
 			if (!(level in rank.requirements)) {
 				continue
 			}
-			var p = $('<p>')
+			var main = $('<p>')
+			var subs = $('<p>')
 			aAn = (level == 8 || level == 11 || level == 18) ? 'an' : 'a'
 			for (let requirement of rank.requirements[level]) {
 				switch(requirement.kind) {
@@ -829,7 +835,7 @@ $(document).ready(function () {
 						var lachendy = level == 19 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ''
 						requirement.div = requirementDiv(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`)
 					}
-					break;
+					break
 				case 'clears':
 					if (requirement.qty == 0) {
 						requirement.div = requirementDiv(`${level} ${lampTypes[requirement.threshold]} Lamp`)
@@ -840,7 +846,7 @@ $(document).ready(function () {
 						var orHigher = requirement.or_higher ? '+' : ''
 						requirement.div = requirementDiv(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`)
 					}
-					break;
+					break
 				case 'consecutives':
 					requirement.div = requirementDiv(`Clear ${requirement.qty} ${level}s in a row`, true)
 					requirement.div.find('input').change(function() {
@@ -855,26 +861,32 @@ $(document).ready(function () {
 							}
 						})					
 					})
-					break;
+					break
 				case 'averages':
 					requirement.div = requirementDiv(`${requirement.threshold.toLocaleString()} ${level}s average`)
-					break;
+					break
 				default:
 					requirement.div = requirementDiv(JSON.stringify(requirement))
 				}
-				p.append(requirement.div)
+				section = (requirement.sub ? subs : main)
+				section.append(requirement.div)
 			}
 			if (level == 19 && 'lachendy' in rank.requirements) {
 				for (var requirement of rank.requirements.lachendy) {
 					requirement.div = requirementDiv(`${requirement.threshold/1000}k+ on Lachryma《Re:Queen’M》 challenge and ENDYMION challenge`)
-					p.append(requirement.div)
+					section = (requirement.sub ? subs : main)
+					section.append(requirement.div)
 				}
 			}
-			rank.div.append(p)
+			rank.main.append(main)
+			if (subs.children().length) {
+				rank.subs.append(subs)
+			}
 		}
 
 		if ('calories' in rank.requirements) {
-			var p = $('<p>')
+			var main = $('<p>')
+			var subs = $('<p>')
 			for (let requirement of rank.requirements.calories) {
 				requirement.div = requirementDiv(`Burn ${requirement.threshold} calories in one day`, true)
 
@@ -890,14 +902,18 @@ $(document).ready(function () {
 						}
 					})					
 				})
-
-				p.append(requirement.div)
+				section = (requirement.sub ? subs : main)
+				section.append(requirement.div)
 			}
-			rank.div.append(p)
+			rank.main.append(main)
+			if (subs.children().length) {
+				rank.subs.append(subs)
+			}
 		}
 
 		if ('trials' in rank.requirements) {
-			var p = $('<p>')
+			var main = $('<p>')
+			var subs = $('<p>')
 			for (let requirement of rank.requirements.trials) {
 				var plural = requirement.qty == 1 ? '' : 's'
 				requirement.div = requirementDiv(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, true)
@@ -913,15 +929,20 @@ $(document).ready(function () {
 							evaluateRanks()
 						}
 					})					
-				})
+				});
 				
-				p.append(requirement.div)
+				section = (requirement.sub ? subs : main)
+				section.append(requirement.div)
 			}
-			rank.div.append(p)
+			rank.main.append(main)
+			if (subs.children().length) {
+				rank.subs.append(subs)
+			}
 		}
 
 		if ('mfc_points' in rank.requirements) {
-			var p = $('<p>')
+			var main = $('<p>')
+			var subs = $('<p>')
 			for (var requirement of rank.requirements.mfc_points) {
 				requirement.div = requirementDiv('')
 				
@@ -929,25 +950,35 @@ $(document).ready(function () {
 				label.text('MFC Points')
 				var description = requirement.div.find('.req-description')
 				description.append(label)
-				description.append(`: ${requirement.threshold}`)
+				description.append(`: ${requirement.threshold}`);
 
-				p.append(requirement.div)
+				section = (requirement.sub ? subs : main)
+				section.append(requirement.div)
 			}
-			rank.div.append(p)
+			rank.main.append(main)
+			if (subs.children().length) {
+				rank.subs.append(subs)
+			}
 		}
 
-		$('#rank-details').append(rank.div)
+		rank.container.append(rank.main)
+		if (rank.subs.children().length > 0) {
+			rank.container.append(rank.subHeader)
+			rank.container.append(rank.subs)
+		}
+
+		$('#rank-details').append(rank.container)
 	}
 	selectedRank = rankRequirements[0]
-	selectedRank.div.show()
+	selectedRank.container.show()
 
 	function selectRank() {
-		selectedRank.div.hide()
+		selectedRank.container.hide()
 
 		rankIndex = $('#rank-select').find(':selected').val()
 		rank = rankRequirements[rankIndex]
 		selectedRank = rank
-		rank.div.show()
+		rank.container.show()
 	}
 	$('#rank-select').change(selectRank)
 

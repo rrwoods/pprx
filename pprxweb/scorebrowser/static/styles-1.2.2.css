@@ -48,6 +48,10 @@
 	font-weight: bold;
 }
 
+.requirement {
+	text-indent: 2em;
+}
+
 .romanized-title {
 	font-family: monospace;
 }
