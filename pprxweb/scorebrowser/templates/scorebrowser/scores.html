@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.0.20.js' %}"></script>
+	<script src="{% static 'scores-1.2.1.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -49,6 +49,12 @@
 		Chart level:
 		<select id="level-select">
 			<option selected value=0>All</option>
+			<option value=1>1</option>
+			<option value=2>2</option>
+			<option value=3>3</option>
+			<option value=4>4</option>
+			<option value=5>5</option>
+			<option value=6>6</option>
 			<option value=7>7</option>
 			<option value=8>8</option>
 			<option value=9>9</option>
@@ -65,7 +71,13 @@
 		</select>
 		<span id="level-range" hidden>
 			<select id="level-min" class="select-filter">
-				<option selected value=7>7</option>
+				<option selected value=1>1</option>
+				<option value=2>2</option>
+				<option value=3>3</option>
+				<option value=4>4</option>
+				<option value=5>5</option>
+				<option value=6>6</option>
+				<option value=7>7</option>
 				<option value=8>8</option>
 				<option value=9>9</option>
 				<option value=10>10</option>
@@ -81,6 +93,12 @@
 			</select>
 			to
 			<select id="level-max" class="select-filter">
+				<option value=1>1</option>
+				<option value=2>2</option>
+				<option value=3>3</option>
+				<option value=4>4</option>
+				<option value=5>5</option>
+				<option value=6>6</option>
 				<option value=7>7</option>
 				<option value=8>8</option>
 				<option value=9>9</option>
@@ -173,8 +191,8 @@
 		Show <span class="locked-chart">locked</span> charts:
 		<input type="checkbox" id="show-locked" class="select-filter">
 
-		Hide auto-spiced songs:
-		<input type="checkbox" id="hide-autospice" class="select-filter">
+		Show unspiced charts:
+		<input type="checkbox" id="show-unspiced" class="select-filter" checked>
 
 		Bookmarks only:
 		<input type="checkbox" id="bookmarks-only" class="select-filter">
@@ -243,7 +261,9 @@
 
 	<div style="display: none" id="romanize-titles" data-x="{{ romanized_titles }}"></div>
 	<div style="display: none" id="jsonData" data-json="{{ scores }}"></div>
+	<div style="display: none" id="rank-requirements" data-json="{{ rank_requirements }}"></div>
 	<div style="display: none" id="all-charts" data-json="{{ all_charts }}"></div>
+	<div style="display: none" id="life4-reqs" data-json="{{ life4_reqs }}"></div>
 	<table id="scores" class="row-border hover scores-table" width="100%"></table>
 
 	<p class="unhide-container" hidden>
@@ -252,14 +272,9 @@
 
 	<p id="goals-summary"></p>
 
-	{% for cab, avgs in averages.items %}
-		<p id="{{ cab }}-averages" class="averages" hidden>
-			14 average: {{ avgs|dict_key:14|intcomma }}<br />
-			15 average: {{ avgs|dict_key:15|intcomma }}<br />
-			16 average: {{ avgs|dict_key:16|intcomma }}<br />
-			17 average: {{ avgs|dict_key:17|intcomma }}<br />
-			18 average: {{ avgs|dict_key:18|intcomma }}<br />
-			19 average: {{ avgs|dict_key:19|intcomma }}<br />
-		</p>
-	{% endfor %}
+	<h1>LIFE4 Rank Evaluation</h1>
+	<p>
+		<select id="rank-select"></select>
+	</p>
+	<p id="rank-details"></p>
 {% endblock %}

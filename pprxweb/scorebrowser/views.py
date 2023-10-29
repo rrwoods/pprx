@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db.models.functions import Lower
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
@@ -203,6 +203,73 @@ def set_chart_life4(request):
 	)
 
 	return HttpResponse('Set/cleared life4 clear.')	
+
+@csrf_exempt
+def set_trials(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	
+	passed = requestBody["passed"]
+	count = requestBody["count"]
+	rank = requestBody["rank"]
+
+	if passed:
+		user.best_trial = max(user.best_trial, rank)
+		if count > 1:
+			user.second_best_trial = max(user.second_best_trial, rank)
+	else:
+		user.second_best_trial = min(user.second_best_trial, rank - 1)
+		if count == 1:
+			user.best_trial = min(user.best_trial, rank - 1)
+	user.save()
+
+	return JsonResponse({'best': user.best_trial, 'second': user.second_best_trial})
+
+@csrf_exempt
+def set_calories(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	
+	calories = requestBody["calories"]
+	passed = requestBody["passed"]
+
+	if passed:
+		user.best_calorie_burn = max(user.best_calorie_burn, calories)
+	else:
+		user.best_calorie_burn = min(user.best_calorie_burn, calories - 1)
+	user.save()
+
+	return JsonResponse({"calories": user.best_calorie_burn})
+
+@csrf_exempt
+def set_consecutives(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+
+	passed = requestBody["passed"]
+	count = requestBody["count"]
+	level = requestBody["level"]
+
+	if passed:
+		user.best_two_consecutive = max(user.best_two_consecutive, level)
+		if count > 2:
+			user.best_three_consecutive = max(user.best_three_consecutive, level)
+	else:
+		user.best_three_consecutive = min(user.best_three_consecutive, level - 1)
+		if count == 2:
+			user.best_two_consecutive = min(user.best_two_consecutive, level - 1)
+	user.save()
+
+	return JsonResponse({2: user.best_two_consecutive, 3: user.best_three_consecutive})
 
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
@@ -410,12 +477,6 @@ def scores(request):
 	# set of task ids this user has completed
 	user_unlocks = set(u.task_id for u in UserUnlock.objects.filter(user=user))
 	
-	all_benchmarks = Benchmark.objects.all().select_related("chart")
-	default_spice = {b.chart.rating: b.chart.spice for b in all_benchmarks if b.description == 'easiest'}
-	default_goals = {b.chart.rating: 1000001 - 15625*math.pow(2, 6 + b.chart.spice - target_quality) if target_quality else None for b in all_benchmarks if b.description == 'hardest'}
-
-	scores_by_diff = {cab: {diff: [] for diff in range(14, 20)} for cab in range(3)}
-
 	#### DATATABLE ENTRY GENERATION ####
 
 	# {song_id: [ratings]}
@@ -425,11 +486,15 @@ def scores(request):
 		.filter(song__removed=False)  \
 		.select_related("song", "song__version", "difficulty")
 
+	scores_by_diff = {diff: [] for diff in range(14, 20)}
+
 	for chart in chart_query:
 		if chart.song_id in duplicate_song_ids[1:]:
 			continue
 
 		entry = {}
+		default_chart = True
+		amethyst_required = True
 		for i, cabinet in enumerate(cabinets):
 			cab_vis_id = str(i)
 			if chart.song.version_id > cabinet.version_id:
@@ -438,12 +503,17 @@ def scores(request):
 
 			if check_locks(chart.song_id, song_locks, cabinet):
 				entry[cab_vis_id] = UNAVAILABLE
+				default_chart = False
+				amethyst_required = False
 				continue
 			
 			chart_vis = VISIBLE
 			if chart.id in chart_unlocks[cabinet.version_id]:
 				requirements = chart_unlocks[cabinet.version_id][chart.id]
 				for r in requirements:
+					default_chart = False
+					if not r.task.event.amethyst_required:
+						amethyst_required = False
 					if (not r.extra) and (not r.task.event.completable):
 						chart_vis = UNAVAILABLE
 						break
@@ -460,67 +530,63 @@ def scores(request):
 			all_charts[chart.song_id] = [-1, -1, -1, -1, -1]
 		all_charts[chart.song_id][chart.difficulty_id] = chart.rating
 
-		if chart.tracked:
-			spice = chart.spice
+		spice = chart.spice
 
-			k = '{}-{}'.format(chart.song_id, chart.difficulty_id)
-			score, timestamp, clearType = scores_lookup[k] if (k in scores_lookup) else (0, 0, 0)
-			if (clearType == 1) and (chart.id in aux) and (aux[chart.id].life4_clear):
-				clearType = 2
+		k = '{}-{}'.format(chart.song_id, chart.difficulty_id)
+		score, timestamp, clearType = scores_lookup[k] if (k in scores_lookup) else (0, 0, 0)
+		if (clearType == 1) and (chart.id in aux) and (aux[chart.id].life4_clear):
+			clearType = 2
 
-			if chart.rating >= 14:
-				for cab in range(3):
-					if entry[str(cab)] < LOCKED:
-						scores_by_diff[cab][chart.rating].append(score)
+		if chart.rating >= 14:
+			scores_by_diff[chart.rating].append(score)
 
-			quality = None
-			goal = None
-			autospiced = False
-			if spice is None:
-				autospiced = True
-				try:
-					spice = default_spice[chart.rating]
-					goal = default_goals[chart.rating]
-				except:
-					print(chart.song.title)
-			else:
-				goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-				if score > 0:
-					quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
+		quality = None
+		goal = None
+		if spice is not None:
+			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
+			if score > 0:
+				quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
 			goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
 
-			entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }
-			entry['song_id'] = chart.song_id
-			entry['song_name'] = { 'title': chart.song.title, 'sort_key': sort_key(chart.song.searchable_title or chart.song.title) }
-			entry['alternate_title'] = chart.song.alternate_title
-			entry['romanized_title'] = chart.song.romanized_title
-			entry['searchable_title'] = chart.song.searchable_title
-			entry['difficulty'] = { 'id': chart.difficulty_id, 'name': chart.difficulty.name, 'rating': chart.rating }
-			entry['rating'] = chart.rating
-			entry['spice'] = spice
-			entry['score'] = score
-			entry['clear_type'] = clearType
-			entry['quality'] = quality
-			entry['goal'] = goal
-			entry['autospiced'] = autospiced
-			entry['chart_id'] = chart.id
-			entry['distance'] = (goal - score) if goal else 0
-			entry['timestamp'] = timestamp
-			entry['notes'] = aux[chart.id].notes if chart.id in aux else ''
-			entry['bookmarked'] = aux[chart.id].bookmark if chart.id in aux else False
-			scores_data.append(entry)
+		entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }
+		entry['song_id'] = chart.song_id
+		entry['song_name'] = { 'title': chart.song.title, 'sort_key': sort_key(chart.song.searchable_title or chart.song.title) }
+		entry['alternate_title'] = chart.song.alternate_title
+		entry['romanized_title'] = chart.song.romanized_title
+		entry['searchable_title'] = chart.song.searchable_title
+		entry['difficulty'] = { 'id': chart.difficulty_id, 'name': chart.difficulty.name, 'rating': chart.rating }
+		entry['rating'] = chart.rating
+		entry['spice'] = spice
+		entry['score'] = score
+		entry['clear_type'] = clearType
+		entry['quality'] = quality
+		entry['goal'] = goal
+		entry['spiced'] = spice is not None
+		entry['chart_id'] = chart.id
+		entry['distance'] = (goal - score) if goal else 0
+		entry['timestamp'] = timestamp
+		entry['notes'] = aux[chart.id].notes if chart.id in aux else ''
+		entry['bookmarked'] = aux[chart.id].bookmark if chart.id in aux else False
+		entry['default_chart'] = default_chart
+		entry['amethyst_required'] = amethyst_required
+		scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)
 	for i, entry in enumerate(scores_data):
 		entry['rank'] = i + 1
 
-	averages = {str(cab): {diff: int(sum(scores_by_diff[cab][diff])/max(len(scores_by_diff[cab][diff]), 1)) for diff in range(14, 20)} for cab in range(3)}
+	life4_reqs = {
+		'trials': {'best': user.best_trial, 'second': user.second_best_trial},
+		'calories': user.best_calorie_burn,
+		'consecutives': {2: user.best_two_consecutive, 3: user.best_three_consecutive},
+	}
 
 	return render(request, 'scorebrowser/scores.html', {
 		'scores': json.dumps(scores_data),
 		'cabinets': cab_names,
 		'versions': version_names,
-		'averages': averages,
+		'rank_requirements': json.dumps(settings.RANK_REQUIREMENTS),
 		'all_charts': json.dumps(all_charts),
 		'romanized_titles': user.romanized_titles,
+		'life4_reqs': json.dumps(life4_reqs),
 	})

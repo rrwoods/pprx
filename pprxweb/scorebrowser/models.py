@@ -107,6 +107,12 @@ class User(models.Model):
     goal_chart = models.ForeignKey(Chart, on_delete=models.CASCADE, null=True, default=None)
     romanized_titles = models.BooleanField(default=False)
 
+    best_trial = models.IntegerField(default=0)
+    second_best_trial = models.IntegerField(default=0)
+    best_two_consecutive = models.IntegerField(default=0)
+    best_three_consecutive = models.IntegerField(default=0)
+    best_calorie_burn = models.IntegerField(default=0)
+
 class UserChartAux(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -141,6 +147,7 @@ class UnlockEvent(models.Model):
     name = models.TextField()
     ordering = models.IntegerField()
     completable = models.BooleanField(default=True)
+    amethyst_required = models.BooleanField(default=True)
 
 
 class UnlockTask(models.Model):
