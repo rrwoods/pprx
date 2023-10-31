@@ -610,6 +610,31 @@ $(document).ready(function () {
 		rowData.clear_type = checked ? 2 : 1
 		row.invalidate()
 
+		var level = rowData.difficulty.rating
+		if (checked) {
+			clears[level][2].total++
+			for (var l = 1; l <= level; l++) {
+				clears[l][2].totalIncludingHigher++
+			}
+			if (rowData.default_chart) {
+				clears[level][2].distanceToLamp--
+			}
+			if (rowData.amethyst_required) {
+				clears[level][2].distanceToAmethystLamp--
+			}
+		} else {
+			clears[level][2].total--
+			for (var l = 1; l <= level; l++) {
+				clears[l][2].totalIncludingHigher--
+			}
+			if (rowData.default_chart) {
+				clears[level][2].distanceToLamp++
+			}
+			if (rowData.amethyst_required) {
+				clears[level][2].distanceToAmethystLamp++
+			}
+		}
+
 		$.ajax({
 			type: "POST",
 			url: "/scorebrowser/set_chart_life4",
@@ -1001,9 +1026,10 @@ $(document).ready(function () {
 		clears[level] = []
 		for (var clearType = 1; clearType <= 6; clearType++) {
 			clears[level][clearType] = {
-				'total': 0,
-				'totalIncludingHigher': 0,
-				'distanceToLamp': 0,
+				total: 0,
+				totalIncludingHigher: 0,
+				distanceToLamp: 0,
+				distanceToAmethystLamp: 0,
 			}
 		}
 	}
@@ -1033,6 +1059,15 @@ $(document).ready(function () {
 		if (d.default_chart) {
 			for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
 				clears[d.difficulty.rating][clearType].distanceToLamp++
+			}
+		}
+
+		if (d.amethyst_required) {
+			if (d.difficulty.rating == 18 && d.clear_type < 1) {
+				console.log(d.song_name.title)
+			}
+			for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
+				clears[d.difficulty.rating][clearType].distanceToAmethystLamp++
 			}
 		}
 
@@ -1161,10 +1196,10 @@ $(document).ready(function () {
 						break;
 					case 'clears':
 						if (requirement.qty == 0) {
-							distanceToLamp = clears[level][requirement.threshold].distanceToLamp
+							distanceToLamp = clears[level][requirement.threshold][amethyst ? 'distanceToAmethystLamp' : 'distanceToLamp']
 							styleReq(requirement, distanceToLamp)
 						} else {
-							total = requirement.or_higher ? clears[level][requirement.threshold].totalIncludingHigher : clears[level][requirement.threshold].total
+							total = clears[level][requirement.threshold][requirement.or_higher ? 'totalIncludingHigher' : 'total']
 							styleReq(requirement, requirement.qty - total)
 						}
 						break
