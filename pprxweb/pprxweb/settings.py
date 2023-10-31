@@ -25,6 +25,9 @@ reqfile = open(os.path.join(BASE_DIR, 'rank-requirements.json'))
 RANK_REQUIREMENTS = json.loads(reqfile.read())
 reqfile.close()
 
+reqfile = open(os.path.join(BASE_DIR, 'rank-requirements-a20plus.json'))
+RANK_REQUIREMENTS_A20PLUS = json.loads(reqfile.read())
+reqfile.close()
 
 env = environ.Env()
 environ.Env.read_env()

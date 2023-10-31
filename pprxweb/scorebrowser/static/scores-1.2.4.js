@@ -683,8 +683,8 @@ $(document).ready(function () {
 	$('#version-select').change(function() {
 		$(this).hide()
 		versionId = $(this).find(':selected').val()
-		versionMin = parseInt(versionId)
-		versionMax = parseInt(versionId)
+		version_min = parseInt(versionId)
+		version_max = parseInt(versionId)
 		$(`#version-min option[value="${versionId}"]`).prop('selected', true)
 		$(`#version-max option[value="${versionId}"]`).prop('selected', true)
 		$('#version-range').show()
@@ -747,16 +747,16 @@ $(document).ready(function () {
 		} else if (elementId == 'song-beginner') {
 			songLevelStart = $(`#song-beginner`).is(':checked') ? 0 : 1
 		} else if (elementId == 'version-min') {
-			versionMin = selected
-			if (versionMax < selected) {
+			version_min = selected
+			if (version_max < selected) {
 				$(`#version-max option[value="${selected}"]`).prop('selected', true)
-				versionMax = selected
+				version_max = selected
 			}
 		} else if (elementId == 'version-max') {
-			versionMax = selected
-			if (versionMin > selected) {
+			version_max = selected
+			if (version_min > selected) {
 				$(`#version-min option[value="${selected}"]`).prop('selected', true)
-				versionMin = selected
+				version_min = selected
 			}
 		} else if (elementId == 'clear-type-min') {
 			min_clear_type = selected
@@ -1063,9 +1063,6 @@ $(document).ready(function () {
 		}
 
 		if (d.amethyst_required) {
-			if (d.difficulty.rating == 18 && d.clear_type < 1) {
-				console.log(d.song_name.title)
-			}
 			for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
 				clears[d.difficulty.rating][clearType].distanceToAmethystLamp++
 			}

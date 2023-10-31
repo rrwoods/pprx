@@ -12,15 +12,19 @@
 
 	<h1>Preferences</h1>
 
-	<p><form method="POST">
-		Select your white cabinet region:
-		<select name="region" hx-post="{% url 'set_region' %}" hx-trigger="change" hx-target="#saved-pref">
-			{% for region in regions %}
-				<option {% if region.id == selectedRegionId %}selected{% endif %} value="{{ region.id }}">{{ region.name }}</option>
-			{% endfor %}
-		</select>
-		{% csrf_token %}
-	</form></p>
+	<p>
+		<form method="POST">
+			Select your white cabinet region:
+			<select name="region" hx-post="{% url 'set_region' %}" hx-trigger="change" hx-target="#saved-pref">
+				{% for region in regions %}
+					<option {% if region.id == selectedRegionId %}selected{% endif %} value="{{ region.id }}">{{ region.name }}</option>
+				{% endfor %}
+			</select>
+			{% csrf_token %}
+		</form>
+		<br />
+		Your cabinet selection will also determine which rank requirements are evaluated (A20+ for Dave & Busters, A3 everywhere else)
+	</p>
 
 	<p><form method="POST">
 		<input
