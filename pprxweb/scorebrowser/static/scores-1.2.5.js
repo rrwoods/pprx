@@ -79,6 +79,7 @@ var scoresByLevel = []
 var lachendyScores = []
 var mfcPointsEarned = 0
 var checkedRequirements = null
+var whiteVersion = 0
 
 function escapeHtml(unsafe) {
     return unsafe
@@ -822,6 +823,7 @@ $(document).ready(function () {
 		return div
 	}
 
+	whiteVersion = $('#white-version').data('json')
 	rankRequirements = $('#rank-requirements').data('json')
 	for (var index in rankRequirements) {
 		var rank = rankRequirements[index]
@@ -857,7 +859,7 @@ $(document).ready(function () {
 						requirement.div = requirementDiv(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`)
 					} else {
 						var exceptions = requirement.qty == 0 ? '' : ` (${-requirement.qty} exceptions)`
-						var lachendy = level == 19 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ''
+						var lachendy = level == 19 ? (whiteVersion > 18 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ' (ex. ENDYMION)') : ''
 						requirement.div = requirementDiv(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`)
 					}
 					break
@@ -897,8 +899,9 @@ $(document).ready(function () {
 				section.append(requirement.div)
 			}
 			if (level == 19 && 'lachendy' in rank.requirements) {
+				var lachryma = whiteVersion > 18 ? "Lachryma《Re:Queen’M》 challenge and " : ""
 				for (var requirement of rank.requirements.lachendy) {
-					requirement.div = requirementDiv(`${requirement.threshold/1000}k+ on Lachryma《Re:Queen’M》 challenge and ENDYMION challenge`)
+					requirement.div = requirementDiv(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`)
 					section = (requirement.sub ? subs : main)
 					section.append(requirement.div)
 				}
@@ -1036,6 +1039,9 @@ $(document).ready(function () {
 
 	scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
 		d = this.data()
+		if (d.game_version.id > whiteVersion) {
+			return
+		}
 
 		if (isLachEndy(d)) {
 			lachendyScores.push(d.score)

@@ -587,6 +587,7 @@ def scores(request):
 		'scores': json.dumps(scores_data),
 		'cabinets': cab_names,
 		'versions': version_names,
+		'white_version': white_cab.version_id,
 		'rank_requirements': json.dumps(settings.RANK_REQUIREMENTS if white_cab.version_id > 18 else settings.RANK_REQUIREMENTS_A20PLUS),
 		'all_charts': json.dumps(all_charts),
 		'romanized_titles': user.romanized_titles,
