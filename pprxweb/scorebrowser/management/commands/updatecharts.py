@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from scorebrowser.models import *
-import js2py
+import json
 import requests
 
 
@@ -17,9 +17,11 @@ class Command(BaseCommand):
 		if response.status_code != 200:
 			raise CommandError("Received {} response from songdata.js.\n\n{}".format(response.status_code, response.content))
 
-		context = js2py.EvalJs()
-		context.execute(response.content.decode("utf-8"))
-		for fetched_song in context.ALL_SONG_DATA:
+		# TODO : this suffix is variable length now; find some method of doing this that parses the .js more properly
+		prefix = b'var ALL_SONG_DATA='
+		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210,220,230];const SONG_DATA_LAST_UPDATED_unixms=1699948700574;'
+
+		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
 			song = Song.objects.filter(id=fetched_song['song_id']).first()
 			if song is None:
 				song = Song(id=fetched_song['song_id'], version_id=fetched_song['version_num'], title=fetched_song['song_name'])
