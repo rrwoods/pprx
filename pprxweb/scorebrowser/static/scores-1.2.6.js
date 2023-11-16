@@ -439,6 +439,7 @@ $(document).ready(function () {
 				element.prop('checked', newValue)
 			}
 		}
+		updateTimeRange()
 		redrawTable()
 	}
 
