@@ -42,28 +42,9 @@ const trialClears = [
 const mfcPoints = [0, 0.1, 0.25, 0.25, 0.5, 0.5, 0.5, 1, 1, 1, 1.5, 2, 4, 6, 8, 15, 25, 25, 25, 25]
 
 var romanizeTitles = false
-var cabinetSelect = 0
-var showLocked = false
-var show_unspiced = true
-var bookmarks_only = false
-var hide_met_goals = false
 
-var version_min = 0
-var version_max = 100
-
-var level_min = 0
-var level_max = 21
-
-var song_level_min = 0
-var song_level_max = 21
-var songLevelStart = 0
-
-var min_score = 0
-var max_score = 1000000
-
-var min_clear_type = -2
-var max_clear_type = 6
-
+var currentFilters = {}
+var defaultFilters = {}
 var userHidChartIds = []
 var minTimestamp = 0
 
@@ -99,30 +80,28 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	visibility = parseInt(data[cabinetSelect])
+	visibility = parseInt(data[currentFilters["cabinet-select"]])
 	if (visibility === 3) {
 		return false
 	}
-	if ((visibility === 2) && !showLocked) {
+	if ((visibility === 2) && !currentFilters["show-locked"]) {
 		return false
 	}
 
-	if (version_min !== 0) {
-		var version = parseInt(data[4])
-		if ((version < version_min) || (version > version_max)) {
-			return false
-		}
+	var version = parseInt(data[4])
+	if ((version < currentFilters["version-min"]) || (version > currentFilters["version-max"])) {
+		return false
 	}
 
 	var level = parseInt(data[7])
-	if ((level < level_min) || (level > level_max)) {
+	if ((level < currentFilters["level-min"]) || (level > currentFilters["level-max"])) {
 		return false
 	}
 
 	song_level_met = false
 	song_levels = allCharts[data[20]]
-	for (var i = songLevelStart; i < song_levels.length; i++) {
-		if ((song_levels[i] >= song_level_min) && (song_levels[i] <= song_level_max)) {
+	for (var i = (currentFilters["song-beginner"] ? 0 : 1); i < song_levels.length; i++) {
+		if ((song_levels[i] >= currentFilters["song-level-min"]) && (song_levels[i] <= currentFilters["song-level-max"])) {
 			song_level_met = true
 			break
 		}
@@ -132,27 +111,27 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var is_spiced = (data[14] === "true")
-	if (!show_unspiced && !is_spiced) {
+	if (!currentFilters["show-unspiced"] && !is_spiced) {
 		return false
 	}
 
-	if (bookmarks_only && (data[23] === "false")) {
+	if (currentFilters["bookmarks-only"] && (data[23] === "false")) {
 		return false
 	}
 
 	var score = parseFloat(data[9])
-	if (score < min_score) {
+	if (score < currentFilters["min-score"]) {
 		return false
 	}
-	if (score > max_score) {
+	if (score > currentFilters["max-score"]) {
 		return false
 	}
 
 	var clear_type = (score === 0) ? -1 : parseInt(data[22])
-	if (clear_type < min_clear_type) {
+	if (clear_type < currentFilters["clear-type-min"]) {
 		return false
 	}
-	if (clear_type > max_clear_type) {
+	if (clear_type > currentFilters["clear-type-max"]) {
 		return false
 	}
 
@@ -162,7 +141,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		var goal_met = (score >= parseFloat(data[12])) && (score > 0)
 		if (goal_met) {
 			metGoals++
-			if (hide_met_goals) {
+			if (currentFilters["hide-met-goals"]) {
 				return false
 			}
 		}
@@ -193,7 +172,28 @@ $.fn.dataTableExt.oSort['nonzero-number-desc'] = function(a, b) {
 
 $(document).ready(function () {
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
-	cabinetSelect = parseInt($('#cabinet-select').find(':selected').val())
+
+	$('#version-min').val(1)
+	$('#version-max').val($("#version-max option").length)
+
+	$("[type='checkbox'].filter").each(function() {
+		currentFilters[this.id] = this.checked
+		if (!$(this).hasClass("persistent")) {
+			defaultFilters[this.id] = this.checked
+		}
+	})
+	$("[type='number'].filter").each(function() {
+		currentFilters[this.id] = parseInt(this.value)
+		if (!$(this).hasClass("persistent")) {
+			defaultFilters[this.id] = parseInt(this.value)
+		}
+	})
+	$("select.filter").each(function() {
+		currentFilters[this.id] = parseInt(this.value)
+		if (!$(this).hasClass("persistent")) {
+			defaultFilters[this.id] = parseInt(this.value)
+		}
+	})
 
 	function formatAge(timestamp) {
 		if (timestamp === 0) {
@@ -405,7 +405,7 @@ $(document).ready(function () {
 			{ data: 'amethyst_required', visible: false },
 		],
 		createdRow: function(row, data, index) {
-			visibility = parseInt(data[cabinetSelect])
+			visibility = parseInt(data[currentFilters["cabinet-select"]])
 			if (visibility === 1) {
 				$(row).addClass('extra-exclusive')
 			} else if (visibility === 2) {
@@ -428,69 +428,36 @@ $(document).ready(function () {
 		setGoalSummary()
 	}
 
-	$('#reset-filters').click(function() {
-		showLocked = false
-		$('#show-locked').prop('checked', false)
-
-		show_unspiced = false
-		$('#show-unspiced').prop('checked', true)
-
-		bookmarks_only = false
-		$('#bookmarks-only').prop('checked', false)
-
-		hide_met_goals = false
-		$('#hide-met-goals').prop('checked', false)
-
-		version_min = 0
-		version_max = 100
-		$('#version-range').hide()
-		$('#version-select').val(0)
-		$('#version-select').show()
-
-		level_min = 0
-		level_max = 21
-		$('#level-range').hide()
-		$('#level-select').val(0)
-		$('#level-select').show()
-
-		song_level_min = 0
-		song_level_max = 21
-		songLevelStart = 0
-		$('#song-level-range').hide()
-		$('#song-level-select').val(0)
-		$('#song-level-select').show()
-		$('#song-beginner').prop('checked', true)
-
-		min_score = 0
-		$('#min-score').val('')
-
-		max_score = 1000000
-		$('#max-score').val('')
-
-		min_clear_type = -2
-		max_clear_type = 6
-		$('#clear-type-range').hide()
-		$('#clear-type').val(-2)
-		$('#clear-type').show()
-
-		minTimestamp = 0
-		$('#time-range').val('')
-		$('#time-type').val('hours')
-
+	function setFilters(newFilters) {
+		for (var name in newFilters) {
+			var newValue = newFilters[name]
+			currentFilters[name] = newValue
+			var element = $(`#${name}.filter`)
+			if (element.is("select") || element.attr("type") === "number") {
+				element.val(newValue)
+			} else {
+				element.prop('checked', newValue)
+			}
+		}
 		redrawTable()
+	}
+
+	$('#reset-filters').click(function() {
+		setFilters(defaultFilters)
 	})
 
-	spiceHeader = scoresTable.column(8).header()
+	var spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
 	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).  If there's not enough data to accurately spice a song yet, it gets automatically assigned the lowest spice for its level for sorting purposes, and your goal will be the lowest for that level.")
 
-	qualityHeader = scoresTable.column(10).header()
+	var qualityHeader = scoresTable.column(10).header()
 	$(qualityHeader).addClass('tooltip')
 	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.  Points beyond 999,000 do not contribute to quality rating, and goals will never be over 999,000.')
 
 	function applyRowClasses(table) {
+		var cab = currentFilters["cabinet-select"]
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
-			visibility = parseInt(this.data()[cabinetSelect])
+			visibility = parseInt(this.data()[cab])
 			if (visibility === 1) {
 				$(this.node()).addClass('extra-exclusive')
 				$(this.node()).removeClass('locked-chart')				
@@ -653,151 +620,50 @@ $(document).ready(function () {
 		redrawTable(false)
 	})
 
-	$('#cabinet-select').change(function() {
-		cabinetSelect = parseInt($('#cabinet-select').find(':selected').val())
-		redrawTable(true)
-		applyRowClasses(scoresTable)
-	})
-
-	$('#level-select').change(function() {
-		$(this).hide()
-		level = $(this).find(':selected').val()
-		level_min = parseInt(level)
-		level_max = parseInt(level)
-		$(`#level-min option[value="${level}"]`).prop('selected', true)
-		$(`#level-max option[value="${level}"]`).prop('selected', true)
-		$('#level-range').show()
-		redrawTable(true)
-	})
-
-	$('#song-level-select').change(function() {
-		$(this).hide()
-		level = $(this).find(':selected').val()
-		song_level_min = parseInt(level)
-		song_level_max = parseInt(level)
-		$(`#song-level-min option[value="${level}"]`).prop('selected', true)
-		$(`#song-level-max option[value="${level}"]`).prop('selected', true)
-		$('#song-level-range').show()
-		redrawTable(true)
-	})
-
-	$('#version-select').change(function() {
-		$(this).hide()
-		versionId = $(this).find(':selected').val()
-		version_min = parseInt(versionId)
-		version_max = parseInt(versionId)
-		$(`#version-min option[value="${versionId}"]`).prop('selected', true)
-		$(`#version-max option[value="${versionId}"]`).prop('selected', true)
-		$('#version-range').show()
-		redrawTable(true)
-	})
-
-	$('#clear-type').change(function() {
-		$(this).hide()
-		clearType = $(this).find(':selected').val()
-		min_clear_type = parseInt(clearType)
-		max_clear_type = parseInt(clearType)
-		$(`#clear-type-min option[value="${clearType}"]`).prop('selected', true)
-		$(`#clear-type-max option[value="${clearType}"]`).prop('selected', true)
-		$('#clear-type-range').show()
-		redrawTable(true)
-	})
-
 	function updateTimeRange() {
-		timeText = $('#time-range').val()
-		if (!$.isNumeric(timeText)) {
+		var rangeVal = currentFilters["time-range"]
+		if (isNaN(rangeVal)) {
 			minTimestamp = 0
 			return
 		}
-		seconds = Math.floor(parseFloat(timeText) * 60 * 60)
-		if ($('#time-type').val() !== 'hours') {
-			seconds *= 24
-		}
-
-		minTimestamp = loadTimestamp - seconds
+		minTimestamp = loadTimestamp - (rangeVal * currentFilters["time-type"])
 	}
 
-	$('.select-filter').change(function() {
-		elementId = $(this).attr('id')
-		selected = parseInt($(this).find(':selected').val())
-		if (elementId == 'level-min') {
-			level_min = selected
-			if (level_max < selected) {
-				$(`#level-max option[value="${selected}"]`).prop('selected', true)
-				level_max = selected
+	$('select.filter').change(function() {
+		var value = parseInt($(this).val())
+		currentFilters[this.id] = value
+
+		if ($(this).hasClass("min")) {
+			var maxId = $(this).data("max")
+			if (currentFilters[maxId] < value) {
+				currentFilters[maxId] = value
+				$(`#${maxId}`).val(value)
 			}
-		} else if (elementId == 'level-max') {
-			level_max = selected
-			if (level_min > selected) {
-				$(`#level-min option[value="${selected}"]`).prop('selected', true)
-				level_min = selected
+		} else if ($(this).hasClass("max")) {
+			var minId = $(this).data("min")
+			if (currentFilters[minId] > value) {
+				currentFilters[minId] = value
+				$(`#${minId}`).val(value)
 			}
 		}
-		else if (elementId == 'song-level-min') {
-			song_level_min = selected
-			if (song_level_max < selected) {
-				$(`#song-level-max option[value="${selected}"]`).prop('selected', true)
-				song_level_max = selected
-			}
-		} else if (elementId == 'song-level-max') {
-			song_level_max = selected
-			if (song_level_min > selected) {
-				$(`#song-level-min option[value="${selected}"]`).prop('selected', true)
-				song_level_min = selected
-			}
-		} else if (elementId == 'song-beginner') {
-			songLevelStart = $(`#song-beginner`).is(':checked') ? 0 : 1
-		} else if (elementId == 'version-min') {
-			version_min = selected
-			if (version_max < selected) {
-				$(`#version-max option[value="${selected}"]`).prop('selected', true)
-				version_max = selected
-			}
-		} else if (elementId == 'version-max') {
-			version_max = selected
-			if (version_min > selected) {
-				$(`#version-min option[value="${selected}"]`).prop('selected', true)
-				version_min = selected
-			}
-		} else if (elementId == 'clear-type-min') {
-			min_clear_type = selected
-			if (max_clear_type < selected) {
-				$(`#clear-type-max option[value="${selected}"]`).prop('selected', true)
-				max_clear_type = selected
-			}
-		} else if (elementId == 'clear-type-max') {
-			max_clear_type = selected
-			if (min_clear_type > selected) {
-				$(`#clear-type-min option[value="${selected}"]`).prop('selected', true)
-				min_clear_type = selected
-			}
-	    } else if (elementId == 'time-type') {
+
+		if (this.id === "time-type") {
 			updateTimeRange()
-		} else if (elementId == 'show-locked') {
-			showLocked = $('#show-locked').is(':checked')
-		} else if (elementId == 'show-unspiced') {
-			show_unspiced = $('#show-unspiced').is(':checked')
-		} else if (elementId == 'bookmarks-only') {
-			bookmarks_only = $('#bookmarks-only').is(':checked')
-		} else if (elementId == 'hide-met-goals') {
-			hide_met_goals = $('#hide-met-goals').is(':checked')
 		}
 
 		redrawTable(true)
 	})
 
-	$('.text-filter').keyup(function() {
-		elementId = $(this).attr('id')
-		if (elementId === 'time-range') {
-			updateTimeRange()
-		} else if (elementId === 'min-score') {
-			var entered = $('#min-score').val()
-			min_score = $.isNumeric(entered) ? parseFloat(entered) : 0
-		} else if (elementId === 'max-score') {
-			var entered = $('#max-score').val()
-			max_score = $.isNumeric(entered) ? parseFloat(entered) : 1000000
-		}
+	$("[type='checkbox'].filter").change(function() {
+		currentFilters[this.id] = this.checked
+		redrawTable(true)
+	})
 
+	$("[type='number'].filter").keyup(function() {
+		currentFilters[this.id] = parseInt($(this).val())
+		if (this.id === "time-range") {
+			updateTimeRange()
+		}
 		redrawTable(true)
 	})
 

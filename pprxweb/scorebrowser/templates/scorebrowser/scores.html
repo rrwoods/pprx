@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.2.5.js' %}"></script>
+	<script src="{% static 'scores-1.2.6.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -16,40 +16,31 @@
 
 	<p>
 		Cabinet:
-		<select id="cabinet-select">
+		<select id="cabinet-select" class="persistent filter">
 			{% for cabinet in cabinets %}
 				<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
 			{% endfor %}
 		</select>
 
 		Version:
-		<select id="version-select" class="select-filter">
-			<option selected value=0>All</option>
+		<select id="version-min" class="filter min" data-max="version-max">
+			<option hidden selected value=0>All</option>
 			{% for version in versions %}
 				<option value="{{ version.id }}">{{ version.name }}</option>
 			{% endfor %}
 		</select>
-		<span id="version-range" hidden>
-			<select id="version-min" class="select-filter">
-				<option hidden selected value=0>All</option>
-				{% for version in versions %}
-					<option value="{{ version.id }}">{{ version.name }}</option>
-				{% endfor %}
-			</select>
-			to
-			<select id="version-max" class="select-filter">
-				{% for version in versions %}
-					<option value="{{ version.id }}">{{ version.name }}</option>
-				{% endfor %}
-			</select>
-		</span>
+		to
+		<select id="version-max" class="filter max" data-min="version-min">
+			{% for version in versions %}
+				<option value="{{ version.id }}">{{ version.name }}</option>
+			{% endfor %}
+		</select>
 	</p>
 
 	<p>
 		Chart level:
-		<select id="level-select">
-			<option selected value=0>All</option>
-			<option value=1>1</option>
+		<select id="level-min" class="filter min" data-max="level-max">
+			<option selected value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
 			<option value=4>4</option>
@@ -69,56 +60,32 @@
 			<option value=18>18</option>
 			<option value=19>19</option>
 		</select>
-		<span id="level-range" hidden>
-			<select id="level-min" class="select-filter">
-				<option selected value=1>1</option>
-				<option value=2>2</option>
-				<option value=3>3</option>
-				<option value=4>4</option>
-				<option value=5>5</option>
-				<option value=6>6</option>
-				<option value=7>7</option>
-				<option value=8>8</option>
-				<option value=9>9</option>
-				<option value=10>10</option>
-				<option value=11>11</option>
-				<option value=12>12</option>
-				<option value=13>13</option>
-				<option value=14>14</option>
-				<option value=15>15</option>
-				<option value=16>16</option>
-				<option value=17>17</option>
-				<option value=18>18</option>
-				<option value=19>19</option>
-			</select>
-			to
-			<select id="level-max" class="select-filter">
-				<option value=1>1</option>
-				<option value=2>2</option>
-				<option value=3>3</option>
-				<option value=4>4</option>
-				<option value=5>5</option>
-				<option value=6>6</option>
-				<option value=7>7</option>
-				<option value=8>8</option>
-				<option value=9>9</option>
-				<option value=10>10</option>
-				<option value=11>11</option>
-				<option value=12>12</option>
-				<option value=13>13</option>
-				<option value=14>14</option>
-				<option value=15>15</option>
-				<option value=16>16</option>
-				<option value=17>17</option>
-				<option value=18>18</option>
-				<option selected value=19>19</option>
-			</select>
-		</span>
+		to
+		<select id="level-max" class="filter max" data-min="level-min">
+			<option value=1>1</option>
+			<option value=2>2</option>
+			<option value=3>3</option>
+			<option value=4>4</option>
+			<option value=5>5</option>
+			<option value=6>6</option>
+			<option value=7>7</option>
+			<option value=8>8</option>
+			<option value=9>9</option>
+			<option value=10>10</option>
+			<option value=11>11</option>
+			<option value=12>12</option>
+			<option value=13>13</option>
+			<option value=14>14</option>
+			<option value=15>15</option>
+			<option value=16>16</option>
+			<option value=17>17</option>
+			<option value=18>18</option>
+			<option selected value=19>19</option>
+		</select>
 
 		Song has level:
-		<select id="song-level-select">
-			<option selected value=0>All</option>
-			<option value=1>1</option>
+		<select id="song-level-min" class="filter min" data-max="song-level-max">
+			<option selected value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
 			<option value=4>4</option>
@@ -138,90 +105,66 @@
 			<option value=18>18</option>
 			<option value=19>19</option>
 		</select>
-		<span id="song-level-range" hidden>
-			<select id="song-level-min" class="select-filter">
-				<option selected value=1>1</option>
-				<option value=2>2</option>
-				<option value=3>3</option>
-				<option value=4>4</option>
-				<option value=5>5</option>
-				<option value=6>6</option>
-				<option value=7>7</option>
-				<option value=8>8</option>
-				<option value=9>9</option>
-				<option value=10>10</option>
-				<option value=11>11</option>
-				<option value=12>12</option>
-				<option value=13>13</option>
-				<option value=14>14</option>
-				<option value=15>15</option>
-				<option value=16>16</option>
-				<option value=17>17</option>
-				<option value=18>18</option>
-				<option value=19>19</option>
-			</select>
-			to
-			<select id="song-level-max" class="select-filter">
-				<option value=1>1</option>
-				<option value=2>2</option>
-				<option value=3>3</option>
-				<option value=4>4</option>
-				<option value=5>5</option>
-				<option value=6>6</option>
-				<option value=7>7</option>
-				<option value=8>8</option>
-				<option value=9>9</option>
-				<option value=10>10</option>
-				<option value=11>11</option>
-				<option value=12>12</option>
-				<option value=13>13</option>
-				<option value=14>14</option>
-				<option value=15>15</option>
-				<option value=16>16</option>
-				<option value=17>17</option>
-				<option value=18>18</option>
-				<option selected value=19>19</option>
-			</select>
-			Include beginner
-			<input type="checkbox" id="song-beginner" class="select-filter" checked>
-		</span>
+		to
+		<select id="song-level-max" class="filter max" data-min="song-level-min">
+			<option value=1>1</option>
+			<option value=2>2</option>
+			<option value=3>3</option>
+			<option value=4>4</option>
+			<option value=5>5</option>
+			<option value=6>6</option>
+			<option value=7>7</option>
+			<option value=8>8</option>
+			<option value=9>9</option>
+			<option value=10>10</option>
+			<option value=11>11</option>
+			<option value=12>12</option>
+			<option value=13>13</option>
+			<option value=14>14</option>
+			<option value=15>15</option>
+			<option value=16>16</option>
+			<option value=17>17</option>
+			<option value=18>18</option>
+			<option selected value=19>19</option>
+		</select>
+		Include beginner
+		<input type="checkbox" id="song-beginner" class="filter" checked>
 	</p>
 
 	<p>
 		Show <span class="locked-chart">locked</span> charts:
-		<input type="checkbox" id="show-locked" class="select-filter">
+		<input type="checkbox" id="show-locked" class="filter">
 
 		Show unspiced charts:
-		<input type="checkbox" id="show-unspiced" class="select-filter" checked>
+		<input type="checkbox" id="show-unspiced" class="filter" checked>
 
 		Bookmarks only:
-		<input type="checkbox" id="bookmarks-only" class="select-filter">
+		<input type="checkbox" id="bookmarks-only" class="filter">
 	</p>
 
 	<p>
 		Scores from last
-		<input type="text" id="time-range" class="text-filter" size="3">
-		<select id="time-type" class="select-filter">
-			<option selected value='hours'>hours</option>
-			<option value='days'>days</option>
+		<input type="number" id="time-range" class="filter" size="5">
+		<select id="time-type" class="filter">
+			<option selected value=3600>hours</option>
+			<option value=86400>days</option>
 		</select>
 	</p>
 
 	<p>
 		Score:
-		<input type="text" id="min-score" class="text-filter score-input" size="7">
+		<input type="number" id="min-score" class="filter score-input" size="10">
 		to
-		<input type="text" id="max-score" class="text-filter score-input" size="7">
+		<input type="number" id="max-score" class="filter score-input" size="10">
 
 		Hide met goals:
-		<input type="checkbox" id="hide-met-goals" class="select-filter">
+		<input type="checkbox" id="hide-met-goals" class="filter">
 	</p>
 
 	<p>
 		Clear type:
-		<select id="clear-type" class="select-filter">
-			<option value=-2>All</option>
-			<option value=-1>Unplayed</option>
+		<select id="clear-type-min" class="filter min" data-max="clear-type-max">
+			<option value=-1 selected>Unplayed</option>
 			<option value=0>Fail</option>
 			<option value=1>Pass</option>
 			<option value=2>LIFE4</option>
@@ -230,29 +173,17 @@
 			<option value=5>PFC</option>
 			<option value=6>MFC</option>
 		</select>
-		<span id="clear-type-range" hidden>
-			<select id="clear-type-min" class="select-filter">
-				<option value=-1>Unplayed</option>
-				<option value=0>Fail</option>
-				<option value=1>Pass</option>
-				<option value=2>LIFE4</option>
-				<option value=3>FC</option>
-				<option value=4>GFC</option>
-				<option value=5>PFC</option>
-				<option value=6>MFC</option>
-			</select>
-			to
-			<select id="clear-type-max" class="select-filter">
-				<option value=-1>Unplayed</option>
-				<option value=0>Fail</option>
-				<option value=1>Pass</option>
-				<option value=2>LIFE4</option>
-				<option value=3>FC</option>
-				<option value=4>GFC</option>
-				<option value=5>PFC</option>
-				<option value=6>MFC</option>
-			</select>
-		</span>
+		to
+		<select id="clear-type-max" class="filter max" data-min="clear-type-min">
+			<option value=-1>Unplayed</option>
+			<option value=0>Fail</option>
+			<option value=1>Pass</option>
+			<option value=2>LIFE4</option>
+			<option value=3>FC</option>
+			<option value=4>GFC</option>
+			<option value=5>PFC</option>
+			<option value=6 selected>MFC</option>
+		</select>
 	</p>
 
 	<p>
