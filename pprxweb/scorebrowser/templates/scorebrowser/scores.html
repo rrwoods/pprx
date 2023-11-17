@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.2.7.js' %}"></script>
+	<script src="{% static 'scores-1.2.8.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -16,21 +16,21 @@
 
 	<p>
 		Cabinet:
-		<select id="cabinet-select" class="persistent filter">
+		<select autocomplete="off" id="cabinet-select" class="persistent filter">
 			{% for cabinet in cabinets %}
 				<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
 			{% endfor %}
 		</select>
 
 		Version:
-		<select id="version-min" class="filter min" data-max="version-max">
+		<select autocomplete="off" id="version-min" class="filter min" data-max="version-max">
 			<option hidden selected value=0>All</option>
 			{% for version in versions %}
 				<option value="{{ version.id }}">{{ version.name }}</option>
 			{% endfor %}
 		</select>
 		to
-		<select id="version-max" class="filter max" data-min="version-min">
+		<select autocomplete="off" id="version-max" class="filter max" data-min="version-min">
 			{% for version in versions %}
 				<option value="{{ version.id }}">{{ version.name }}</option>
 			{% endfor %}
@@ -39,7 +39,7 @@
 
 	<p>
 		Chart level:
-		<select id="level-min" class="filter min" data-max="level-max">
+		<select autocomplete="off" id="level-min" class="filter min" data-max="level-max">
 			<option selected value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -61,7 +61,7 @@
 			<option value=19>19</option>
 		</select>
 		to
-		<select id="level-max" class="filter max" data-min="level-min">
+		<select autocomplete="off" id="level-max" class="filter max" data-min="level-min">
 			<option value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -84,7 +84,7 @@
 		</select>
 
 		Song has level:
-		<select id="song-level-min" class="filter min" data-max="song-level-max">
+		<select autocomplete="off" id="song-level-min" class="filter min" data-max="song-level-max">
 			<option selected value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -106,7 +106,7 @@
 			<option value=19>19</option>
 		</select>
 		to
-		<select id="song-level-max" class="filter max" data-min="song-level-min">
+		<select autocomplete="off" id="song-level-max" class="filter max" data-min="song-level-min">
 			<option value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -127,25 +127,30 @@
 			<option value=18>18</option>
 			<option selected value=19>19</option>
 		</select>
-		Include beginner
-		<input type="checkbox" id="song-beginner" class="filter" checked>
+		<label>Include beginner <input autocomplete="off" type="checkbox" id="song-beginner" class="filter" checked></label>
 	</p>
 
 	<p>
-		Show <span class="locked-chart">locked</span> charts:
-		<input type="checkbox" id="show-locked" class="filter">
+		<label>
+			Show <span class="locked-chart">locked</span> charts:
+			<input autocomplete="off" type="checkbox" id="show-locked" class="filter">
+		</label>
 
-		Show unspiced charts:
-		<input type="checkbox" id="show-unspiced" class="filter" checked>
+		<label>
+			Show unspiced charts:
+			<input autocomplete="off" type="checkbox" id="show-unspiced" class="filter" checked>
+		</label>
 
-		Bookmarks only:
-		<input type="checkbox" id="bookmarks-only" class="filter">
+		<label>
+			Bookmarks only:
+			<input autocomplete="off" type="checkbox" id="bookmarks-only" class="filter">
+		</label>
 	</p>
 
 	<p>
 		Scores from last
-		<input type="number" id="time-range" class="filter" size="5">
-		<select id="time-type" class="filter">
+		<input autocomplete="off" type="number" id="time-range" class="filter" size="5">
+		<select autocomplete="off" id="time-type" class="filter">
 			<option selected value=3600>hours</option>
 			<option value=86400>days</option>
 		</select>
@@ -153,17 +158,16 @@
 
 	<p>
 		Score:
-		<input type="number" id="min-score" class="filter score-input" size="10">
+		<input autocomplete="off" type="number" id="min-score" class="filter score-input" size="10">
 		to
-		<input type="number" id="max-score" class="filter score-input" size="10">
+		<input autocomplete="off" type="number" id="max-score" class="filter score-input" size="10">
 
-		Hide met goals:
-		<input type="checkbox" id="hide-met-goals" class="filter">
+		<label>Hide met goals: <input autocomplete="off" type="checkbox" id="hide-met-goals" class="filter"></label>
 	</p>
 
 	<p>
 		Clear type:
-		<select id="clear-type-min" class="filter min" data-max="clear-type-max">
+		<select autocomplete="off" id="clear-type-min" class="filter min" data-max="clear-type-max">
 			<option value=-1 selected>Unplayed</option>
 			<option value=0>Fail</option>
 			<option value=1>Pass</option>
@@ -174,7 +178,7 @@
 			<option value=6>MFC</option>
 		</select>
 		to
-		<select id="clear-type-max" class="filter max" data-min="clear-type-min">
+		<select autocomplete="off" id="clear-type-max" class="filter max" data-min="clear-type-min">
 			<option value=-1>Unplayed</option>
 			<option value=0>Fail</option>
 			<option value=1>Pass</option>
@@ -209,7 +213,8 @@
 		NOTE: PPR X is not maintained by or affiliated with LIFE4, and the information presented here is not a substitute for submission proof.  This is a tool to help you figure out which requirements you are missing and how you can satisfy them.
 	</p>
 	<p>
-		<select id="rank-select"></select>
+		<select autocomplete="off" id="rank-select"></select>
+		<label>Hide non-required songs: <input autocomplete="off" type="checkbox" id="hide-optional" class="filter"></label>
 	</p>
 	<p id="rank-details"></p>
 {% endblock %}

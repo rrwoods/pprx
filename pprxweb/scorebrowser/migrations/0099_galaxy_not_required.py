@@ -11,7 +11,7 @@ def forward(apps, schema_editor):
 
     bird = UnlockEvent.objects.get(name="BABY-LON'S GALAXY ENCORE EXTRA STAGE")
     bird.amethyst_required = False
-    babylon.save()
+    bird.save()
 
 
 def backward(apps, schema_editor):

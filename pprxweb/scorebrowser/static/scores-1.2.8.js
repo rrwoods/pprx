@@ -44,6 +44,7 @@ const mfcPoints = [0, 0.1, 0.25, 0.25, 0.5, 0.5, 0.5, 1, 1, 1, 1.5, 2, 4, 6, 8, 
 var romanizeTitles = false
 
 var currentFilters = {}
+var baseFilters = {}
 var defaultFilters = {}
 var userHidChartIds = []
 var minTimestamp = 0
@@ -108,6 +109,13 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 	if (!song_level_met) {
 		return false
+	}
+
+	if (currentFilters["hide-optional"]) {
+		var optional = selectedRank.amethyst ? (data[25] === "false") : (data[24] === "false")
+		if (optional) {
+			return false
+		}
 	}
 
 	var is_spiced = (data[14] === "true")
@@ -194,6 +202,9 @@ $(document).ready(function () {
 			defaultFilters[this.id] = parseInt(this.value)
 		}
 	})
+	Object.assign(baseFilters, currentFilters)
+	baseFilters["show-locked"] = true
+	baseFilters["hide-optional"] = true
 
 	function formatAge(timestamp) {
 		if (timestamp === 0) {
@@ -874,6 +885,8 @@ $(document).ready(function () {
 		rank = rankRequirements[rankIndex]
 		selectedRank = rank
 		rank.container.show()
+
+		redrawTable() // might change what "required songs" means
 	}
 	$('#rank-select').change(selectRank)
 
@@ -986,6 +999,10 @@ $(document).ready(function () {
 	}
 	lachendyScores.sort()
 
+	$("#rank-details").on('click', '.need-link', function() {
+		setFilters(Object.assign({}, baseFilters, $(this).data('filters')))
+	})
+
 	function qtyAboveThreshold(scoresList, threshold) {
 		var metIndex = scoresList.findIndex((score) => score >= threshold)
 		if (metIndex == -1) {
@@ -994,7 +1011,7 @@ $(document).ready(function () {
 		return scoresList.length - metIndex
 	}
 
-	function styleReq(requirement, distance, additional = "") {
+	function styleReq(requirement, distance, filters = undefined, additional = "", additionalFilters = undefined) {
 		var togo = requirement.div.find('.togo')
 		togo.empty()
 
@@ -1010,14 +1027,34 @@ $(document).ready(function () {
 
 		var needs = []
 		if (distance > 0) {
-			needs.push(`${distance.toLocaleString()} more`)
+			var moreText = `${distance.toLocaleString()} more`
+			if (filters) {
+				var needLink = $('<button>', {class: 'need-link'})
+				needLink.data('filters', filters)
+				needLink.append(moreText)
+				needs.push(needLink)
+			} else {
+				needs.push(moreText)
+			}
 		}
 		if (additional) {
-			needs.push(additional)
+			if (needs.length) {
+				needs.push('and')
+			}
+			var needLink = $('<button>', {class: 'need-link'})
+			needLink.data('filters', additionalFilters)
+			needLink.append(additional)
+			needs.push(needLink)
 		}
 		if (needs.length) {
-			togo.text(` (need ${needs.join(' and ')})`)
+			togo.append(' (need')
+			for (need of needs) {
+				togo.append(' ')
+				togo.append(need)
+			}
+			togo.append(')')
 		}
+
 		requirement.div.removeClass('met')
 		requirement.div.addClass('unmet')
 		checkbox.prop('checked', false)
@@ -1031,11 +1068,13 @@ $(document).ready(function () {
 			if (rank.name.startsWith("Amethyst")) {
 				amethyst = true
 			}
+			rank.amethyst = amethyst
 
 			for (var level = 1; level < 20; level++) {
 				if (!(level in rank.requirements)) {
 					continue
 				}
+				var levelFilters = {"level-min": level, "level-max": level}
 				for (var requirement of rank.requirements[level]) {
 					switch(requirement.kind) {
 					case 'scores':
@@ -1049,28 +1088,35 @@ $(document).ready(function () {
 								}
 							}
 							if (qtyMet < requirement.qty) {
-								styleReq(requirement, requirement.qty - qtyMet)
+								styleReq(requirement, requirement.qty - qtyMet, {"max-score": requirement.threshold, "level-min": level})
 							}
 						} else {
+							var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
 							if (requirement.qty <= 0) {
 								var segment = amethyst ? 'amethyst_required' : 'default'
 								var qtyMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.threshold)
-								var clearLamp = clears[level][1].distanceToLamp == 0 ? "" : "clear lamp"
+								//var clearLamp = clears[level][1].distanceToLamp == 0 ? "" : "clear lamp"
 								var qtyUnmet = scoresByLevel[level][segment].length - qtyMet
-								styleReq(requirement, qtyUnmet + requirement.qty, clearLamp)
+								if (clears[level][1].distanceToLamp == 0) {
+									styleReq(requirement, qtyUnmet + requirement.qty, needFilters)
+								} else {
+									var clearFilters = Object.assign({"clear-type-min": -1, "clear-type-max": 0}, levelFilters)
+									styleReq(requirement, qtyUnmet + requirement.qty, needFilters, "clear lamp", clearFilters)
+								}
 							} else {
 								var qtyMet = qtyAboveThreshold(scoresByLevel[level].all, requirement.threshold)
-								styleReq(requirement, requirement.qty - qtyMet)
+								styleReq(requirement, requirement.qty - qtyMet, needFilters)
 							}
 						}
 						break;
 					case 'clears':
+						var needFilters = Object.assign({"clear-type-min": -1, "clear-type-max": requirement.threshold - 1}, levelFilters)
 						if (requirement.qty == 0) {
 							distanceToLamp = clears[level][requirement.threshold][amethyst ? 'distanceToAmethystLamp' : 'distanceToLamp']
-							styleReq(requirement, distanceToLamp)
+							styleReq(requirement, distanceToLamp, needFilters)
 						} else {
 							total = clears[level][requirement.threshold][requirement.or_higher ? 'totalIncludingHigher' : 'total']
-							styleReq(requirement, requirement.qty - total)
+							styleReq(requirement, requirement.qty - total, needFilters)
 						}
 						break
 					case 'consecutives':
