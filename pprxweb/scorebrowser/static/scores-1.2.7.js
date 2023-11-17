@@ -1131,6 +1131,8 @@ $(document).ready(function () {
 				}
 			} else if (remainingMandatory > 0) {
 				remainingText = `need ${remainingMandatory} mandatory`
+			} else if (remainingOptional < 0) {
+				remainingText = `attained, +${-remainingOptional} extra`
 			}
 
 			var rankOption = $(`#rank-select option[value=${index}]`)
