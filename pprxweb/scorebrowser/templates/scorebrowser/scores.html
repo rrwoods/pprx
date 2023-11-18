@@ -149,7 +149,7 @@
 
 	<p>
 		Scores from last
-		<input autocomplete="off" type="number" id="time-range" class="filter" size="5">
+		<input autocomplete="off" type="number" pattern="\d*" id="time-range" class="filter" size="5">
 		<select autocomplete="off" id="time-type" class="filter">
 			<option selected value=3600>hours</option>
 			<option value=86400>days</option>
@@ -158,9 +158,9 @@
 
 	<p>
 		Score:
-		<input autocomplete="off" type="number" id="min-score" class="filter score-input" size="10">
+		<input autocomplete="off" type="number" pattern="\d*" id="min-score" class="filter score-input" size="10">
 		to
-		<input autocomplete="off" type="number" id="max-score" class="filter score-input" size="10">
+		<input autocomplete="off" type="number" pattern="\d*" id="max-score" class="filter score-input" size="10">
 
 		<label>Hide met goals: <input autocomplete="off" type="checkbox" id="hide-met-goals" class="filter"></label>
 	</p>
