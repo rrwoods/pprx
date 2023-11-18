@@ -15,6 +15,7 @@ urlpatterns = [
 	path('set_chart_notes', views.set_chart_notes, name='set_chart_notes'),
 	path('set_chart_bookmark', views.set_chart_bookmark, name='set_chart_bookmark'),
 	path('set_chart_life4', views.set_chart_life4, name='set_chart_life4'),
+	path('set_selected_rank', views.set_selected_rank, name='set_selected_rank'),
 	path('set_trials', views.set_trials, name='set_trials'),
 	path('set_calories', views.set_calories, name='set_calories'),
 	path('set_consecutives', views.set_consecutives, name='set_consecutives'),

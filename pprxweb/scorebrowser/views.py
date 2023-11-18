@@ -205,6 +205,18 @@ def set_chart_life4(request):
 	return HttpResponse('Set/cleared life4 clear.')	
 
 @csrf_exempt
+def set_selected_rank(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	user.selected_rank = requestBody["rank"]
+	user.save()
+
+	return HttpResponse('Set selected rank.')		
+
+@csrf_exempt
 def set_trials(request):
 	if request.method != 'POST':
 		return
@@ -592,4 +604,5 @@ def scores(request):
 		'all_charts': json.dumps(all_charts),
 		'romanized_titles': user.romanized_titles,
 		'life4_reqs': json.dumps(life4_reqs),
+		'selected_rank': user.selected_rank,
 	})

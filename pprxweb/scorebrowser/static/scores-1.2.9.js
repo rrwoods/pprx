@@ -703,6 +703,7 @@ $(document).ready(function () {
 
 	whiteVersion = $('#white-version').data('json')
 	rankRequirements = $('#rank-requirements').data('json')
+	var initialSelectedRank = $('#selected-rank').data('x')
 	for (var index in rankRequirements) {
 		var rank = rankRequirements[index]
 		rank.option = $('<option>', {
@@ -875,7 +876,8 @@ $(document).ready(function () {
 
 		$('#rank-details').append(rank.container)
 	}
-	selectedRank = rankRequirements[0]
+	selectedRank = rankRequirements[initialSelectedRank]
+	$('#rank-select').val(initialSelectedRank)
 	selectedRank.container.show()
 
 	function selectRank() {
@@ -887,6 +889,12 @@ $(document).ready(function () {
 		rank.container.show()
 
 		redrawTable() // might change what "required songs" means
+
+		$.ajax({
+			url: '/scorebrowser/set_selected_rank',
+			type: 'POST',
+			data: JSON.stringify({'rank': rankIndex})
+		})
 	}
 	$('#rank-select').change(selectRank)
 

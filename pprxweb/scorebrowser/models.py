@@ -107,6 +107,7 @@ class User(models.Model):
     goal_chart = models.ForeignKey(Chart, on_delete=models.CASCADE, null=True, default=None)
     romanized_titles = models.BooleanField(default=False)
 
+    selected_rank = models.IntegerField(default=0)
     best_trial = models.IntegerField(default=0)
     second_best_trial = models.IntegerField(default=0)
     best_two_consecutive = models.IntegerField(default=0)

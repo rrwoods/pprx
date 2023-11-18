@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.2.8.js' %}"></script>
+	<script src="{% static 'scores-1.2.9.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -195,6 +195,7 @@
 	</p>
 
 	<div style="display: none" id="romanize-titles" data-x="{{ romanized_titles }}"></div>
+	<div style="display: none" id="selected-rank" data-x="{{ selected_rank }}"></div>
 	<div style="display: none" id="jsonData" data-json="{{ scores }}"></div>
 	<div style="display: none" id="white-version" data-json="{{ white_version }}"></div>
 	<div style="display: none" id="rank-requirements" data-json="{{ rank_requirements }}"></div>
