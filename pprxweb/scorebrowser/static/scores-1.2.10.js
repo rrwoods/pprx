@@ -81,9 +81,19 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
+	// if ((data[26] === "true") && !currentFilters["show-removed"]) {
+	// 	return false
+	// }
+
 	visibility = parseInt(data[currentFilters["cabinet-select"]])
 	if (visibility === 3) {
-		return false
+		if (data[26] === "true") {
+			if (!currentFilters["show-removed"]) {
+				return false
+			}
+		} else {
+			return false
+		}
 	}
 	if ((visibility === 2) && !currentFilters["show-locked"]) {
 		return false
@@ -414,6 +424,8 @@ $(document).ready(function () {
 			{ data: 'default_chart', visible: false },
 			// 25:
 			{ data: 'amethyst_required', visible: false },
+			// 26:
+			{ data: 'removed', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[currentFilters["cabinet-select"]])
@@ -421,6 +433,9 @@ $(document).ready(function () {
 				$(row).addClass('extra-exclusive')
 			} else if (visibility === 2) {
 				$(row).addClass('locked-chart')
+			}
+			if (data.removed) {
+				$(row).addClass('removed-song')
 			}
 		},
 		order: [[16, 'asc']],

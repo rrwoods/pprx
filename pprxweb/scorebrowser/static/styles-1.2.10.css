@@ -34,11 +34,6 @@
 	border-right-color: darkgray; !important;
 }
 
-.autospice {
-	color: gray;
-	font-style: italic;
-}
-
 .met {
 	color: seagreen;
 	font-style: italic;
@@ -62,6 +57,11 @@
 
 .locked-chart, .locked-chart a {
 	background-color: black !important;
+	color: white !important;
+}
+
+.removed-song, .removed-song a {
+	background-color: red !important;
 	color: white !important;
 }
 

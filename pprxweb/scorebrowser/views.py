@@ -495,7 +495,6 @@ def scores(request):
 	all_charts = {}
 
 	chart_query = Chart.objects  \
-		.filter(song__removed=False)  \
 		.select_related("song", "song__version", "difficulty")
 
 	scores_by_diff = {diff: [] for diff in range(14, 20)}
@@ -507,33 +506,39 @@ def scores(request):
 		entry = {}
 		default_chart = True
 		amethyst_required = True
-		for i, cabinet in enumerate(cabinets):
-			cab_vis_id = str(i)
-			if chart.song.version_id > cabinet.version_id:
-				entry[cab_vis_id] = UNAVAILABLE
-				default_chart = False
-				amethyst_required = False
-				continue
-
-			if check_locks(chart.song_id, song_locks, cabinet):
-				entry[cab_vis_id] = UNAVAILABLE
-				default_chart = False
-				amethyst_required = False
-				continue
-			
-			chart_vis = VISIBLE
-			if chart.id in chart_unlocks[cabinet.version_id]:
-				requirements = chart_unlocks[cabinet.version_id][chart.id]
-				for r in requirements:
+		if chart.song.removed:
+			default_chart = False
+			amethyst_required = False
+			entry["0"] = UNAVAILABLE
+			entry["1"] = UNAVAILABLE
+		else:
+			for i, cabinet in enumerate(cabinets):
+				cab_vis_id = str(i)
+				if chart.song.version_id > cabinet.version_id:
+					entry[cab_vis_id] = UNAVAILABLE
 					default_chart = False
-					if not r.task.event.amethyst_required:
-						amethyst_required = False
-					if (not r.extra) and (not r.task.event.completable):
-						chart_vis = UNAVAILABLE
-						break
-					if (r.task_id not in user_unlocks):
-						chart_vis = max(chart_vis, (EXTRA if r.extra else LOCKED))
-			entry[cab_vis_id] = chart_vis
+					amethyst_required = False
+					continue
+
+				if check_locks(chart.song_id, song_locks, cabinet):
+					entry[cab_vis_id] = UNAVAILABLE
+					default_chart = False
+					amethyst_required = False
+					continue
+				
+				chart_vis = VISIBLE
+				if chart.id in chart_unlocks[cabinet.version_id]:
+					requirements = chart_unlocks[cabinet.version_id][chart.id]
+					for r in requirements:
+						default_chart = False
+						if not r.task.event.amethyst_required:
+							amethyst_required = False
+						if (not r.extra) and (not r.task.event.completable):
+							chart_vis = UNAVAILABLE
+							break
+						if (r.task_id not in user_unlocks):
+							chart_vis = max(chart_vis, (EXTRA if r.extra else LOCKED))
+				entry[cab_vis_id] = chart_vis
 
 		if entry["0"] <= entry["1"]:
 			entry["2"] = UNAVAILABLE
@@ -583,6 +588,7 @@ def scores(request):
 		entry['bookmarked'] = aux[chart.id].bookmark if chart.id in aux else False
 		entry['default_chart'] = default_chart
 		entry['amethyst_required'] = amethyst_required
+		entry['removed'] = chart.song.removed
 		scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)

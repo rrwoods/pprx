@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.2.9.js' %}"></script>
+	<script src="{% static 'scores-1.2.10.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -131,6 +131,11 @@
 	</p>
 
 	<p>
+		<label>
+			Show <span class="removed-song">removed</span> songs:
+			<input autocomplete="off" type="checkbox" id="show-removed" class="filter">
+		</label>
+
 		<label>
 			Show <span class="locked-chart">locked</span> charts:
 			<input autocomplete="off" type="checkbox" id="show-locked" class="filter">
