@@ -34,6 +34,14 @@
 	border-right-color: darkgray; !important;
 }
 
+table.requirements {
+	border-collapse: collapse;
+}
+
+table.requirements td {
+	padding: 0;
+}
+
 .met {
 	color: seagreen;
 	font-style: italic;
@@ -43,8 +51,12 @@
 	font-weight: bold;
 }
 
-.requirement {
-	text-indent: 2em;
+.blank-row {
+	height: 0.85em;
+}
+
+.target-icon {
+	min-width: 2em;
 }
 
 .romanized-title {

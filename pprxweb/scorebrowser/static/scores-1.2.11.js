@@ -699,21 +699,44 @@ $(document).ready(function () {
 		return requirementId++
 	}
 
-	function requirementDiv(text, checkable = false) {
-		var div = $('<div>', {class: 'requirement'})
+	function requirementTable() {
+		var table = $('<table>', {class: 'requirements'})
+		var colgroup = $('<colgroup>')
+		colgroup.append($('<col>', {class: 'target-icon'}))
+		table.append(colgroup)
+		return table
+	}
 
+	function appendSection(table, section) {
+		if (!section.length) {
+			return
+		}
+		for (row of section) {
+			table.append(row)
+		}
+		table.append($('<tr>', {class: 'blank-row'}))
+	}
+
+	function requirementRow(text, checkable = false) {
+		var td = $('<td>')
 		var reqId = `req-${nextReqId()}`
-		var checkbox = $('<input>', {type: 'checkbox', id: reqId, disabled: !checkable})
-		div.append(checkbox)
+
+		if (checkable) {
+			var checkbox = $('<input>', {type: 'checkbox', id: reqId})
+			td.append(checkbox)
+		}
 
 		var description = $('<label>', {class: 'req-description', for: reqId})
 		description.text(text)
-		div.append(description)
+		td.append(description)
 
 		var togo = $('<span>', {class: 'togo'})
-		div.append(togo)
+		td.append(togo)
 
-		return div
+		var tr = $('<tr>')
+		tr.append($('<td>', {class: 'target-icon'}))
+		tr.append(td)
+		return tr
 	}
 
 	whiteVersion = $('#white-version').data('json')
@@ -730,17 +753,19 @@ $(document).ready(function () {
 		rank.container = $('<div>')
 		rank.container.hide()
 
-		rank.main = $('<div>')
+		rank.main = requirementTable()
 		rank.subHeader = $('<p>')
 		rank.subHeader.text('Substitutions:')
-		rank.subs = $('<div>')
+		rank.subs = requirementTable()
 
+		var mainContent = false
+		var subsContent = false
 		for (let level = 1; level < 20; level++) {
 			if (!(level in rank.requirements)) {
 				continue
 			}
-			var main = $('<p>')
-			var subs = $('<p>')
+			var main = []
+			var subs = []
 			aAn = (level == 8 || level == 11 || level == 18) ? 'an' : 'a'
 			for (let requirement of rank.requirements[level]) {
 				switch(requirement.kind) {
@@ -750,27 +775,27 @@ $(document).ready(function () {
 						var qtyText = requirement.qty == 1 ? aAn : requirement.qty
 						var plural = requirement.qty == 1 ? '' : 's'
 						var orHigher = requirement.or_higher ? '+' : ''
-						requirement.div = requirementDiv(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`)
+						requirement.row = requirementRow(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`)
 					} else {
 						var exceptions = requirement.qty == 0 ? '' : ` (${-requirement.qty} exceptions)`
 						var lachendy = level == 19 ? (whiteVersion > 18 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ' (ex. ENDYMION)') : ''
-						requirement.div = requirementDiv(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`)
+						requirement.row = requirementRow(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`)
 					}
 					break
 				case 'clears':
 					if (requirement.qty == 0) {
-						requirement.div = requirementDiv(`${level} ${lampTypes[requirement.threshold]} Lamp`)
+						requirement.row = requirementRow(`${level} ${lampTypes[requirement.threshold]} Lamp`)
 					} else {
 						var mandatory = requirement.mandatory ? '[MANDATORY] ' : ''
 						var qtyText = requirement.qty == 1 ? aAn : requirement.qty
 						var plural = requirement.qty == 1 ? '' : 's'
 						var orHigher = requirement.or_higher ? '+' : ''
-						requirement.div = requirementDiv(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`)
+						requirement.row = requirementRow(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`)
 					}
 					break
 				case 'consecutives':
-					requirement.div = requirementDiv(`Clear ${requirement.qty} ${level}s in a row`, true)
-					requirement.div.find('input').change(function() {
+					requirement.row = requirementRow(`Clear ${requirement.qty} ${level}s in a row`, true)
+					requirement.row.find('input').change(function() {
 						var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'level': level})
 						$.ajax({
 							url: '/scorebrowser/set_consecutives',
@@ -784,35 +809,33 @@ $(document).ready(function () {
 					})
 					break
 				case 'averages':
-					requirement.div = requirementDiv(`${requirement.threshold.toLocaleString()} ${level}s average`)
+					requirement.row = requirementRow(`${requirement.threshold.toLocaleString()} ${level}s average`)
 					break
 				default:
-					requirement.div = requirementDiv(JSON.stringify(requirement))
+					requirement.row = requirementRow(JSON.stringify(requirement))
 				}
 				section = (requirement.sub ? subs : main)
-				section.append(requirement.div)
+				section.push(requirement.row)
 			}
 			if (level == 19 && 'lachendy' in rank.requirements) {
 				var lachryma = whiteVersion > 18 ? "Lachryma《Re:Queen’M》 challenge and " : ""
 				for (var requirement of rank.requirements.lachendy) {
-					requirement.div = requirementDiv(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`)
+					requirement.row = requirementRow(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`)
 					section = (requirement.sub ? subs : main)
-					section.append(requirement.div)
+					section.push(requirement.row)
 				}
 			}
-			rank.main.append(main)
-			if (subs.children().length) {
-				rank.subs.append(subs)
-			}
+			appendSection(rank.main, main)
+			appendSection(rank.subs, subs)
 		}
 
 		if ('calories' in rank.requirements) {
-			var main = $('<p>')
-			var subs = $('<p>')
+			var main = []
+			var subs = []
 			for (let requirement of rank.requirements.calories) {
-				requirement.div = requirementDiv(`Burn ${requirement.threshold} calories in one day`, true)
+				requirement.row = requirementRow(`Burn ${requirement.threshold} calories in one day`, true)
 
-				requirement.div.find('input').change(function() {
+				requirement.row.find('input').change(function() {
 					var postData = JSON.stringify({'passed': this.checked, 'calories': requirement.threshold})
 					$.ajax({
 						url: '/scorebrowser/set_calories',
@@ -825,22 +848,20 @@ $(document).ready(function () {
 					})					
 				})
 				section = (requirement.sub ? subs : main)
-				section.append(requirement.div)
+				section.push(requirement.row)
 			}
-			rank.main.append(main)
-			if (subs.children().length) {
-				rank.subs.append(subs)
-			}
+			appendSection(rank.main, main)
+			appendSection(rank.subs, subs)
 		}
 
 		if ('trials' in rank.requirements) {
-			var main = $('<p>')
-			var subs = $('<p>')
+			var main = []
+			var subs = []
 			for (let requirement of rank.requirements.trials) {
 				var plural = requirement.qty == 1 ? '' : 's'
-				requirement.div = requirementDiv(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, true)
+				requirement.row = requirementRow(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, true)
 
-				requirement.div.find('input').change(function() {
+				requirement.row.find('input').change(function() {
 					var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'rank': requirement.threshold})
 					$.ajax({
 						url: '/scorebrowser/set_trials',
@@ -854,37 +875,35 @@ $(document).ready(function () {
 				});
 				
 				section = (requirement.sub ? subs : main)
-				section.append(requirement.div)
+				section.push(requirement.row)
 			}
-			rank.main.append(main)
-			if (subs.children().length) {
-				rank.subs.append(subs)
-			}
+			appendSection(rank.main, main)
+			appendSection(rank.subs, subs)
 		}
 
 		if ('mfc_points' in rank.requirements) {
-			var main = $('<p>')
-			var subs = $('<p>')
+			var main = []
+			var subs = []
 			for (var requirement of rank.requirements.mfc_points) {
-				requirement.div = requirementDiv('')
+				requirement.row = requirementRow('')
 				
 				var label = $('<a>', {target: '_blank', href: 'https://life4ddr.com/rank-requirements/#mfcpoints'})
 				label.text('MFC Points')
-				var description = requirement.div.find('.req-description')
+				var description = requirement.row.find('.req-description')
 				description.append(label)
 				description.append(`: ${requirement.threshold}`);
 
 				section = (requirement.sub ? subs : main)
-				section.append(requirement.div)
+				section.push(requirement.row)
 			}
-			rank.main.append(main)
-			if (subs.children().length) {
-				rank.subs.append(subs)
-			}
+			appendSection(rank.main, main)
+			appendSection(rank.subs, subs)
 		}
 
+		rank.main.children().last().remove()
 		rank.container.append(rank.main)
-		if (rank.subs.children().length > 0) {
+		if (rank.subs.find('td').index() >= 0) {
+			rank.subs.children().last().remove()
 			rank.container.append(rank.subHeader)
 			rank.container.append(rank.subs)
 		}
@@ -1035,14 +1054,14 @@ $(document).ready(function () {
 	}
 
 	function styleReq(requirement, distance, filters = undefined, additional = "", additionalFilters = undefined) {
-		var togo = requirement.div.find('.togo')
+		var togo = requirement.row.find('.togo')
 		togo.empty()
 
-		var checkbox = requirement.div.find('input')
+		var checkbox = requirement.row.find('input')
 
 		if (!additional && (distance <= 0) && (distance != null)) {
-			requirement.div.removeClass('unmet')
-			requirement.div.addClass('met')
+			requirement.row.removeClass('unmet')
+			requirement.row.addClass('met')
 			checkbox.prop('checked', true)
 			requirement.met = true
 			return
@@ -1078,8 +1097,8 @@ $(document).ready(function () {
 			togo.append(')')
 		}
 
-		requirement.div.removeClass('met')
-		requirement.div.addClass('unmet')
+		requirement.row.removeClass('met')
+		requirement.row.addClass('unmet')
 		checkbox.prop('checked', false)
 		requirement.met = false
 	}
