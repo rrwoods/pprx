@@ -122,6 +122,12 @@ class UserChartAux(models.Model):
     notes = models.TextField(default='')
     life4_clear = models.BooleanField(default=False)
 
+class UserRequirementTarget(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    version = models.ForeignKey(Version, on_delete=models.CASCADE)
+    goal_id = models.IntegerField()
+
 class CabinetModel(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.TextField()

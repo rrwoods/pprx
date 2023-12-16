@@ -51,12 +51,25 @@ table.requirements td {
 	font-weight: bold;
 }
 
+.targeted {
+	background-color: yellow;
+}
+
 .blank-row {
 	height: 0.85em;
 }
 
-.target-icon {
+.target-cell {
 	min-width: 2em;
+	cursor: default;
+}
+
+.target-icon {
+	visibility: hidden;
+}
+
+.targetable:hover .target-icon {
+	visibility: visible;
 }
 
 .romanized-title {

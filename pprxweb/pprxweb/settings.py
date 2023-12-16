@@ -21,13 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Load life4 rank requirements
-reqfile = open(os.path.join(BASE_DIR, 'rank-requirements.json'))
-RANK_REQUIREMENTS = json.loads(reqfile.read())
-reqfile.close()
+def load_file(filename):
+    with open(os.path.join(BASE_DIR, filename)) as reqfile:
+        return json.load(reqfile)
 
-reqfile = open(os.path.join(BASE_DIR, 'rank-requirements-a20plus.json'))
-RANK_REQUIREMENTS_A20PLUS = json.loads(reqfile.read())
-reqfile.close()
+RANK_REQUIREMENTS = load_file('rank-requirements.json')
+RANK_REQUIREMENTS_A20PLUS = load_file('rank-requirements-a20plus.json')
+IMPLICATIONS = {int(k): v for k, v in load_file('implications.json').items()}
+IMPLICATIONS_A20PLUS = {int(k): v for k, v in load_file('implications-a20plus.json').items()}
+
 
 env = environ.Env()
 environ.Env.read_env()

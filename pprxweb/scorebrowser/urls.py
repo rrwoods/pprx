@@ -19,6 +19,8 @@ urlpatterns = [
 	path('set_trials', views.set_trials, name='set_trials'),
 	path('set_calories', views.set_calories, name='set_calories'),
 	path('set_consecutives', views.set_consecutives, name='set_consecutives'),
+	path('target_requirement', views.target_requirement, name='target_requirement'),
+	path('untarget_requirement', views.untarget_requirement, name='untarget_requirement'),
 
 	path('hello', views.hello, name='hello'),
 ]

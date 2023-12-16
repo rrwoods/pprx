@@ -283,6 +283,64 @@ def set_consecutives(request):
 
 	return JsonResponse({2: user.best_two_consecutive, 3: user.best_three_consecutive})
 
+@csrf_exempt
+def target_requirement(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+
+	goal_id = requestBody["goal_id"]
+	version_id = requestBody["version_id"]
+	return JsonResponse({'targets': user_targets(user, version_id, add=goal_id)})
+
+@csrf_exempt
+def untarget_requirement(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+
+	goal_id = requestBody["goal_id"]
+	version_id = requestBody["version_id"]
+	return JsonResponse({'targets': user_targets(user, version_id, remove=goal_id)})
+
+def user_targets(user, version_id, add = None, remove = None):
+	current_explicit = set(t.goal_id for t in UserRequirementTarget.objects.filter(user=user, version_id=version_id))
+	implications = settings.IMPLICATIONS if version_id > 18 else settings.IMPLICATIONS_A20PLUS
+
+	all_targets = current_explicit.copy()
+	if add:
+		all_targets.add(add)
+
+	implicit_targets = set()
+	for goal_id in all_targets:
+		implicit_targets.update(implications[goal_id])
+	all_targets.update(implicit_targets)
+
+	if remove:
+		if remove in all_targets:
+			all_targets.remove(remove)
+		removals = set()
+		for goal_id in all_targets:
+			if remove in implications[goal_id]:
+				removals.add(goal_id)
+		all_targets -= removals
+
+	implicit_targets = set()
+	for goal_id in all_targets:
+		implicit_targets.update(implications[goal_id])
+	new_explicit = all_targets - implicit_targets
+
+	UserRequirementTarget.objects.filter(user=user, version_id=version_id, goal_id__in=(current_explicit - new_explicit)).delete()
+	for goal_id in new_explicit - current_explicit:
+		UserRequirementTarget.objects.create(user=user, version_id=version_id, goal_id=goal_id)
+
+	print(list(new_explicit))
+	return list(all_targets)
+
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
 		for lock in song_locks[song_id]:
@@ -367,7 +425,6 @@ def sort_key(searchable_title):
 
 
 def scores(request):
-	
 	#### USER RETRIEVAL ####
 
 	user = None
@@ -601,14 +658,18 @@ def scores(request):
 		'consecutives': {2: user.best_two_consecutive, 3: user.best_three_consecutive},
 	}
 
+	rank_requirements = settings.RANK_REQUIREMENTS if white_cab.version_id > 18 else settings.RANK_REQUIREMENTS_A20PLUS
+	requirement_targets = user_targets(user, white_cab.version_id)
+
 	return render(request, 'scorebrowser/scores.html', {
 		'scores': json.dumps(scores_data),
 		'cabinets': cab_names,
 		'versions': version_names,
 		'white_version': white_cab.version_id,
-		'rank_requirements': json.dumps(settings.RANK_REQUIREMENTS if white_cab.version_id > 18 else settings.RANK_REQUIREMENTS_A20PLUS),
+		'rank_requirements': json.dumps(rank_requirements),
 		'all_charts': json.dumps(all_charts),
 		'romanized_titles': user.romanized_titles,
 		'life4_reqs': json.dumps(life4_reqs),
+		'requirement_targets': json.dumps(requirement_targets),
 		'selected_rank': user.selected_rank,
 	})

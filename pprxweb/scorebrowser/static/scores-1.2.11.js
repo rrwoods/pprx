@@ -55,6 +55,7 @@ var totalGoals = 0
 var allCharts = null
 var rankRequirements = null
 var selectedRank = null
+var requirementTargets = null
 var averages = []
 var clears = []
 var scoresByLevel = []
@@ -717,7 +718,12 @@ $(document).ready(function () {
 		table.append($('<tr>', {class: 'blank-row'}))
 	}
 
-	function requirementRow(text, checkable = false) {
+	function requirementRow(text, goalId, checkable = false) {
+		var targetCell = $('<td>', {class: 'target-cell', 'data-goal-id': goalId})
+		var targetIcon = $('<span>', {class: 'target-icon'})
+		targetIcon.append('🎯')
+		targetCell.append(targetIcon)
+
 		var td = $('<td>')
 		var reqId = `req-${nextReqId()}`
 
@@ -734,13 +740,14 @@ $(document).ready(function () {
 		td.append(togo)
 
 		var tr = $('<tr>')
-		tr.append($('<td>', {class: 'target-icon'}))
+		tr.append(targetCell)
 		tr.append(td)
 		return tr
 	}
 
 	whiteVersion = $('#white-version').data('json')
 	rankRequirements = $('#rank-requirements').data('json')
+	requirementTargets = $('#requirement-targets').data('json')
 	var initialSelectedRank = $('#selected-rank').data('x')
 	for (var index in rankRequirements) {
 		var rank = rankRequirements[index]
@@ -768,6 +775,7 @@ $(document).ready(function () {
 			var subs = []
 			aAn = (level == 8 || level == 11 || level == 18) ? 'an' : 'a'
 			for (let requirement of rank.requirements[level]) {
+				var goalId = requirement.goal_id
 				switch(requirement.kind) {
 				case 'scores':
 					if (requirement.qty > 0) {
@@ -775,26 +783,26 @@ $(document).ready(function () {
 						var qtyText = requirement.qty == 1 ? aAn : requirement.qty
 						var plural = requirement.qty == 1 ? '' : 's'
 						var orHigher = requirement.or_higher ? '+' : ''
-						requirement.row = requirementRow(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`)
+						requirement.row = requirementRow(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`, goalId)
 					} else {
 						var exceptions = requirement.qty == 0 ? '' : ` (${-requirement.qty} exceptions)`
 						var lachendy = level == 19 ? (whiteVersion > 18 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ' (ex. ENDYMION)') : ''
-						requirement.row = requirementRow(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`)
+						requirement.row = requirementRow(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`, goalId)
 					}
 					break
 				case 'clears':
 					if (requirement.qty == 0) {
-						requirement.row = requirementRow(`${level} ${lampTypes[requirement.threshold]} Lamp`)
+						requirement.row = requirementRow(`${level} ${lampTypes[requirement.threshold]} Lamp`, goalId)
 					} else {
 						var mandatory = requirement.mandatory ? '[MANDATORY] ' : ''
 						var qtyText = requirement.qty == 1 ? aAn : requirement.qty
 						var plural = requirement.qty == 1 ? '' : 's'
 						var orHigher = requirement.or_higher ? '+' : ''
-						requirement.row = requirementRow(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`)
+						requirement.row = requirementRow(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`, goalId)
 					}
 					break
 				case 'consecutives':
-					requirement.row = requirementRow(`Clear ${requirement.qty} ${level}s in a row`, true)
+					requirement.row = requirementRow(`Clear ${requirement.qty} ${level}s in a row`, goalId, true)
 					requirement.row.find('input').change(function() {
 						var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'level': level})
 						$.ajax({
@@ -809,10 +817,10 @@ $(document).ready(function () {
 					})
 					break
 				case 'averages':
-					requirement.row = requirementRow(`${requirement.threshold.toLocaleString()} ${level}s average`)
+					requirement.row = requirementRow(`${requirement.threshold.toLocaleString()} ${level}s average`, goalId)
 					break
 				default:
-					requirement.row = requirementRow(JSON.stringify(requirement))
+					requirement.row = requirementRow(JSON.stringify(requirement), goalId)
 				}
 				section = (requirement.sub ? subs : main)
 				section.push(requirement.row)
@@ -820,7 +828,7 @@ $(document).ready(function () {
 			if (level == 19 && 'lachendy' in rank.requirements) {
 				var lachryma = whiteVersion > 18 ? "Lachryma《Re:Queen’M》 challenge and " : ""
 				for (var requirement of rank.requirements.lachendy) {
-					requirement.row = requirementRow(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`)
+					requirement.row = requirementRow(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`, requirement.goal_id)
 					section = (requirement.sub ? subs : main)
 					section.push(requirement.row)
 				}
@@ -833,7 +841,7 @@ $(document).ready(function () {
 			var main = []
 			var subs = []
 			for (let requirement of rank.requirements.calories) {
-				requirement.row = requirementRow(`Burn ${requirement.threshold} calories in one day`, true)
+				requirement.row = requirementRow(`Burn ${requirement.threshold} calories in one day`, requirement.goal_id, true)
 
 				requirement.row.find('input').change(function() {
 					var postData = JSON.stringify({'passed': this.checked, 'calories': requirement.threshold})
@@ -859,7 +867,7 @@ $(document).ready(function () {
 			var subs = []
 			for (let requirement of rank.requirements.trials) {
 				var plural = requirement.qty == 1 ? '' : 's'
-				requirement.row = requirementRow(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, true)
+				requirement.row = requirementRow(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, requirement.goal_id, true)
 
 				requirement.row.find('input').change(function() {
 					var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'rank': requirement.threshold})
@@ -885,7 +893,7 @@ $(document).ready(function () {
 			var main = []
 			var subs = []
 			for (var requirement of rank.requirements.mfc_points) {
-				requirement.row = requirementRow('')
+				requirement.row = requirementRow('', requirement.goal_id)
 				
 				var label = $('<a>', {target: '_blank', href: 'https://life4ddr.com/rank-requirements/#mfcpoints'})
 				label.text('MFC Points')
@@ -913,6 +921,20 @@ $(document).ready(function () {
 	selectedRank = rankRequirements[initialSelectedRank]
 	$('#rank-select').val(initialSelectedRank)
 	selectedRank.container.show()
+
+	$('.requirements').on('click', '.targetable', function() {
+		goalId = $(this).data('goal-id')
+		var postData = JSON.stringify({'goal_id': goalId, 'version_id': whiteVersion})
+		$.ajax({
+			url: $(this).next().hasClass('targeted') ? '/scorebrowser/untarget_requirement' : '/scorebrowser/target_requirement',
+			type: 'POST',
+			data: postData,
+			success: function(response) {
+				requirementTargets = response.targets
+				evaluateRanks()
+			}
+		})
+	})
 
 	function selectRank() {
 		selectedRank.container.hide()
@@ -1058,10 +1080,13 @@ $(document).ready(function () {
 		togo.empty()
 
 		var checkbox = requirement.row.find('input')
+		var label = requirement.row.find('label')
+		var targetCell = requirement.row.find('.target-cell')
 
 		if (!additional && (distance <= 0) && (distance != null)) {
-			requirement.row.removeClass('unmet')
-			requirement.row.addClass('met')
+			label.removeClass('unmet')
+			label.addClass('met')
+			targetCell.removeClass('targetable')
 			checkbox.prop('checked', true)
 			requirement.met = true
 			return
@@ -1097,8 +1122,9 @@ $(document).ready(function () {
 			togo.append(')')
 		}
 
-		requirement.row.removeClass('met')
-		requirement.row.addClass('unmet')
+		label.removeClass('met')
+		label.addClass('unmet')
+		targetCell.addClass('targetable')
 		checkbox.prop('checked', false)
 		requirement.met = false
 	}
@@ -1211,16 +1237,46 @@ $(document).ready(function () {
 			var remainingOptional = rank.min - metOptional
 
 			var remainingText = "attained"
+			var attainedRank = true
 			if (remainingOptional > 0) {
+				attainedRank = false
 				if (remainingMandatory > 0) {
 					remainingText = `need ${remainingMandatory} mandatory, plus ${remainingOptional} more`
 				} else {
 					remainingText = `need ${remainingOptional} more`
 				}
 			} else if (remainingMandatory > 0) {
+				attainedRank = false
 				remainingText = `need ${remainingMandatory} mandatory`
 			} else if (remainingOptional < 0) {
 				remainingText = `attained, +${-remainingOptional} extra`
+			}
+
+			if (!attainedRank) {
+				var numTargets = 0
+				for (let targetCell of rank.main.find('.target-cell')) {
+					targetCell = $(targetCell)
+					description = targetCell.next().find('.req-description')
+					if (requirementTargets.includes(targetCell.data('goal-id')) && description.hasClass('unmet')) {
+						targetCell.next().addClass('targeted')
+						numTargets++
+					} else {
+						targetCell.next().removeClass('targeted')
+					}
+				}
+				for (let targetCell of rank.subs.find('.target-cell')) {
+					targetCell = $(targetCell)
+					description = targetCell.next().find('.req-description')
+					if (requirementTargets.includes($(targetCell).data('goal-id')) && description.hasClass('unmet')) {
+						targetCell.next().addClass('targeted')
+						numTargets++
+					} else {
+						targetCell.next().removeClass('targeted')
+					}
+				}
+				if (numTargets) {
+					remainingText += `, ${numTargets} targeted`
+				}
 			}
 
 			var rankOption = $(`#rank-select option[value=${index}]`)
