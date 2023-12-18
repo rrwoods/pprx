@@ -1,3 +1,5 @@
+var csrfToken = null
+
 const clearTypeIcons = [
 	'<img src="/static/fail.png" class="inline-image">',
 	'<input type="checkbox" class="life4-clear">',
@@ -189,7 +191,24 @@ $.fn.dataTableExt.oSort['nonzero-number-desc'] = function(a, b) {
 	return Math.sign(b - a)
 }
 
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 $(document).ready(function () {
+	csrfToken = getCookie('csrftoken')
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
 
 	$('#version-min').val(1)
@@ -529,6 +548,7 @@ $(document).ready(function () {
 		$.ajax({
 			url: '/scorebrowser/set_goal',
 			type: 'POST',
+			headers: {'X-CSRFToken': csrfToken},
 			data: JSON.stringify({'chart_id': row.chart_id, 'target_score': newGoal})
 		})
 	})
@@ -571,6 +591,7 @@ $(document).ready(function () {
 				$.ajax({
 					type: "POST",
 					url: "/scorebrowser/set_chart_notes",
+					headers: {'X-CSRFToken': csrfToken},
 					data: JSON.stringify({
 						chart_id: chart_id,
 						notes: notes,
@@ -591,6 +612,7 @@ $(document).ready(function () {
 		$.ajax({
 			type: "POST",
 			url: "/scorebrowser/set_chart_bookmark",
+			headers: {'X-CSRFToken': csrfToken},
 			data: JSON.stringify({
 				chart_id: rowData.chart_id,
 				bookmark: rowData.bookmarked,
@@ -634,6 +656,7 @@ $(document).ready(function () {
 		$.ajax({
 			type: "POST",
 			url: "/scorebrowser/set_chart_life4",
+			headers: {'X-CSRFToken': csrfToken},
 			data: JSON.stringify({
 				chart_id: rowData.chart_id,
 				life4: checked,
@@ -724,7 +747,7 @@ $(document).ready(function () {
 		targetIcon.append('🎯')
 		targetCell.append(targetIcon)
 
-		var td = $('<td>')
+		var td = $('<td>', {class: 'desc-cell'})
 		var reqId = `req-${nextReqId()}`
 
 		if (checkable) {
@@ -808,6 +831,7 @@ $(document).ready(function () {
 						$.ajax({
 							url: '/scorebrowser/set_consecutives',
 							type: 'POST',
+							headers: {'X-CSRFToken': csrfToken},
 							data: postData,
 							success: function(response) {
 								checkedRequirements.consecutives = response
@@ -848,6 +872,7 @@ $(document).ready(function () {
 					$.ajax({
 						url: '/scorebrowser/set_calories',
 						type: 'POST',
+						headers: {'X-CSRFToken': csrfToken},
 						data: postData,
 						success: function(response) {
 							checkedRequirements.calories = response.calories
@@ -874,6 +899,7 @@ $(document).ready(function () {
 					$.ajax({
 						url: '/scorebrowser/set_trials',
 						type: 'POST',
+						headers: {'X-CSRFToken': csrfToken},
 						data: postData,
 						success: function(response) {
 							checkedRequirements.trials = response
@@ -928,6 +954,7 @@ $(document).ready(function () {
 		$.ajax({
 			url: $(this).next().hasClass('targeted') ? '/scorebrowser/untarget_requirement' : '/scorebrowser/target_requirement',
 			type: 'POST',
+			headers: {'X-CSRFToken': csrfToken},
 			data: postData,
 			success: function(response) {
 				requirementTargets = response.targets
@@ -949,6 +976,7 @@ $(document).ready(function () {
 		$.ajax({
 			url: '/scorebrowser/set_selected_rank',
 			type: 'POST',
+			headers: {'X-CSRFToken': csrfToken},
 			data: JSON.stringify({'rank': rankIndex})
 		})
 	}
@@ -1194,7 +1222,8 @@ $(document).ready(function () {
 						break
 					case 'averages':
 						var segment = amethyst ? 'amethyst' : 'default'
-						styleReq(requirement, Math.ceil(requirement.threshold - averages[level][segment]))
+						var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
+						styleReq(requirement, Math.ceil(requirement.threshold - averages[level][segment]), needFilters)
 						break
 					}
 				}

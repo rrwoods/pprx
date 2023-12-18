@@ -3,7 +3,7 @@ from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
-from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .models import *
 import json
 import math
@@ -89,7 +89,6 @@ def update_unlock(request):
 		UserUnlock.objects.filter(user=user, task_id=task_id).delete()
 	return HttpResponse("Updated unlock status.")
 
-@csrf_exempt
 def update_unlock_event(request):
 	if request.method != 'POST':
 		return
@@ -139,7 +138,6 @@ def unlocks(request):
 	}
 	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
-@csrf_exempt
 def set_goal(request):
 	if request.method != 'POST':
 		return
@@ -152,7 +150,6 @@ def set_goal(request):
 
 	return HttpResponse('Set goal.')
 
-@csrf_exempt
 def set_chart_notes(request):
 	if request.method != 'POST':
 		return
@@ -170,7 +167,6 @@ def set_chart_notes(request):
 
 	return HttpResponse('Set chart notes.')
 
-@csrf_exempt
 def set_chart_bookmark(request):
 	if request.method != 'POST':
 		return
@@ -187,7 +183,6 @@ def set_chart_bookmark(request):
 
 	return HttpResponse('Set/cleared chart bookmark.')
 
-@csrf_exempt
 def set_chart_life4(request):
 	if request.method != 'POST':
 		return
@@ -204,7 +199,6 @@ def set_chart_life4(request):
 
 	return HttpResponse('Set/cleared life4 clear.')	
 
-@csrf_exempt
 def set_selected_rank(request):
 	if request.method != 'POST':
 		return
@@ -216,7 +210,6 @@ def set_selected_rank(request):
 
 	return HttpResponse('Set selected rank.')		
 
-@csrf_exempt
 def set_trials(request):
 	if request.method != 'POST':
 		return
@@ -240,7 +233,6 @@ def set_trials(request):
 
 	return JsonResponse({'best': user.best_trial, 'second': user.second_best_trial})
 
-@csrf_exempt
 def set_calories(request):
 	if request.method != 'POST':
 		return
@@ -259,7 +251,6 @@ def set_calories(request):
 
 	return JsonResponse({"calories": user.best_calorie_burn})
 
-@csrf_exempt
 def set_consecutives(request):
 	if request.method != 'POST':
 		return
@@ -283,7 +274,6 @@ def set_consecutives(request):
 
 	return JsonResponse({2: user.best_two_consecutive, 3: user.best_three_consecutive})
 
-@csrf_exempt
 def target_requirement(request):
 	if request.method != 'POST':
 		return
@@ -295,7 +285,6 @@ def target_requirement(request):
 	version_id = requestBody["version_id"]
 	return JsonResponse({'targets': user_targets(user, version_id, add=goal_id)})
 
-@csrf_exempt
 def untarget_requirement(request):
 	if request.method != 'POST':
 		return
@@ -338,7 +327,6 @@ def user_targets(user, version_id, add = None, remove = None):
 	for goal_id in new_explicit - current_explicit:
 		UserRequirementTarget.objects.create(user=user, version_id=version_id, goal_id=goal_id)
 
-	print(list(new_explicit))
 	return list(all_targets)
 
 def check_locks(song_id, song_locks, cabinet):
