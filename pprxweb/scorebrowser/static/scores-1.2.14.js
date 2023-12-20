@@ -275,6 +275,7 @@ $(document).ready(function () {
 	var scoresTable = $('#scores').DataTable({
 		data: scores,
 		responsive: true,
+		deferRender: true,
 		columns: [
 			{ data: '0', visible: false }, // white visibility
 			{ data: '1', visible: false }, // gold visibility
