@@ -208,6 +208,11 @@ function getCookie(name) {
 }
 
 $(document).ready(function () {
+	whiteVersion = $('#white-version').data('json')
+	reqsPromise = fetch("/static/rank-requirements-1.2.13.json")
+		.then(x => x.json())
+		.then(json => rankRequirements = json[whiteVersion])
+
 	csrfToken = getCookie('csrftoken')
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
 
@@ -768,549 +773,549 @@ $(document).ready(function () {
 		return tr
 	}
 
-	whiteVersion = $('#white-version').data('json')
-	rankRequirements = $('#rank-requirements').data('json')
-	requirementTargets = $('#requirement-targets').data('json')
-	var initialSelectedRank = $('#selected-rank').data('x')
-	for (var index in rankRequirements) {
-		var rank = rankRequirements[index]
-		rank.option = $('<option>', {
-			value: index,
-			text: rank.name,
-		})
-		$('#rank-select').append(rank.option)
+	reqsPromise.then(() => {
+		requirementTargets = $('#requirement-targets').data('json')
+		var initialSelectedRank = $('#selected-rank').data('x')
+		for (var index in rankRequirements) {
+			var rank = rankRequirements[index]
+			rank.option = $('<option>', {
+				value: index,
+				text: rank.name,
+			})
+			$('#rank-select').append(rank.option)
 
-		rank.container = $('<div>')
-		rank.container.hide()
+			rank.container = $('<div>')
+			rank.container.hide()
 
-		rank.main = requirementTable()
-		rank.subHeader = $('<p>')
-		rank.subHeader.text('Substitutions:')
-		rank.subs = requirementTable()
+			rank.main = requirementTable()
+			rank.subHeader = $('<p>')
+			rank.subHeader.text('Substitutions:')
+			rank.subs = requirementTable()
 
-		var mainContent = false
-		var subsContent = false
-		for (let level = 1; level < 20; level++) {
-			if (!(level in rank.requirements)) {
-				continue
+			var mainContent = false
+			var subsContent = false
+			for (let level = 1; level < 20; level++) {
+				if (!(level in rank.requirements)) {
+					continue
+				}
+				var main = []
+				var subs = []
+				aAn = (level == 8 || level == 11 || level == 18) ? 'an' : 'a'
+				for (let requirement of rank.requirements[level]) {
+					var goalId = requirement.goal_id
+					switch(requirement.kind) {
+					case 'scores':
+						if (requirement.qty > 0) {
+							var scoreText = (requirement.threshold == 990000) ? 'AAA' : (requirement.threshold/1000 + 'k+')
+							var qtyText = requirement.qty == 1 ? aAn : requirement.qty
+							var plural = requirement.qty == 1 ? '' : 's'
+							var orHigher = requirement.or_higher ? '+' : ''
+							requirement.row = requirementRow(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`, goalId)
+						} else {
+							var exceptions = requirement.qty == 0 ? '' : ` (${-requirement.qty} exceptions)`
+							var lachendy = level == 19 ? (whiteVersion > 18 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ' (ex. ENDYMION)') : ''
+							requirement.row = requirementRow(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`, goalId)
+						}
+						break
+					case 'clears':
+						if (requirement.qty == 0) {
+							requirement.row = requirementRow(`${level} ${lampTypes[requirement.threshold]} Lamp`, goalId)
+						} else {
+							var mandatory = requirement.mandatory ? '[MANDATORY] ' : ''
+							var qtyText = requirement.qty == 1 ? aAn : requirement.qty
+							var plural = requirement.qty == 1 ? '' : 's'
+							var orHigher = requirement.or_higher ? '+' : ''
+							requirement.row = requirementRow(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`, goalId)
+						}
+						break
+					case 'consecutives':
+						requirement.row = requirementRow(`Clear ${requirement.qty} ${level}s in a row`, goalId, true)
+						requirement.row.find('input').change(function() {
+							var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'level': level})
+							$.ajax({
+								url: '/scorebrowser/set_consecutives',
+								type: 'POST',
+								headers: {'X-CSRFToken': csrfToken},
+								data: postData,
+								success: function(response) {
+									checkedRequirements.consecutives = response
+									evaluateRanks()
+								}
+							})					
+						})
+						break
+					case 'averages':
+						requirement.row = requirementRow(`${requirement.threshold.toLocaleString()} ${level}s average`, goalId)
+						break
+					default:
+						requirement.row = requirementRow(JSON.stringify(requirement), goalId)
+					}
+					section = (requirement.sub ? subs : main)
+					section.push(requirement.row)
+				}
+				if (level == 19 && 'lachendy' in rank.requirements) {
+					var lachryma = whiteVersion > 18 ? "Lachryma《Re:Queen’M》 challenge and " : ""
+					for (var requirement of rank.requirements.lachendy) {
+						requirement.row = requirementRow(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`, requirement.goal_id)
+						section = (requirement.sub ? subs : main)
+						section.push(requirement.row)
+					}
+				}
+				appendSection(rank.main, main)
+				appendSection(rank.subs, subs)
 			}
-			var main = []
-			var subs = []
-			aAn = (level == 8 || level == 11 || level == 18) ? 'an' : 'a'
-			for (let requirement of rank.requirements[level]) {
-				var goalId = requirement.goal_id
-				switch(requirement.kind) {
-				case 'scores':
-					if (requirement.qty > 0) {
-						var scoreText = (requirement.threshold == 990000) ? 'AAA' : (requirement.threshold/1000 + 'k+')
-						var qtyText = requirement.qty == 1 ? aAn : requirement.qty
-						var plural = requirement.qty == 1 ? '' : 's'
-						var orHigher = requirement.or_higher ? '+' : ''
-						requirement.row = requirementRow(`${scoreText} ${qtyText} ${level}${plural}${orHigher}`, goalId)
-					} else {
-						var exceptions = requirement.qty == 0 ? '' : ` (${-requirement.qty} exceptions)`
-						var lachendy = level == 19 ? (whiteVersion > 18 ? ' (ex. Lachryma《Re:Queen’M》 & ENDYMION)' : ' (ex. ENDYMION)') : ''
-						requirement.row = requirementRow(`All ${level}s over ${requirement.threshold/1000}k${exceptions}${lachendy}`, goalId)
-					}
-					break
-				case 'clears':
-					if (requirement.qty == 0) {
-						requirement.row = requirementRow(`${level} ${lampTypes[requirement.threshold]} Lamp`, goalId)
-					} else {
-						var mandatory = requirement.mandatory ? '[MANDATORY] ' : ''
-						var qtyText = requirement.qty == 1 ? aAn : requirement.qty
-						var plural = requirement.qty == 1 ? '' : 's'
-						var orHigher = requirement.or_higher ? '+' : ''
-						requirement.row = requirementRow(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`, goalId)
-					}
-					break
-				case 'consecutives':
-					requirement.row = requirementRow(`Clear ${requirement.qty} ${level}s in a row`, goalId, true)
+
+			if ('calories' in rank.requirements) {
+				var main = []
+				var subs = []
+				for (let requirement of rank.requirements.calories) {
+					requirement.row = requirementRow(`Burn ${requirement.threshold} calories in one day`, requirement.goal_id, true)
+
 					requirement.row.find('input').change(function() {
-						var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'level': level})
+						var postData = JSON.stringify({'passed': this.checked, 'calories': requirement.threshold})
 						$.ajax({
-							url: '/scorebrowser/set_consecutives',
+							url: '/scorebrowser/set_calories',
 							type: 'POST',
 							headers: {'X-CSRFToken': csrfToken},
 							data: postData,
 							success: function(response) {
-								checkedRequirements.consecutives = response
+								checkedRequirements.calories = response.calories
 								evaluateRanks()
 							}
 						})					
 					})
-					break
-				case 'averages':
-					requirement.row = requirementRow(`${requirement.threshold.toLocaleString()} ${level}s average`, goalId)
-					break
-				default:
-					requirement.row = requirementRow(JSON.stringify(requirement), goalId)
-				}
-				section = (requirement.sub ? subs : main)
-				section.push(requirement.row)
-			}
-			if (level == 19 && 'lachendy' in rank.requirements) {
-				var lachryma = whiteVersion > 18 ? "Lachryma《Re:Queen’M》 challenge and " : ""
-				for (var requirement of rank.requirements.lachendy) {
-					requirement.row = requirementRow(`${requirement.threshold/1000}k+ on ${lachryma}ENDYMION challenge`, requirement.goal_id)
 					section = (requirement.sub ? subs : main)
 					section.push(requirement.row)
 				}
-			}
-			appendSection(rank.main, main)
-			appendSection(rank.subs, subs)
-		}
-
-		if ('calories' in rank.requirements) {
-			var main = []
-			var subs = []
-			for (let requirement of rank.requirements.calories) {
-				requirement.row = requirementRow(`Burn ${requirement.threshold} calories in one day`, requirement.goal_id, true)
-
-				requirement.row.find('input').change(function() {
-					var postData = JSON.stringify({'passed': this.checked, 'calories': requirement.threshold})
-					$.ajax({
-						url: '/scorebrowser/set_calories',
-						type: 'POST',
-						headers: {'X-CSRFToken': csrfToken},
-						data: postData,
-						success: function(response) {
-							checkedRequirements.calories = response.calories
-							evaluateRanks()
-						}
-					})					
-				})
-				section = (requirement.sub ? subs : main)
-				section.push(requirement.row)
-			}
-			appendSection(rank.main, main)
-			appendSection(rank.subs, subs)
-		}
-
-		if ('trials' in rank.requirements) {
-			var main = []
-			var subs = []
-			for (let requirement of rank.requirements.trials) {
-				var plural = requirement.qty == 1 ? '' : 's'
-				requirement.row = requirementRow(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, requirement.goal_id, true)
-
-				requirement.row.find('input').change(function() {
-					var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'rank': requirement.threshold})
-					$.ajax({
-						url: '/scorebrowser/set_trials',
-						type: 'POST',
-						headers: {'X-CSRFToken': csrfToken},
-						data: postData,
-						success: function(response) {
-							checkedRequirements.trials = response
-							evaluateRanks()
-						}
-					})					
-				});
-				
-				section = (requirement.sub ? subs : main)
-				section.push(requirement.row)
-			}
-			appendSection(rank.main, main)
-			appendSection(rank.subs, subs)
-		}
-
-		if ('mfc_points' in rank.requirements) {
-			var main = []
-			var subs = []
-			for (var requirement of rank.requirements.mfc_points) {
-				requirement.row = requirementRow('', requirement.goal_id)
-				
-				var label = $('<a>', {target: '_blank', href: 'https://life4ddr.com/rank-requirements/#mfcpoints'})
-				label.text('MFC Points')
-				var description = requirement.row.find('.req-description')
-				description.append(label)
-				description.append(`: ${requirement.threshold}`);
-
-				section = (requirement.sub ? subs : main)
-				section.push(requirement.row)
-			}
-			appendSection(rank.main, main)
-			appendSection(rank.subs, subs)
-		}
-
-		rank.main.children().last().remove()
-		rank.container.append(rank.main)
-		if (rank.subs.find('td').index() >= 0) {
-			rank.subs.children().last().remove()
-			rank.container.append(rank.subHeader)
-			rank.container.append(rank.subs)
-		}
-
-		$('#rank-details').append(rank.container)
-	}
-	selectedRank = rankRequirements[initialSelectedRank]
-	$('#rank-select').val(initialSelectedRank)
-	selectedRank.container.show()
-
-	$('.requirements').on('click', '.targetable', function() {
-		goalId = $(this).data('goal-id')
-		var postData = JSON.stringify({'goal_id': goalId, 'version_id': whiteVersion})
-		$.ajax({
-			url: $(this).next().hasClass('targeted') ? '/scorebrowser/untarget_requirement' : '/scorebrowser/target_requirement',
-			type: 'POST',
-			headers: {'X-CSRFToken': csrfToken},
-			data: postData,
-			success: function(response) {
-				requirementTargets = response.targets
-				evaluateRanks()
-			}
-		})
-	})
-
-	function selectRank() {
-		selectedRank.container.hide()
-
-		rankIndex = $('#rank-select').find(':selected').val()
-		rank = rankRequirements[rankIndex]
-		selectedRank = rank
-		rank.container.show()
-
-		redrawTable() // might change what "required songs" means
-
-		$.ajax({
-			url: '/scorebrowser/set_selected_rank',
-			type: 'POST',
-			headers: {'X-CSRFToken': csrfToken},
-			data: JSON.stringify({'rank': rankIndex})
-		})
-	}
-	$('#rank-select').change(selectRank)
-
-	function isLachEndy(d) {
-		if (d.difficulty.rating != 19) {
-			return false
-		}
-		return (d.song_name.title == "Lachryma《Re:Queen’M》" || d.song_name.title == "ENDYMION")
-	}
-
-	for (var level = 1; level < 20; level++) {
-		scoresByLevel[level] = {
-			'all': [],
-			'default': [],
-			'non_default': [],
-			'amethyst_required': [],
-			'hard_unlocks': [],
-		}
-
-		clears[level] = []
-		for (var clearType = 1; clearType <= 6; clearType++) {
-			clears[level][clearType] = {
-				total: 0,
-				totalIncludingHigher: 0,
-				distanceToLamp: 0,
-				distanceToAmethystLamp: 0,
-			}
-		}
-	}
-
-	scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
-		d = this.data()
-		if (d.game_version.id > whiteVersion) {
-			return
-		}
-
-		if (isLachEndy(d)) {
-			lachendyScores.push(d.score)
-		} else {
-			scoresByLevel[d.difficulty.rating].all.push(d.score)
-
-			var segment = d.default_chart ? 'default' : 'non_default'
-			scoresByLevel[d.difficulty.rating][segment].push(d.score)
-
-			segment = d.amethyst_required ? 'amethyst_required' : 'hard_unlocks'
-			scoresByLevel[d.difficulty.rating][segment].push(d.score)
-		}
-
-		for (var clearType = 1; clearType <= d.clear_type; clearType++) {
-			clears[d.difficulty.rating][clearType].total++
-			for (var level = 1; level <= d.difficulty.rating; level++) {
-				clears[level][clearType].totalIncludingHigher++
-			}
-		}
-
-		if (d.default_chart) {
-			for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
-				clears[d.difficulty.rating][clearType].distanceToLamp++
-			}
-		}
-
-		if (d.amethyst_required) {
-			for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
-				clears[d.difficulty.rating][clearType].distanceToAmethystLamp++
-			}
-		}
-
-		if (d.clear_type == 6) {
-			mfcPointsEarned += mfcPoints[d.difficulty.rating]
-		}
-	})
-
-	for (var level = 1; level < 20; level++) {
-		scoresByLevel[level].all.sort()
-		scoresByLevel[level].default.sort()
-		scoresByLevel[level].non_default.sort()
-		scoresByLevel[level].amethyst_required.sort()
-		scoresByLevel[level].hard_unlocks.sort()
-
-		var defaultTotal = scoresByLevel[level].default.reduce((acc, cur) => acc + cur)
-		var defaultCount = scoresByLevel[level].default.length
-		var defaultAverage = defaultTotal / defaultCount
-		for (var i = scoresByLevel[level].non_default.length - 1; i >= 0; i--) {
-			var score = scoresByLevel[level].non_default[i]
-			if (score <= defaultAverage) {
-				break
-			}
-			defaultTotal += score
-			defaultCount++
-			defaultAverage = defaultTotal / defaultCount
-		}
-
-		var amethystTotal = scoresByLevel[level].amethyst_required.reduce((acc, cur) => acc + cur)
-		var amethystCount = scoresByLevel[level].amethyst_required.length
-		var amethystAverage = amethystTotal / amethystCount
-		for (var i = scoresByLevel[level].hard_unlocks.length - 1; i >= 0; i--) {
-			var score = scoresByLevel[level].hard_unlocks[i]
-			if (score <= amethystAverage) {
-				break
-			}
-			amethystTotal += score
-			amethystCount++
-			amethystAverage = amethystTotal / amethystCount
-		}
-
-		averages[level] = {
-			'default': defaultAverage,
-			'amethyst': amethystAverage,
-		}
-	}
-	lachendyScores.sort()
-
-	$("#rank-details").on('click', '.need-link', function() {
-		setFilters(Object.assign({}, baseFilters, $(this).data('filters')))
-	})
-
-	function qtyAboveThreshold(scoresList, threshold) {
-		var metIndex = scoresList.findIndex((score) => score >= threshold)
-		if (metIndex == -1) {
-			return 0
-		}
-		return scoresList.length - metIndex
-	}
-
-	function styleReq(requirement, distance, filters = undefined, additional = "", additionalFilters = undefined) {
-		var togo = requirement.row.find('.togo')
-		togo.empty()
-
-		var checkbox = requirement.row.find('input')
-		var label = requirement.row.find('label')
-		var targetCell = requirement.row.find('.target-cell')
-
-		if (!additional && (distance <= 0) && (distance != null)) {
-			label.removeClass('unmet')
-			label.addClass('met')
-			targetCell.removeClass('targetable')
-			checkbox.prop('checked', true)
-			requirement.met = true
-			return
-		}
-
-		var needs = []
-		if (distance > 0) {
-			var moreText = `${distance.toLocaleString()} more`
-			if (filters) {
-				var needLink = $('<button>', {class: 'need-link'})
-				needLink.data('filters', filters)
-				needLink.append(moreText)
-				needs.push(needLink)
-			} else {
-				needs.push(moreText)
-			}
-		}
-		if (additional) {
-			if (needs.length) {
-				needs.push('and')
-			}
-			var needLink = $('<button>', {class: 'need-link'})
-			needLink.data('filters', additionalFilters)
-			needLink.append(additional)
-			needs.push(needLink)
-		}
-		if (needs.length) {
-			togo.append(' (need')
-			for (need of needs) {
-				togo.append(' ')
-				togo.append(need)
-			}
-			togo.append(')')
-		}
-
-		label.removeClass('met')
-		label.addClass('unmet')
-		targetCell.addClass('targetable')
-		checkbox.prop('checked', false)
-		requirement.met = false
-	}
-
-	function evaluateRanks() {
-		var amethyst = false
-		for (var index in rankRequirements) {
-			rank = rankRequirements[index]
-			if (rank.name.startsWith("Amethyst")) {
-				amethyst = true
-			}
-			rank.amethyst = amethyst
-
-			for (var level = 1; level < 20; level++) {
-				if (!(level in rank.requirements)) {
-					continue
-				}
-				var levelFilters = {"level-min": level, "level-max": level}
-				for (var requirement of rank.requirements[level]) {
-					switch(requirement.kind) {
-					case 'scores':
-						if (requirement.or_higher) {
-							var qtyMet = 0
-							for (var chartLevel = level; chartLevel < 20; chartLevel++) {
-								qtyMet += qtyAboveThreshold(scoresByLevel[chartLevel].all, requirement.threshold)
-								if (qtyMet >= requirement.qty) {
-									styleReq(requirement, 0)
-									break
-								}
-							}
-							if (qtyMet < requirement.qty) {
-								styleReq(requirement, requirement.qty - qtyMet, {"max-score": requirement.threshold, "level-min": level})
-							}
-						} else {
-							var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
-							if (requirement.qty <= 0) {
-								var segment = amethyst ? 'amethyst_required' : 'default'
-								var qtyMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.threshold)
-								//var clearLamp = clears[level][1].distanceToLamp == 0 ? "" : "clear lamp"
-								var qtyUnmet = scoresByLevel[level][segment].length - qtyMet
-								if (clears[level][1].distanceToLamp == 0) {
-									styleReq(requirement, qtyUnmet + requirement.qty, needFilters)
-								} else {
-									var clearFilters = Object.assign({"clear-type-min": -1, "clear-type-max": 0}, levelFilters)
-									styleReq(requirement, qtyUnmet + requirement.qty, needFilters, "clear lamp", clearFilters)
-								}
-							} else {
-								var qtyMet = qtyAboveThreshold(scoresByLevel[level].all, requirement.threshold)
-								styleReq(requirement, requirement.qty - qtyMet, needFilters)
-							}
-						}
-						break;
-					case 'clears':
-						var needFilters = Object.assign({"clear-type-min": -1, "clear-type-max": requirement.threshold - 1}, levelFilters)
-						if (requirement.qty == 0) {
-							distanceToLamp = clears[level][requirement.threshold][amethyst ? 'distanceToAmethystLamp' : 'distanceToLamp']
-							styleReq(requirement, distanceToLamp, needFilters)
-						} else {
-							total = clears[level][requirement.threshold][requirement.or_higher ? 'totalIncludingHigher' : 'total']
-							styleReq(requirement, requirement.qty - total, needFilters)
-						}
-						break
-					case 'consecutives':
-						var attained = checkedRequirements.consecutives[requirement.qty]
-						var distance = (attained >= level) ? 0 : null
-						styleReq(requirement, distance)
-						break
-					case 'averages':
-						var segment = amethyst ? 'amethyst' : 'default'
-						var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
-						styleReq(requirement, Math.ceil(requirement.threshold - averages[level][segment]), needFilters)
-						break
-					}
-				}
-			}
-
-			if ('lachendy' in rank.requirements) {
-				for (var requirement of rank.requirements.lachendy) {
-					remaining = lachendyScores.findIndex((score) => score >= requirement.threshold)
-					if (remaining == -1) {
-						remaining = lachendyScores.length
-					}
-					styleReq(requirement, remaining)
-				}
-			}
-
-			if ('calories' in rank.requirements) {
-				for (var requirement of rank.requirements.calories) {
-					var distance = (checkedRequirements.calories >= requirement.threshold) ? 0 : null
-					styleReq(requirement, distance)
-				}
+				appendSection(rank.main, main)
+				appendSection(rank.subs, subs)
 			}
 
 			if ('trials' in rank.requirements) {
-				for (var requirement of rank.requirements.trials) {
-					var attained = (requirement.qty == 1) ? checkedRequirements.trials.best : checkedRequirements.trials.second
-					var distance = (attained >= requirement.threshold) ? 0 : null
-					styleReq(requirement, distance)
+				var main = []
+				var subs = []
+				for (let requirement of rank.requirements.trials) {
+					var plural = requirement.qty == 1 ? '' : 's'
+					requirement.row = requirementRow(`Earn ${trialClears[requirement.threshold]} or above on ${requirement.qty} Trial${plural}`, requirement.goal_id, true)
+
+					requirement.row.find('input').change(function() {
+						var postData = JSON.stringify({'passed': this.checked, 'count': requirement.qty, 'rank': requirement.threshold})
+						$.ajax({
+							url: '/scorebrowser/set_trials',
+							type: 'POST',
+							headers: {'X-CSRFToken': csrfToken},
+							data: postData,
+							success: function(response) {
+								checkedRequirements.trials = response
+								evaluateRanks()
+							}
+						})					
+					});
+					
+					section = (requirement.sub ? subs : main)
+					section.push(requirement.row)
 				}
+				appendSection(rank.main, main)
+				appendSection(rank.subs, subs)
 			}
 
 			if ('mfc_points' in rank.requirements) {
+				var main = []
+				var subs = []
 				for (var requirement of rank.requirements.mfc_points) {
-					styleReq(requirement, requirement.threshold - mfcPointsEarned)
+					requirement.row = requirementRow('', requirement.goal_id)
+					
+					var label = $('<a>', {target: '_blank', href: 'https://life4ddr.com/rank-requirements/#mfcpoints'})
+					label.text('MFC Points')
+					var description = requirement.row.find('.req-description')
+					description.append(label)
+					description.append(`: ${requirement.threshold}`);
+
+					section = (requirement.sub ? subs : main)
+					section.push(requirement.row)
 				}
+				appendSection(rank.main, main)
+				appendSection(rank.subs, subs)
 			}
 
-			var flattened = Object.values(rank.requirements).reduce((acc, cur) => acc.concat(cur))
-			var remainingMandatory = flattened.reduce((acc, r) => (r.mandatory && !r.met) ? (acc + 1) : acc, 0)
-			var metOptional = flattened.reduce((acc, r) => (!r.mandatory && r.met) ? (acc + 1) : acc, 0)
-			var remainingOptional = rank.min - metOptional
-
-			var remainingText = "attained"
-			var attainedRank = true
-			if (remainingOptional > 0) {
-				attainedRank = false
-				if (remainingMandatory > 0) {
-					remainingText = `need ${remainingMandatory} mandatory, plus ${remainingOptional} more`
-				} else {
-					remainingText = `need ${remainingOptional} more`
-				}
-			} else if (remainingMandatory > 0) {
-				attainedRank = false
-				remainingText = `need ${remainingMandatory} mandatory`
-			} else if (remainingOptional < 0) {
-				remainingText = `attained, +${-remainingOptional} extra`
+			rank.main.children().last().remove()
+			rank.container.append(rank.main)
+			if (rank.subs.find('td').index() >= 0) {
+				rank.subs.children().last().remove()
+				rank.container.append(rank.subHeader)
+				rank.container.append(rank.subs)
 			}
 
-			if (!attainedRank) {
-				var numTargets = 0
-				for (let targetCell of rank.main.find('.target-cell')) {
-					targetCell = $(targetCell)
-					description = targetCell.next().find('.req-description')
-					if (requirementTargets.includes(targetCell.data('goal-id')) && description.hasClass('unmet')) {
-						targetCell.next().addClass('targeted')
-						numTargets++
-					} else {
-						targetCell.next().removeClass('targeted')
-					}
-				}
-				for (let targetCell of rank.subs.find('.target-cell')) {
-					targetCell = $(targetCell)
-					description = targetCell.next().find('.req-description')
-					if (requirementTargets.includes($(targetCell).data('goal-id')) && description.hasClass('unmet')) {
-						targetCell.next().addClass('targeted')
-						numTargets++
-					} else {
-						targetCell.next().removeClass('targeted')
-					}
-				}
-				if (numTargets) {
-					remainingText += `, ${numTargets} targeted`
-				}
-			}
-
-			var rankOption = $(`#rank-select option[value=${index}]`)
-			rankOption.text(`${rank.name} (${remainingText})`)
+			$('#rank-details').append(rank.container)
 		}
-	}
-	evaluateRanks()
+		selectedRank = rankRequirements[initialSelectedRank]
+		$('#rank-select').val(initialSelectedRank)
+		selectedRank.container.show()
+
+		$('.requirements').on('click', '.targetable', function() {
+			goalId = $(this).data('goal-id')
+			var postData = JSON.stringify({'goal_id': goalId, 'version_id': whiteVersion})
+			$.ajax({
+				url: $(this).next().hasClass('targeted') ? '/scorebrowser/untarget_requirement' : '/scorebrowser/target_requirement',
+				type: 'POST',
+				headers: {'X-CSRFToken': csrfToken},
+				data: postData,
+				success: function(response) {
+					requirementTargets = response.targets
+					evaluateRanks()
+				}
+			})
+		})
+
+		function selectRank() {
+			selectedRank.container.hide()
+
+			rankIndex = $('#rank-select').find(':selected').val()
+			rank = rankRequirements[rankIndex]
+			selectedRank = rank
+			rank.container.show()
+
+			redrawTable() // might change what "required songs" means
+
+			$.ajax({
+				url: '/scorebrowser/set_selected_rank',
+				type: 'POST',
+				headers: {'X-CSRFToken': csrfToken},
+				data: JSON.stringify({'rank': rankIndex})
+			})
+		}
+		$('#rank-select').change(selectRank)
+
+		function isLachEndy(d) {
+			if (d.difficulty.rating != 19) {
+				return false
+			}
+			return (d.song_name.title == "Lachryma《Re:Queen’M》" || d.song_name.title == "ENDYMION")
+		}
+
+		for (var level = 1; level < 20; level++) {
+			scoresByLevel[level] = {
+				'all': [],
+				'default': [],
+				'non_default': [],
+				'amethyst_required': [],
+				'hard_unlocks': [],
+			}
+
+			clears[level] = []
+			for (var clearType = 1; clearType <= 6; clearType++) {
+				clears[level][clearType] = {
+					total: 0,
+					totalIncludingHigher: 0,
+					distanceToLamp: 0,
+					distanceToAmethystLamp: 0,
+				}
+			}
+		}
+
+		scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
+			d = this.data()
+			if (d.game_version.id > whiteVersion) {
+				return
+			}
+
+			if (isLachEndy(d)) {
+				lachendyScores.push(d.score)
+			} else {
+				scoresByLevel[d.difficulty.rating].all.push(d.score)
+
+				var segment = d.default_chart ? 'default' : 'non_default'
+				scoresByLevel[d.difficulty.rating][segment].push(d.score)
+
+				segment = d.amethyst_required ? 'amethyst_required' : 'hard_unlocks'
+				scoresByLevel[d.difficulty.rating][segment].push(d.score)
+			}
+
+			for (var clearType = 1; clearType <= d.clear_type; clearType++) {
+				clears[d.difficulty.rating][clearType].total++
+				for (var level = 1; level <= d.difficulty.rating; level++) {
+					clears[level][clearType].totalIncludingHigher++
+				}
+			}
+
+			if (d.default_chart) {
+				for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
+					clears[d.difficulty.rating][clearType].distanceToLamp++
+				}
+			}
+
+			if (d.amethyst_required) {
+				for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
+					clears[d.difficulty.rating][clearType].distanceToAmethystLamp++
+				}
+			}
+
+			if (d.clear_type == 6) {
+				mfcPointsEarned += mfcPoints[d.difficulty.rating]
+			}
+		})
+
+		for (var level = 1; level < 20; level++) {
+			scoresByLevel[level].all.sort()
+			scoresByLevel[level].default.sort()
+			scoresByLevel[level].non_default.sort()
+			scoresByLevel[level].amethyst_required.sort()
+			scoresByLevel[level].hard_unlocks.sort()
+
+			var defaultTotal = scoresByLevel[level].default.reduce((acc, cur) => acc + cur)
+			var defaultCount = scoresByLevel[level].default.length
+			var defaultAverage = defaultTotal / defaultCount
+			for (var i = scoresByLevel[level].non_default.length - 1; i >= 0; i--) {
+				var score = scoresByLevel[level].non_default[i]
+				if (score <= defaultAverage) {
+					break
+				}
+				defaultTotal += score
+				defaultCount++
+				defaultAverage = defaultTotal / defaultCount
+			}
+
+			var amethystTotal = scoresByLevel[level].amethyst_required.reduce((acc, cur) => acc + cur)
+			var amethystCount = scoresByLevel[level].amethyst_required.length
+			var amethystAverage = amethystTotal / amethystCount
+			for (var i = scoresByLevel[level].hard_unlocks.length - 1; i >= 0; i--) {
+				var score = scoresByLevel[level].hard_unlocks[i]
+				if (score <= amethystAverage) {
+					break
+				}
+				amethystTotal += score
+				amethystCount++
+				amethystAverage = amethystTotal / amethystCount
+			}
+
+			averages[level] = {
+				'default': defaultAverage,
+				'amethyst': amethystAverage,
+			}
+		}
+		lachendyScores.sort()
+
+		$("#rank-details").on('click', '.need-link', function() {
+			setFilters(Object.assign({}, baseFilters, $(this).data('filters')))
+		})
+
+		function qtyAboveThreshold(scoresList, threshold) {
+			var metIndex = scoresList.findIndex((score) => score >= threshold)
+			if (metIndex == -1) {
+				return 0
+			}
+			return scoresList.length - metIndex
+		}
+
+		function styleReq(requirement, distance, filters = undefined, additional = "", additionalFilters = undefined) {
+			var togo = requirement.row.find('.togo')
+			togo.empty()
+
+			var checkbox = requirement.row.find('input')
+			var label = requirement.row.find('label')
+			var targetCell = requirement.row.find('.target-cell')
+
+			if (!additional && (distance <= 0) && (distance != null)) {
+				label.removeClass('unmet')
+				label.addClass('met')
+				targetCell.removeClass('targetable')
+				checkbox.prop('checked', true)
+				requirement.met = true
+				return
+			}
+
+			var needs = []
+			if (distance > 0) {
+				var moreText = `${distance.toLocaleString()} more`
+				if (filters) {
+					var needLink = $('<button>', {class: 'need-link'})
+					needLink.data('filters', filters)
+					needLink.append(moreText)
+					needs.push(needLink)
+				} else {
+					needs.push(moreText)
+				}
+			}
+			if (additional) {
+				if (needs.length) {
+					needs.push('and')
+				}
+				var needLink = $('<button>', {class: 'need-link'})
+				needLink.data('filters', additionalFilters)
+				needLink.append(additional)
+				needs.push(needLink)
+			}
+			if (needs.length) {
+				togo.append(' (need')
+				for (need of needs) {
+					togo.append(' ')
+					togo.append(need)
+				}
+				togo.append(')')
+			}
+
+			label.removeClass('met')
+			label.addClass('unmet')
+			targetCell.addClass('targetable')
+			checkbox.prop('checked', false)
+			requirement.met = false
+		}
+
+		function evaluateRanks() {
+			var amethyst = false
+			for (var index in rankRequirements) {
+				rank = rankRequirements[index]
+				if (rank.name.startsWith("Amethyst")) {
+					amethyst = true
+				}
+				rank.amethyst = amethyst
+
+				for (var level = 1; level < 20; level++) {
+					if (!(level in rank.requirements)) {
+						continue
+					}
+					var levelFilters = {"level-min": level, "level-max": level}
+					for (var requirement of rank.requirements[level]) {
+						switch(requirement.kind) {
+						case 'scores':
+							if (requirement.or_higher) {
+								var qtyMet = 0
+								for (var chartLevel = level; chartLevel < 20; chartLevel++) {
+									qtyMet += qtyAboveThreshold(scoresByLevel[chartLevel].all, requirement.threshold)
+									if (qtyMet >= requirement.qty) {
+										styleReq(requirement, 0)
+										break
+									}
+								}
+								if (qtyMet < requirement.qty) {
+									styleReq(requirement, requirement.qty - qtyMet, {"max-score": requirement.threshold, "level-min": level})
+								}
+							} else {
+								var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
+								if (requirement.qty <= 0) {
+									var segment = amethyst ? 'amethyst_required' : 'default'
+									var qtyMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.threshold)
+									//var clearLamp = clears[level][1].distanceToLamp == 0 ? "" : "clear lamp"
+									var qtyUnmet = scoresByLevel[level][segment].length - qtyMet
+									if (clears[level][1].distanceToLamp == 0) {
+										styleReq(requirement, qtyUnmet + requirement.qty, needFilters)
+									} else {
+										var clearFilters = Object.assign({"clear-type-min": -1, "clear-type-max": 0}, levelFilters)
+										styleReq(requirement, qtyUnmet + requirement.qty, needFilters, "clear lamp", clearFilters)
+									}
+								} else {
+									var qtyMet = qtyAboveThreshold(scoresByLevel[level].all, requirement.threshold)
+									styleReq(requirement, requirement.qty - qtyMet, needFilters)
+								}
+							}
+							break;
+						case 'clears':
+							var needFilters = Object.assign({"clear-type-min": -1, "clear-type-max": requirement.threshold - 1}, levelFilters)
+							if (requirement.qty == 0) {
+								distanceToLamp = clears[level][requirement.threshold][amethyst ? 'distanceToAmethystLamp' : 'distanceToLamp']
+								styleReq(requirement, distanceToLamp, needFilters)
+							} else {
+								total = clears[level][requirement.threshold][requirement.or_higher ? 'totalIncludingHigher' : 'total']
+								styleReq(requirement, requirement.qty - total, needFilters)
+							}
+							break
+						case 'consecutives':
+							var attained = checkedRequirements.consecutives[requirement.qty]
+							var distance = (attained >= level) ? 0 : null
+							styleReq(requirement, distance)
+							break
+						case 'averages':
+							var segment = amethyst ? 'amethyst' : 'default'
+							var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
+							styleReq(requirement, Math.ceil(requirement.threshold - averages[level][segment]), needFilters)
+							break
+						}
+					}
+				}
+
+				if ('lachendy' in rank.requirements) {
+					for (var requirement of rank.requirements.lachendy) {
+						remaining = lachendyScores.findIndex((score) => score >= requirement.threshold)
+						if (remaining == -1) {
+							remaining = lachendyScores.length
+						}
+						styleReq(requirement, remaining)
+					}
+				}
+
+				if ('calories' in rank.requirements) {
+					for (var requirement of rank.requirements.calories) {
+						var distance = (checkedRequirements.calories >= requirement.threshold) ? 0 : null
+						styleReq(requirement, distance)
+					}
+				}
+
+				if ('trials' in rank.requirements) {
+					for (var requirement of rank.requirements.trials) {
+						var attained = (requirement.qty == 1) ? checkedRequirements.trials.best : checkedRequirements.trials.second
+						var distance = (attained >= requirement.threshold) ? 0 : null
+						styleReq(requirement, distance)
+					}
+				}
+
+				if ('mfc_points' in rank.requirements) {
+					for (var requirement of rank.requirements.mfc_points) {
+						styleReq(requirement, requirement.threshold - mfcPointsEarned)
+					}
+				}
+
+				var flattened = Object.values(rank.requirements).reduce((acc, cur) => acc.concat(cur))
+				var remainingMandatory = flattened.reduce((acc, r) => (r.mandatory && !r.met) ? (acc + 1) : acc, 0)
+				var metOptional = flattened.reduce((acc, r) => (!r.mandatory && r.met) ? (acc + 1) : acc, 0)
+				var remainingOptional = rank.min - metOptional
+
+				var remainingText = "attained"
+				var attainedRank = true
+				if (remainingOptional > 0) {
+					attainedRank = false
+					if (remainingMandatory > 0) {
+						remainingText = `need ${remainingMandatory} mandatory, plus ${remainingOptional} more`
+					} else {
+						remainingText = `need ${remainingOptional} more`
+					}
+				} else if (remainingMandatory > 0) {
+					attainedRank = false
+					remainingText = `need ${remainingMandatory} mandatory`
+				} else if (remainingOptional < 0) {
+					remainingText = `attained, +${-remainingOptional} extra`
+				}
+
+				if (!attainedRank) {
+					var numTargets = 0
+					for (let targetCell of rank.main.find('.target-cell')) {
+						targetCell = $(targetCell)
+						description = targetCell.next().find('.req-description')
+						if (requirementTargets.includes(targetCell.data('goal-id')) && description.hasClass('unmet')) {
+							targetCell.next().addClass('targeted')
+							numTargets++
+						} else {
+							targetCell.next().removeClass('targeted')
+						}
+					}
+					for (let targetCell of rank.subs.find('.target-cell')) {
+						targetCell = $(targetCell)
+						description = targetCell.next().find('.req-description')
+						if (requirementTargets.includes($(targetCell).data('goal-id')) && description.hasClass('unmet')) {
+							targetCell.next().addClass('targeted')
+							numTargets++
+						} else {
+							targetCell.next().removeClass('targeted')
+						}
+					}
+					if (numTargets) {
+						remainingText += `, ${numTargets} targeted`
+					}
+				}
+
+				var rankOption = $(`#rank-select option[value=${index}]`)
+				rankOption.text(`${rank.name} (${remainingText})`)
+			}
+		}
+		evaluateRanks()
+	})
 })

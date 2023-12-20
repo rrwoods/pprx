@@ -646,7 +646,6 @@ def scores(request):
 		'consecutives': {2: user.best_two_consecutive, 3: user.best_three_consecutive},
 	}
 
-	rank_requirements = settings.RANK_REQUIREMENTS if white_cab.version_id > 18 else settings.RANK_REQUIREMENTS_A20PLUS
 	requirement_targets = user_targets(user, white_cab.version_id)
 
 	return render(request, 'scorebrowser/scores.html', {
@@ -654,7 +653,6 @@ def scores(request):
 		'cabinets': cab_names,
 		'versions': version_names,
 		'white_version': white_cab.version_id,
-		'rank_requirements': json.dumps(rank_requirements),
 		'all_charts': json.dumps(all_charts),
 		'romanized_titles': user.romanized_titles,
 		'life4_reqs': json.dumps(life4_reqs),
