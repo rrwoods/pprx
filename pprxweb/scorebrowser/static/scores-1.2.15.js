@@ -208,6 +208,8 @@ function getCookie(name) {
 }
 
 $(document).ready(function () {
+	const loadTimestamp = Math.floor(Date.now()/1000)
+
 	whiteVersion = $('#white-version').data('json')
 	reqsPromise = fetch("/static/rank-requirements-1.2.13.json")
 		.then(x => x.json())
@@ -216,25 +218,22 @@ $(document).ready(function () {
 	csrfToken = getCookie('csrftoken')
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
 
-	$('#version-min').val(1)
-	$('#version-max').val($("#version-max option").length)
-
 	$("[type='checkbox'].filter").each(function() {
-		currentFilters[this.id] = this.checked
+		currentFilters[this.id] = $(this).data('default') == 'true'
 		if (!$(this).hasClass("persistent")) {
-			defaultFilters[this.id] = this.checked
+			defaultFilters[this.id] = currentFilters[this.id]
 		}
 	})
 	$("[type='number'].filter").each(function() {
-		currentFilters[this.id] = parseInt(this.value)
+		currentFilters[this.id] = $(this).data('default')
 		if (!$(this).hasClass("persistent")) {
-			defaultFilters[this.id] = parseInt(this.value)
+			defaultFilters[this.id] = currentFilters[this.id]
 		}
 	})
 	$("select.filter").each(function() {
-		currentFilters[this.id] = parseInt(this.value)
+		currentFilters[this.id] = $(this).data('default')
 		if (!$(this).hasClass("persistent")) {
-			defaultFilters[this.id] = parseInt(this.value)
+			defaultFilters[this.id] = currentFilters[this.id]
 		}
 	})
 	Object.assign(baseFilters, currentFilters)
@@ -266,8 +265,6 @@ $(document).ready(function () {
 			duration /= division.divAmt
 		}
 	}
-
-	const loadTimestamp = Math.floor(Date.now()/1000)
 
 	checkedRequirements = $('#life4-reqs').data('json')
 	allCharts = $('#all-charts').data('json')
@@ -466,6 +463,7 @@ $(document).ready(function () {
 		},
 		order: [[16, 'asc']],
 	})
+	setFilters()
 
 	function setGoalSummary() {
 		$("#goals-summary").text(`${metGoals} goals met, ${totalGoals - metGoals} remaining`)
@@ -480,7 +478,7 @@ $(document).ready(function () {
 		setGoalSummary()
 	}
 
-	function setFilters(newFilters) {
+	function setFilters(newFilters = currentFilters) {
 		for (var name in newFilters) {
 			var newValue = newFilters[name]
 			currentFilters[name] = newValue

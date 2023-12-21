@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.2.14.js' %}"></script>
+	<script src="{% static 'scores-1.2.15.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -18,30 +18,36 @@
 
 	<p>
 		Cabinet:
-		<select autocomplete="off" id="cabinet-select" class="persistent filter">
-			{% for cabinet in cabinets %}
-				<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
-			{% endfor %}
-		</select>
+		{% with cabinets|first as first %}
+			<select autocomplete="off" id="cabinet-select" class="persistent filter" data-default="{{ first.id }}">
+				{% for cabinet in cabinets %}
+					<option value="{{ cabinet.id }}">{{ cabinet.name }}</option>
+				{% endfor %}
+			</select>
+		{% endwith %}
 
 		Version:
-		<select autocomplete="off" id="version-min" class="filter min" data-max="version-max">
-			<option hidden selected value=0>All</option>
-			{% for version in versions %}
-				<option value="{{ version.id }}">{{ version.name }}</option>
-			{% endfor %}
-		</select>
+		{% with versions|first as first %}
+			<select autocomplete="off" id="version-min" class="filter min" data-max="version-max" data-default="{{ first.id }}">
+				<option hidden selected value=0>All</option>
+				{% for version in versions %}
+					<option value="{{ version.id }}">{{ version.name }}</option>
+				{% endfor %}
+			</select>
+		{% endwith %}
 		to
-		<select autocomplete="off" id="version-max" class="filter max" data-min="version-min">
-			{% for version in versions %}
-				<option value="{{ version.id }}">{{ version.name }}</option>
-			{% endfor %}
-		</select>
+		{% with versions|last as last %}
+			<select autocomplete="off" id="version-max" class="filter max" data-min="version-min" data-default="{{ last.id }}">
+				{% for version in versions %}
+					<option value="{{ version.id }}">{{ version.name }}</option>
+				{% endfor %}
+			</select>
+		{% endwith %}
 	</p>
 
 	<p>
 		Chart level:
-		<select autocomplete="off" id="level-min" class="filter min" data-max="level-max">
+		<select autocomplete="off" id="level-min" class="filter min" data-max="level-max" data-default="1">
 			<option selected value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -63,7 +69,7 @@
 			<option value=19>19</option>
 		</select>
 		to
-		<select autocomplete="off" id="level-max" class="filter max" data-min="level-min">
+		<select autocomplete="off" id="level-max" class="filter max" data-min="level-min" data-default="19">
 			<option value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -86,7 +92,7 @@
 		</select>
 
 		Song has level:
-		<select autocomplete="off" id="song-level-min" class="filter min" data-max="song-level-max">
+		<select autocomplete="off" id="song-level-min" class="filter min" data-max="song-level-max" data-default="1">
 			<option selected value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -108,7 +114,7 @@
 			<option value=19>19</option>
 		</select>
 		to
-		<select autocomplete="off" id="song-level-max" class="filter max" data-min="song-level-min">
+		<select autocomplete="off" id="song-level-max" class="filter max" data-min="song-level-min" data-default="19">
 			<option value=1>1</option>
 			<option value=2>2</option>
 			<option value=3>3</option>
@@ -129,35 +135,35 @@
 			<option value=18>18</option>
 			<option selected value=19>19</option>
 		</select>
-		<label>Include beginner <input autocomplete="off" type="checkbox" id="song-beginner" class="filter" checked></label>
+		<label>Include beginner <input autocomplete="off" type="checkbox" id="song-beginner" class="filter" data-default="true"></label>
 	</p>
 
 	<p>
 		<label>
 			Show <span class="removed-song">removed</span> songs:
-			<input autocomplete="off" type="checkbox" id="show-removed" class="filter">
+			<input autocomplete="off" type="checkbox" id="show-removed" class="filter" data-default="false">
 		</label>
 
 		<label>
 			Show <span class="locked-chart">locked</span> charts:
-			<input autocomplete="off" type="checkbox" id="show-locked" class="filter">
+			<input autocomplete="off" type="checkbox" id="show-locked" class="filter" data-default="false">
 		</label>
 
 		<label>
 			Show unspiced charts:
-			<input autocomplete="off" type="checkbox" id="show-unspiced" class="filter" checked>
+			<input autocomplete="off" type="checkbox" id="show-unspiced" class="filter" data-default="true">
 		</label>
 
 		<label>
 			Bookmarks only:
-			<input autocomplete="off" type="checkbox" id="bookmarks-only" class="filter">
+			<input autocomplete="off" type="checkbox" id="bookmarks-only" class="filter" data-default="false">
 		</label>
 	</p>
 
 	<p>
 		Scores from last
-		<input autocomplete="off" type="number" pattern="\d*" id="time-range" class="filter" size="5">
-		<select autocomplete="off" id="time-type" class="filter">
+		<input autocomplete="off" type="number" pattern="\d*" id="time-range" class="filter" size="5" data-default="NaN">
+		<select autocomplete="off" id="time-type" class="filter" data-default=3600>
 			<option selected value=3600>hours</option>
 			<option value=86400>days</option>
 		</select>
@@ -165,16 +171,16 @@
 
 	<p>
 		Score:
-		<input autocomplete="off" type="number" pattern="\d*" id="min-score" class="filter score-input" size="10">
+		<input autocomplete="off" type="number" pattern="\d*" id="min-score" class="filter score-input" size="10" data-default="NaN">
 		to
-		<input autocomplete="off" type="number" pattern="\d*" id="max-score" class="filter score-input" size="10">
+		<input autocomplete="off" type="number" pattern="\d*" id="max-score" class="filter score-input" size="10" data-default="NaN">
 
-		<label>Hide met goals: <input autocomplete="off" type="checkbox" id="hide-met-goals" class="filter"></label>
+		<label>Hide met goals: <input autocomplete="off" type="checkbox" id="hide-met-goals" class="filter" data-default="false"></label>
 	</p>
 
 	<p>
 		Clear type:
-		<select autocomplete="off" id="clear-type-min" class="filter min" data-max="clear-type-max">
+		<select autocomplete="off" id="clear-type-min" class="filter min" data-max="clear-type-max" data-default=-1>
 			<option value=-1 selected>Unplayed</option>
 			<option value=0>Fail</option>
 			<option value=1>Pass</option>
@@ -185,7 +191,7 @@
 			<option value=6>MFC</option>
 		</select>
 		to
-		<select autocomplete="off" id="clear-type-max" class="filter max" data-min="clear-type-min">
+		<select autocomplete="off" id="clear-type-max" class="filter max" data-min="clear-type-min" data-default=6>
 			<option value=-1>Unplayed</option>
 			<option value=0>Fail</option>
 			<option value=1>Pass</option>
@@ -222,7 +228,7 @@
 	</p>
 	<p>
 		<select autocomplete="off" id="rank-select"></select>
-		<label>Hide non-required songs: <input autocomplete="off" type="checkbox" id="hide-optional" class="filter"></label>
+		<label>Hide non-required songs: <input autocomplete="off" type="checkbox" id="hide-optional" class="filter" data-default="false"></label>
 	</p>
 	<p id="rank-details"></p>
 {% endblock %}
