@@ -88,12 +88,12 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 
 /* goal styling (for scores table and requirements tables) */
 
-.met {
+.met .req-description, button.met {
 	color: seagreen;
 	font-style: italic;
 }
 
-.unmet {
+.unmet .req-description, button.unmet {
 	font-weight: bold;
 }
 

@@ -219,7 +219,7 @@ $(document).ready(function () {
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
 
 	$("[type='checkbox'].filter").each(function() {
-		currentFilters[this.id] = $(this).data('default') == 'true'
+		currentFilters[this.id] = $(this).data('default')
 		if (!$(this).hasClass("persistent")) {
 			defaultFilters[this.id] = currentFilters[this.id]
 		}
@@ -754,12 +754,15 @@ $(document).ready(function () {
 		var td = $('<td>', {class: 'desc-cell'})
 		var reqId = `req-${nextReqId()}`
 
+		var description
 		if (checkable) {
 			var checkbox = $('<input>', {type: 'checkbox', id: reqId})
 			td.append(checkbox)
+			description = $('<label>', {class: 'req-description', for: reqId})
+		} else {
+			description = $('<span>', {class: 'req-description'})
 		}
 
-		var description = $('<label>', {class: 'req-description', for: reqId})
 		description.text(text)
 		td.append(description)
 
@@ -1111,12 +1114,11 @@ $(document).ready(function () {
 			togo.empty()
 
 			var checkbox = requirement.row.find('input')
-			var label = requirement.row.find('label')
 			var targetCell = requirement.row.find('.target-cell')
 
 			if (!additional && (distance <= 0) && (distance != null)) {
-				label.removeClass('unmet')
-				label.addClass('met')
+				requirement.row.removeClass('unmet')
+				requirement.row.addClass('met')
 				targetCell.removeClass('targetable')
 				checkbox.prop('checked', true)
 				requirement.met = true
@@ -1153,8 +1155,8 @@ $(document).ready(function () {
 				togo.append(')')
 			}
 
-			label.removeClass('met')
-			label.addClass('unmet')
+			requirement.row.removeClass('met')
+			requirement.row.addClass('unmet')
 			targetCell.addClass('targetable')
 			checkbox.prop('checked', false)
 			requirement.met = false
@@ -1285,11 +1287,11 @@ $(document).ready(function () {
 				}
 
 				if (!attainedRank) {
+					console.log(`Getting targets for ${rank.name}`)
 					var numTargets = 0
 					for (let targetCell of rank.main.find('.target-cell')) {
 						targetCell = $(targetCell)
-						description = targetCell.next().find('.req-description')
-						if (requirementTargets.includes(targetCell.data('goal-id')) && description.hasClass('unmet')) {
+						if (requirementTargets.includes(targetCell.data('goal-id')) && targetCell.parent().hasClass('unmet')) {
 							targetCell.next().addClass('targeted')
 							numTargets++
 						} else {
@@ -1298,8 +1300,7 @@ $(document).ready(function () {
 					}
 					for (let targetCell of rank.subs.find('.target-cell')) {
 						targetCell = $(targetCell)
-						description = targetCell.next().find('.req-description')
-						if (requirementTargets.includes($(targetCell).data('goal-id')) && description.hasClass('unmet')) {
+						if (requirementTargets.includes($(targetCell).data('goal-id')) && targetCell.parent().hasClass('unmet')) {
 							targetCell.next().addClass('targeted')
 							numTargets++
 						} else {
