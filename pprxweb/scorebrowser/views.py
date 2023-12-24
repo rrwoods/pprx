@@ -489,15 +489,12 @@ def scores(request):
 	scores_data = []
 	# {'songid-difficulty': (score, timestamp, combo type)}
 	scores_lookup = {}
-	duplicate_song_ids = ['01lbO69qQiP691ll6DIiqPbIdd9O806o', 'dll9D90dq1O09oObO66Pl8l9I9l0PbPP']
 	for score in scores_response.json():
 		song_id = score['song_id']
 		difficulty = score['difficulty']
 		timestamp = score['time_played'] or score['time_uploaded']
 		lamp = score['lamp']
 		score = score['score']
-		if song_id in duplicate_song_ids:
-			song_id = duplicate_song_ids[0]
 		key = '{}-{}'.format(song_id, difficulty)
 		if (key in scores_lookup) and (scores_lookup[key][0] >= score):
 			continue
@@ -545,9 +542,6 @@ def scores(request):
 	scores_by_diff = {diff: [] for diff in range(14, 20)}
 
 	for chart in chart_query:
-		if chart.song_id in duplicate_song_ids[1:]:
-			continue
-
 		entry = {}
 		default_chart = True
 		amethyst_required = True
