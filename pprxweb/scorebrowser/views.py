@@ -522,11 +522,12 @@ def scores(request):
 	# {version id: {chart id: [requirements]}}
 	chart_unlocks = {v: {} for v in cab_versions}
 	for chart_unlock in ChartUnlock.objects.all().select_related("task__event"):
-		if chart_unlock.version_id not in cab_versions:
+		version_id = chart_unlock.task.event.version_id
+		if version_id not in cab_versions:
 			continue
-		if chart_unlock.chart_id not in chart_unlocks[chart_unlock.version_id]:
-			chart_unlocks[chart_unlock.version_id][chart_unlock.chart_id] = []
-		chart_unlocks[chart_unlock.version_id][chart_unlock.chart_id].append(chart_unlock)
+		if chart_unlock.chart_id not in chart_unlocks[version_id]:
+			chart_unlocks[version_id][chart_unlock.chart_id] = []
+		chart_unlocks[version_id][chart_unlock.chart_id].append(chart_unlock)
 
 	# set of task ids this user has completed
 	user_unlocks = set(u.task_id for u in UserUnlock.objects.filter(user=user))

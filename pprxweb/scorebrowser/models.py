@@ -160,7 +160,6 @@ class UnlockTask(models.Model):
 
 class ChartUnlock(models.Model):
     id = models.AutoField(primary_key=True)
-    version = models.ForeignKey(Version, on_delete=models.CASCADE)
     task = models.ForeignKey(UnlockTask, on_delete=models.CASCADE)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
     extra = models.BooleanField(default=False)

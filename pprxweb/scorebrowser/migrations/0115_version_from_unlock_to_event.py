@@ -24,4 +24,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+    # there's no operations here, this code didn't run
     ]
