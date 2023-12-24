@@ -144,6 +144,7 @@ class Cabinet(models.Model):
 
 class UnlockEvent(models.Model):
     id = models.AutoField(primary_key=True)
+    version = models.ForeignKey(Version, on_delete=models.CASCADE, null=True)
     name = models.TextField()
     ordering = models.IntegerField()
     completable = models.BooleanField(default=True)
