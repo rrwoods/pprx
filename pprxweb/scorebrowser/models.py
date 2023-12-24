@@ -79,13 +79,6 @@ class Score(models.Model):
         db_table = 'scores'
 
 
-class Benchmark(models.Model):
-    id = models.AutoField(primary_key=True)
-    rating = models.IntegerField()
-    description = models.TextField()
-    chart = models.ForeignKey(Chart, on_delete=models.PROTECT, null=True)
-
-
 class Region(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.TextField()
