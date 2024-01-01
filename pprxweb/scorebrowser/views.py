@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from django.conf import settings
 from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
@@ -117,19 +118,40 @@ def unlocks(request):
 	if not user:
 		return render_landing(request, True)
 
-	events = UnlockEvent.objects.filter(completable=True).order_by('ordering')
+	allGroups = UnlockGroup.objects.all().order_by('ordering')
+	allEvents = UnlockEvent.objects.filter(group__isnull=False).select_related('version').order_by('ordering')
 	allTasks = UnlockTask.objects.all().order_by('ordering')
 	allUserUnlocks = UserUnlock.objects.filter(user=user)
+	groups = {x.id: x.name for x in allGroups}
+	versions = {}
+	events = {}
 	tasks = {}
 	userUnlocks = []
-	for event in events:
+	for event in allEvents:
+		versions[event.version_id] = event.version.name
+		if event.version_id not in events:
+			events[event.version_id] = {}
+		if event.group_id not in events[event.version_id]:
+			events[event.version_id][event.group_id] = []
+		events[event.version_id][event.group_id].append(event)
 		eventTasks = [t for t in allTasks if t.event_id == event.id]
 		tasks[event.id] = eventTasks
 		for task in eventTasks:
 			if any(u.task_id == task.id for u in allUserUnlocks):
 				userUnlocks.append(task.id)
+
+	ordered_events = OrderedDict()
+	for version_id in versions:
+		version_events = OrderedDict()
+		for group in allGroups:
+			if group.id in events[version_id]:
+				version_events[group.id] = events[version_id][group.id]
+		ordered_events[version_id] = version_events
+
 	unlockData = {
-		'events': events,
+		'versions': versions.items(),
+		'groups': groups,
+		'events': ordered_events,
 		'tasks': tasks,
 		'userUnlocks': userUnlocks,
 		'selectedRegionId': user.region_id,
@@ -521,7 +543,7 @@ def scores(request):
 
 	# {version id: {chart id: [requirements]}}
 	chart_unlocks = {v: {} for v in cab_versions}
-	for chart_unlock in ChartUnlock.objects.all().select_related("task__event"):
+	for chart_unlock in ChartUnlock.objects.all().select_related("task__event", "task__event__group"):
 		version_id = chart_unlock.task.event.version_id
 		if version_id not in cab_versions:
 			continue
@@ -573,7 +595,7 @@ def scores(request):
 						default_chart = False
 						if not r.task.event.amethyst_required:
 							amethyst_required = False
-						if (not r.extra) and (not r.task.event.completable):
+						if (not r.extra) and (not r.task.event.group):
 							chart_vis = UNAVAILABLE
 							break
 						if (r.task_id not in user_unlocks):

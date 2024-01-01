@@ -45,29 +45,47 @@
 
 	<p>Extra savior unlocks are game-version-specific.  Don't check off every A20 PLUS extra savior just because you play on A3 -- only check off the ones you have actually unlocked on A20 PLUS.</p>
 
-	{% for event in events %}
-		<h4>
-			{{ event.name }}
-			<button class="all-button" data-event="{{ event.id }}">All</button>
-			<button class="none-button" data-event="{{ event.id }}">None</button>
-		</h4>
-		<div data-event="{{ event.id }}">
-			{% for task in tasks|dict_key:event.id %}
-				<form method="POST" class="inline-form">
-					<input
-						type="checkbox"
-						{% if task.id in userUnlocks %}checked{% endif %}
-						name="pref_value"
-						id="{{ task.id }}"
-						hx-post="{% url 'update_unlock' %}"
-						hx-target="#saved-pref"
-					>
-					<label for="{{ task.id }}">{{ task.name }}</label>
-					<input type="hidden" name="taskId" value="{{ task.id }}">
-					{% csrf_token %}
-				</form>
-				<br/>
-			{% endfor %}
-		</div>
-	{% endfor %}
+	<section>
+		{% for version_id, version in versions %}
+			<details>
+				<summary><h2>{{ version }}</h2></summary>
+				<div class="details">
+					{% with events|dict_key:version_id as event_group %}
+						{% for group_id, grouped_events in event_group.items %}
+							<details>
+								<summary><h3>{{ groups|dict_key:group_id }}</h3></summary>
+								<div class="details">
+									{% for event in grouped_events %}
+										<h4>
+											{{ event.name }}
+											<button class="all-button" data-event="{{ event.id }}">All</button>
+											<button class="none-button" data-event="{{ event.id }}">None</button>
+										</h4>
+										<div data-event="{{ event.id }}">
+											{% for task in tasks|dict_key:event.id %}
+												<form method="POST" class="inline-form">
+													<input
+														type="checkbox"
+														{% if task.id in userUnlocks %}checked{% endif %}
+														name="pref_value"
+														id="{{ task.id }}"
+														hx-post="{% url 'update_unlock' %}"
+														hx-target="#saved-pref"
+													>
+													<label for="{{ task.id }}">{{ task.name }}</label>
+													<input type="hidden" name="taskId" value="{{ task.id }}">
+													{% csrf_token %}
+												</form>
+												<br/>
+											{% endfor %}
+										</div>
+									{% endfor %}
+								</div>
+							</details>
+						{% endfor %}
+					{% endwith %}
+				</div>
+			</details>
+		{% endfor %}
+	</section>
 {% endblock %}

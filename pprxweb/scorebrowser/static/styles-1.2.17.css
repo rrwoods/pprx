@@ -20,6 +20,23 @@
 	display: inline;
 }
 
+summary {
+	cursor: pointer;
+}
+
+summary > * {
+	display: inline;
+}
+
+details {
+	margin-bottom: 1em;
+}
+
+details .details {
+	margin-left: 2em;
+	margin-bottom: 1em;
+}
+
 
 
 /*** scores table ***/

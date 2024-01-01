@@ -142,12 +142,18 @@ class Cabinet(models.Model):
     gold = models.BooleanField(default=False)
 
 
-class UnlockEvent(models.Model):
+class UnlockGroup(models.Model):
     id = models.AutoField(primary_key=True)
-    version = models.ForeignKey(Version, on_delete=models.CASCADE, null=True)
     name = models.TextField()
     ordering = models.IntegerField()
-    completable = models.BooleanField(default=True)
+
+
+class UnlockEvent(models.Model):
+    id = models.AutoField(primary_key=True)
+    version = models.ForeignKey(Version, on_delete=models.CASCADE)
+    group = models.ForeignKey(UnlockGroup, on_delete=models.CASCADE, null=True)
+    name = models.TextField()
+    ordering = models.IntegerField()
     amethyst_required = models.BooleanField(default=True)
 
 
