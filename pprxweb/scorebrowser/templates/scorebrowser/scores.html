@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-1.2.16.js' %}"></script>
+	<script src="{% static 'scores-1.2.18.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -149,10 +149,12 @@
 			<input autocomplete="off" type="checkbox" id="show-locked" class="filter" data-default="false">
 		</label>
 
-		<label>
-			Show unspiced charts:
-			<input autocomplete="off" type="checkbox" id="show-unspiced" class="filter" data-default="true">
-		</label>
+		Spice status:
+		<select autocomplete="off" id="spice-status" class="filter" data-default="0">
+			<option value=0>All</option>
+			<option value=1>Tracked</option>
+			<option value=2>Spiced</option>
+		</select>
 
 		<label>
 			Bookmarks only:

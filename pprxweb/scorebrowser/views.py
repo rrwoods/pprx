@@ -651,6 +651,7 @@ def scores(request):
 		entry['default_chart'] = default_chart
 		entry['amethyst_required'] = amethyst_required
 		entry['removed'] = chart.song.removed
+		entry['tracked'] = chart.tracked
 		scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)

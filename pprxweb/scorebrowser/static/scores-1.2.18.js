@@ -131,9 +131,15 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		}
 	}
 
-	var is_spiced = (data[14] === "true")
-	if (!currentFilters["show-unspiced"] && !is_spiced) {
-		return false
+	const is_spiced = data[14] === "true"
+	if (currentFilters["spice-status"] == 1) {
+		if (data[27] !== "true") {
+			return false
+		}
+	} else if (currentFilters["spice-status"] == 2) {
+		if (!is_spiced) {
+			return false
+		}
 	}
 
 	if (currentFilters["bookmarks-only"] && (data[23] === "false")) {
@@ -449,6 +455,8 @@ $(document).ready(function () {
 			{ data: 'amethyst_required', visible: false },
 			// 26:
 			{ data: 'removed', visible: false },
+			// 27:
+			{ data: 'tracked', visible: false },
 		],
 		createdRow: function(row, data, index) {
 			visibility = parseInt(data[currentFilters["cabinet-select"]])
