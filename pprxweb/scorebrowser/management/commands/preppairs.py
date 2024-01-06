@@ -15,10 +15,6 @@ class Command(BaseCommand):
 			charts = Chart.objects.filter(rating=rating, tracked=True)
 			chart_popularity = []
 			for chart in charts:
-				# skip duplicate B4U Acyolyte -- it should have no scores against it
-				# (score updater shunts all those scores over to the primary one)
-				if chart.song.id == 'dll9D90dq1O09oObO66Pl8l9I9l0PbPP':
-					continue
 				qty = Score.objects.filter(chart__id=chart.id).count()
 				chart_popularity.append((qty, chart.id))
 			chart_popularity.sort(reverse=True)
