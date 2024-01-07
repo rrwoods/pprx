@@ -1295,7 +1295,6 @@ $(document).ready(function () {
 				}
 
 				if (!attainedRank) {
-					console.log(`Getting targets for ${rank.name}`)
 					var numTargets = 0
 					for (let targetCell of rank.main.find('.target-cell')) {
 						targetCell = $(targetCell)
