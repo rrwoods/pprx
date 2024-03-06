@@ -100,6 +100,7 @@ if 'RDS_HOSTNAME' in os.environ:
     }
     ALLOWED_HOSTS = [
         'pprx-dev.us-west-2.elasticbeanstalk.com',
+        'pprx-mysql8.eba-hzrcmmit.us-west-2.elasticbeanstalk.com',
         'pprx.gg',
     ]
 else:

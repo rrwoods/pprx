@@ -243,7 +243,6 @@ $(document).ready(function () {
 		}
 	})
 	Object.assign(baseFilters, currentFilters)
-	baseFilters["show-locked"] = true
 	baseFilters["hide-optional"] = true
 
 	function formatAge(timestamp) {
@@ -1184,6 +1183,7 @@ $(document).ready(function () {
 						continue
 					}
 					var levelFilters = {"level-min": level, "level-max": level}
+					var levelFiltersWithOptional = {"level-min": level, "level-max": level, "hide-optional": false}
 					for (var requirement of rank.requirements[level]) {
 						switch(requirement.kind) {
 						case 'scores':
@@ -1200,8 +1200,8 @@ $(document).ready(function () {
 									styleReq(requirement, requirement.qty - qtyMet, {"max-score": requirement.threshold, "level-min": level})
 								}
 							} else {
-								var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
 								if (requirement.qty <= 0) {
+									var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
 									var segment = amethyst ? 'amethyst_required' : 'default'
 									var qtyMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.threshold)
 									//var clearLamp = clears[level][1].distanceToLamp == 0 ? "" : "clear lamp"
@@ -1213,17 +1213,19 @@ $(document).ready(function () {
 										styleReq(requirement, qtyUnmet + requirement.qty, needFilters, "clear lamp", clearFilters)
 									}
 								} else {
+									var needFilters = Object.assign({"max-score": requirement.threshold}, levelFiltersWithOptional)
 									var qtyMet = qtyAboveThreshold(scoresByLevel[level].all, requirement.threshold)
 									styleReq(requirement, requirement.qty - qtyMet, needFilters)
 								}
 							}
 							break;
 						case 'clears':
-							var needFilters = Object.assign({"clear-type-min": -1, "clear-type-max": requirement.threshold - 1}, levelFilters)
 							if (requirement.qty == 0) {
+								var needFilters = Object.assign({"clear-type-min": -1, "clear-type-max": requirement.threshold - 1}, levelFilters)
 								distanceToLamp = clears[level][requirement.threshold][amethyst ? 'distanceToAmethystLamp' : 'distanceToLamp']
 								styleReq(requirement, distanceToLamp, needFilters)
 							} else {
+								var needFilters = Object.assign({"clear-type-min": -1, "clear-type-max": requirement.threshold - 1}, levelFiltersWithOptional)
 								total = clears[level][requirement.threshold][requirement.or_higher ? 'totalIncludingHigher' : 'total']
 								styleReq(requirement, requirement.qty - total, needFilters)
 							}
