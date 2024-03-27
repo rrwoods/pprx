@@ -3,8 +3,12 @@ from . import views
 
 urlpatterns = [
 	path('', views.landing, name='landing'),
-	path('logged_in', views.logged_in, name='logged_in'),
-	path('charts', views.charts, name='charts'),
+	path('register', views.register, name='register'),
+	path('login', views.login_user, name='login'),
+	path('link_sanbai', views.link_sanbai, name='link_sanbai'),
+	path('finish_link', views.finish_link, name='finish_link'),
+	path('logout', views.logout_user, name='logout'),
+
 	path('scores', views.scores, name='scores'),
 	path('unlocks', views.unlocks, name='unlocks'),
 	path('set_region', views.set_region, name='set_region'),

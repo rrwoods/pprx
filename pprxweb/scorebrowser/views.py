@@ -1,8 +1,12 @@
 from collections import OrderedDict
 from django.conf import settings
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.models import User as DjangoUser
 from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from .models import *
@@ -13,48 +17,77 @@ import requests
 def hello(request):
 	return render(request, 'scorebrowser/hello.html')
 
-def render_landing(request, fresh_user):
-	if fresh_user:
-		return render(request, 'scorebrowser/landing.html', {'client_id': settings.CLIENT_ID})
+def register(request):
+	if request.method == 'POST':
+		form = UserCreationForm(request.POST)
+		if form.is_valid():
+			django_user = form.save(commit=False)
+			django_user.save()
+			login(request, django_user)
+			return redirect('link_sanbai')
+
+	return render(request, 'scorebrowser/register.html', {'form': UserCreationForm()})
+
+def login_user(request):
+	if request.method == 'POST':
+		form = AuthenticationForm(request, data=request.POST)
+		if form.is_valid():
+			django_user = form.get_user()
+			login(request, django_user)
+
+			users = User.objects.filter(django_user=django_user)
+			next_url = request.POST.get('next')
+			return redirect(next_url or 'landing') if users else redirect('link_sanbai')
 	else:
-		return render(request, 'scorebrowser/loggedin.html')
+		form = AuthenticationForm(request)
 
-def landing(request):
-	return render_landing(request, 'player_id' not in request.session)
+	return render(request, 'scorebrowser/login.html', {'form': form})
 
-def charts(request):
-	charts = Chart.objects.exclude(spice=None).order_by('-spice')
-	return render(request, 'scorebrowser/charts.html', {'charts': charts})
+@login_required(login_url='login')
+def link_sanbai(request):
+	return render(request, 'scorebrowser/link_sanbai.html', {'client_id': settings.CLIENT_ID})
 
-def get_user(request):
-	if 'player_id' not in request.session:
-		return None
-	return User.objects.filter(player_id=request.session['player_id']).first()
-
-def logged_in(request):
+def finish_link(request):
 	if 'code' not in request.GET:
 		return HttpResponse("Couldn't log in, unknown error :/")
+	player_id = request.GET.get('player_id')
+	user = User.objects.filter(player_id=player_id).first()
+	if user is None:
+		user = User(player_id=player_id)
+	user.django_user = request.user
+	user.save()
 
 	auth_response = requests.post('https://3icecream.com/oauth/token', data={
 		'client_id': settings.CLIENT_ID,
 		'client_secret': settings.CLIENT_SECRET,
 		'grant_type': 'authorization_code',
 		'code': request.GET.get('code'),
-		'redirect_uri': request.build_absolute_uri(reverse('logged_in')),
+		'redirect_uri': request.build_absolute_uri(reverse('finish_link')),
 	})
 	if auth_response.status_code != 200:
 		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(auth_response.status_code, auth_response.text))
 
-	player_id = request.GET.get('player_id')
-	request.session['player_id'] = player_id
-	user = User.objects.filter(player_id=player_id).first()
-	if user is None:
-		user = User(player_id=player_id)
 	response_json = auth_response.json()
 	user.access_token = response_json['access_token']
 	user.refresh_token = response_json['refresh_token']
 	user.save()
 	return render(request, 'scorebrowser/loggedin.html')
+
+@login_required(login_url='login')
+def landing(request):
+	return render(request, 'scorebrowser/loggedin.html')
+
+def logout_user(request):
+	logout(request)
+	return redirect('login')
+
+def get_user(request):
+	if not request.user:
+		return None
+	users = User.objects.filter(django_user=request.user)
+	if not users:
+		return None
+	return users[0]
 
 def set_region(request):
 	if request.method != 'POST':
@@ -113,10 +146,11 @@ def update_unlock_event(request):
 	return HttpResponse("Updated unlock status.")
 
 
+@login_required(login_url='login')
 def unlocks(request):
 	user = get_user(request)
 	if not user:
-		return render_landing(request, True)
+		return redirect('link_sanbai')
 
 	allGroups = UnlockGroup.objects.all().order_by('ordering')
 	allEvents = UnlockEvent.objects.filter(group__isnull=False).select_related('version').order_by('ordering')
@@ -434,42 +468,17 @@ def sort_key(searchable_title):
 	return ret
 
 
+@login_required(login_url='login')
 def scores(request):
 	#### USER RETRIEVAL ####
-
-	user = None
-	if 'code' in request.GET:
-		auth_response = requests.post('https://3icecream.com/oauth/token', data={
-			'client_id': settings.CLIENT_ID,
-			'client_secret': settings.CLIENT_SECRET,
-			'grant_type': 'authorization_code',
-			'code': request.GET.get('code'),
-			'redirect_uri': request.build_absolute_uri(reverse('scores')),
-		})
-		if auth_response.status_code != 200:
-			return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(auth_response.status_code, auth_response.text))
-
-		player_id = request.GET.get('player_id')
-		request.session['player_id'] = player_id
-		user = User.objects.filter(player_id=player_id).first()
-		if user is None:
-			user = User(player_id=player_id)
-		response_json = auth_response.json()
-		user.access_token = response_json['access_token']
-		user.refresh_token = response_json['refresh_token']
-		user.save()
-	else:
-		user = get_user(request)
-
+	user = get_user(request)
 	if not user:
-		return render_landing(request, True)
+		return redirect('link_sanbai')
 
 	#### 3ICECREAM SCORE RETRIEVAL ####
 
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
-		if user.refresh_token is None:
-			return render_landing(request, True)
 		refresh_response = requests.post('https://3icecream.com/oauth/token', data={
 			'client_id': settings.CLIENT_ID,
 			'client_secret': settings.CLIENT_SECRET,
@@ -478,8 +487,6 @@ def scores(request):
 			'code': request.GET.get('code'),
 			'redirect_uri': request.build_absolute_uri(reverse('scores')),
 		})
-		if refresh_response.status_code != 200:
-			return render_landing(request, True)
 		response_json = refresh_response.json()
 		user.access_token = response_json['access_token']
 		user.refresh_token = response_json['refresh_token']

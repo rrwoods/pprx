@@ -1,0 +1,21 @@
+{% load static %}
+<html>
+	<head>
+		<title>PPR X Registration</title>
+		<link rel="stylesheet" href="{% static 'styles-register-1.2.21.css' %}">
+	</head>
+	<body>
+		<form method='POST'>
+			{% csrf_token %}
+			<h1>Create PPR X Account</h1>
+			{% for field in form %}
+				<div class="form-label"><label for="{{ field.auto_id }}">{{ field.label }}</label></div>
+				<div class="form-control">{{ field }}</div>
+			{% endfor %}
+			<button type="submit">Register</button>
+		</form>
+		<div>
+			Already have an account?  <a href="{% url 'login' %}">Log in here.</a>
+		</div>
+	</body>
+</html>

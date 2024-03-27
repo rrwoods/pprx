@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User as DjangoUser
 from django.db import models
 
 
@@ -92,6 +93,7 @@ def default_region():
 # the Player model object is used in spice rating computation and is not related to a logged-in User in any way.
 class User(models.Model):
     id = models.AutoField(primary_key=True)
+    django_user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True, default=None)
     player_id = models.TextField()
     region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)
     access_token = models.TextField(null=True)

@@ -1,0 +1,14 @@
+{% load pprxtras %}
+
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta charset="utf-8" />
+		<title>Welcome to PPR X :)</title>
+	</head>
+	<body>
+		Welcome to PPR X!  Please
+		<a href="https://3icecream.com/oauth/authorize?client_id={{ client_id }}&response_type=code&scope=read_scores on_score_update&redirect_uri={% abs_url 'finish_link' %}">
+		link your 3icecream account</a>.
+	</body>
+</html>
