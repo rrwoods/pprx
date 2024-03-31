@@ -95,9 +95,12 @@ class User(models.Model):
     id = models.AutoField(primary_key=True)
     django_user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True, default=None)
     player_id = models.TextField()
-    region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)
     access_token = models.TextField(null=True)
     refresh_token = models.TextField(null=True)
+    webhooked = models.BooleanField(default=False)
+    pulling_scores = models.BooleanField(default=False)
+
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)
     goal_score = models.IntegerField(default=0)
     goal_chart = models.ForeignKey(Chart, on_delete=models.CASCADE, null=True, default=None)
     romanized_titles = models.BooleanField(default=False)
@@ -108,6 +111,23 @@ class User(models.Model):
     best_two_consecutive = models.IntegerField(default=0)
     best_three_consecutive = models.IntegerField(default=0)
     best_calorie_burn = models.IntegerField(default=0)
+
+class UserScore(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
+    score = models.IntegerField()
+    clear_type = models.IntegerField()
+    timestamp = models.IntegerField()
+    current = models.BooleanField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields = ['user', 'chart', 'current'],
+                name = 'uniq_current_score',
+            )
+        ]
 
 class UserChartAux(models.Model):
     id = models.AutoField(primary_key=True)

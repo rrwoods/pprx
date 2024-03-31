@@ -8,11 +8,12 @@ from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_exempt
 from .models import *
 import json
 import math
 import requests
+import time
 
 def hello(request):
 	return render(request, 'scorebrowser/hello.html')
@@ -47,6 +48,19 @@ def login_user(request):
 def link_sanbai(request):
 	return render(request, 'scorebrowser/link_sanbai.html', {'client_id': settings.CLIENT_ID})
 
+def refresh_user(user, redirect_uri):
+	refresh_response = requests.post('https://3icecream.com/oauth/token', data={
+		'client_id': settings.CLIENT_ID,
+		'client_secret': settings.CLIENT_SECRET,
+		'grant_type': 'refresh_token',
+		'refresh_token': user.refresh_token,
+		'redirect_uri': redirect_uri,
+	})
+	response_json = refresh_response.json()
+	user.access_token = response_json['access_token']
+	user.refresh_token = response_json['refresh_token']
+	user.save()
+
 def finish_link(request):
 	if 'code' not in request.GET:
 		return HttpResponse("Couldn't log in, unknown error :/")
@@ -65,13 +79,29 @@ def finish_link(request):
 		'redirect_uri': request.build_absolute_uri(reverse('finish_link')),
 	})
 	if auth_response.status_code != 200:
-		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(auth_response.status_code, auth_response.text))
+		return HttpResponse("Got {} from 3icecream auth token request; can't proceed.  3icecream error follows.<hr />{}".format(auth_response.status_code, auth_response.text))
 
 	response_json = auth_response.json()
 	user.access_token = response_json['access_token']
 	user.refresh_token = response_json['refresh_token']
 	user.save()
+
+	hook_response = register_webhook(user)
+	if hook_response.status_code != 200:
+		return HttpResponse("Got {} from 3icecream webhook registration; can't proceed.  3icecream error follows.<hr />{}".format(hook_response.status_code, hook_response.text))
+	user.webhooked = True
+	user.save()
+
 	return render(request, 'scorebrowser/loggedin.html')
+
+def register_webhook(user):
+	return requests.post('https://3icecream.com/oauth/add_webhook_relationship', data={
+		'client_id': settings.CLIENT_ID,
+		'client_secret': settings.CLIENT_SECRET,
+		'webhook_id': settings.WEBHOOK_ID,
+		'access_token': user.access_token,
+	})
+
 
 @login_required(login_url='login')
 def landing(request):
@@ -385,6 +415,89 @@ def user_targets(user, version_id, add = None, remove = None):
 
 	return list(all_targets)
 
+# This view is called by the 3icecream on-update webhook
+# see https://3icecream.com/dev/docs for full details
+@csrf_exempt
+def fetch_scores(request):
+	body = request.body.decode('utf-8')
+	player_id = None
+	for component in body.split('&'):
+		[key, value] = component.split('=')
+		if key == 'player_id':
+			player_id = value
+			break
+	user = User.objects.get(player_id=player_id)
+	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
+
+def perform_fetch(user, redirect_uri):
+	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
+	if scores_response.status_code == 400:
+		refresh_user(user, redirect_uri)
+		scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
+
+	if scores_response.status_code != 200:
+		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
+
+	user.pulling_scores = True
+	user.save()
+
+	scores_lookup = {}
+	for score in scores_response.json():
+		song_id = score['song_id']
+		difficulty = score['difficulty']
+		timestamp = score['time_played'] or score['time_uploaded']
+		lamp = score['lamp']
+		score = score['score']
+		key = '{}-{}'.format(song_id, difficulty)
+		scores_lookup[key] = (score, timestamp, lamp)
+
+	current_scores = {}
+	for score in UserScore.objects.filter(user=user, current=True):
+		current_scores[score.chart_id] = score
+
+	formerly_current_scores = []
+	new_scores = []
+
+	all_charts = Chart.objects.all()
+	for chart in all_charts:
+		key = '{}-{}'.format(chart.song_id, chart.difficulty_id)
+		if key not in scores_lookup:
+			continue
+
+		if chart.id in current_scores:
+			new_score = scores_lookup[key]
+			old_score = current_scores[chart.id]
+			if new_score[0] > old_score.score:
+				new_scores.append(UserScore(
+					user=user,
+					chart=chart,
+					score=new_score[0],
+					timestamp=new_score[1],
+					clear_type=new_score[2],
+					current=True,
+				))
+				old_score.current = None
+				formerly_current_scores.append(old_score)
+		else:
+			new_score = scores_lookup[key]
+			new_scores.append(UserScore(
+				user=user,
+				chart=chart,
+				score=new_score[0],
+				timestamp=new_score[1],
+				clear_type=new_score[2],
+				current=True,
+			))
+
+	UserScore.objects.bulk_update(formerly_current_scores, ['current'])
+	UserScore.objects.bulk_create(new_scores)
+
+	user.pulling_scores = False
+	user.save()
+
+	return HttpResponse("Pulled new scores")
+
+
 def check_locks(song_id, song_locks, cabinet):
 	if song_id in song_locks:
 		for lock in song_locks[song_id]:
@@ -471,31 +584,35 @@ def sort_key(searchable_title):
 @login_required(login_url='login')
 def scores(request):
 	#### USER RETRIEVAL ####
+
 	user = get_user(request)
 	if not user:
 		return redirect('link_sanbai')
-
-	#### 3ICECREAM SCORE RETRIEVAL ####
-
-	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
-	if scores_response.status_code == 400:
-		refresh_response = requests.post('https://3icecream.com/oauth/token', data={
-			'client_id': settings.CLIENT_ID,
-			'client_secret': settings.CLIENT_SECRET,
-			'grant_type': 'refresh_token',
-			'refresh_token': user.refresh_token,
-			'code': request.GET.get('code'),
-			'redirect_uri': request.build_absolute_uri(reverse('scores')),
-		})
-		response_json = refresh_response.json()
-		user.access_token = response_json['access_token']
-		user.refresh_token = response_json['refresh_token']
+	if not user.webhooked:
+		redirect_uri = request.build_absolute_uri(reverse('scores'))
+		hook_response = register_webhook(user)
+		if hook_response.status_code != 200:
+			refresh_user(user, redirect_uri)
+			hook_response = register_webhook(user)
+			if hook_response.status_code != 200:
+				return redirect('link_sanbai')
+		user.webhooked = True
 		user.save()
 
-		scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
+		perform_fetch(user, redirect_uri)
 
-	if scores_response.status_code != 200:
-		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
+	if user.pulling_scores:
+		while True:
+			time.sleep(1)
+			user = get_user(request)
+			if not user.pulling_scores:
+				break
+
+	#### DB SCORE RETRIEVAL ####
+
+	current_scores = {}
+	for score in UserScore.objects.filter(user=user, current=True):
+		current_scores[score.chart_id] = score
 
 	#### TARGET QUALITY COMPUTATION ####
 
@@ -514,20 +631,6 @@ def scores(request):
 	EXTRA = 1
 	LOCKED = 2
 	UNAVAILABLE = 3
-
-	scores_data = []
-	# {'songid-difficulty': (score, timestamp, combo type)}
-	scores_lookup = {}
-	for score in scores_response.json():
-		song_id = score['song_id']
-		difficulty = score['difficulty']
-		timestamp = score['time_played'] or score['time_uploaded']
-		lamp = score['lamp']
-		score = score['score']
-		key = '{}-{}'.format(song_id, difficulty)
-		if (key in scores_lookup) and (scores_lookup[key][0] >= score):
-			continue
-		scores_lookup[key] = (score, timestamp, lamp)
 
 	song_locks = {}
 	for lock in SongLock.objects.all():
@@ -563,13 +666,13 @@ def scores(request):
 	
 	#### DATATABLE ENTRY GENERATION ####
 
+	scores_data = []
+
 	# {song_id: [ratings]}
 	all_charts = {}
 
 	chart_query = Chart.objects  \
 		.select_related("song", "song__version", "difficulty")
-
-	scores_by_diff = {diff: [] for diff in range(14, 20)}
 
 	for chart in chart_query:
 		entry = {}
@@ -620,13 +723,18 @@ def scores(request):
 
 		spice = chart.spice
 
-		k = '{}-{}'.format(chart.song_id, chart.difficulty_id)
-		score, timestamp, clearType = scores_lookup[k] if (k in scores_lookup) else (0, 0, 0)
+		if chart.id in current_scores:
+			db_score = current_scores[chart.id]
+			score = db_score.score
+			timestamp = db_score.timestamp
+			clearType = db_score.clear_type
+		else:
+			score = 0
+			timestamp = 0
+			clearType = 0
+
 		if (clearType == 1) and (chart.id in aux) and (aux[chart.id].life4_clear):
 			clearType = 2
-
-		if chart.rating >= 14:
-			scores_by_diff[chart.rating].append(score)
 
 		quality = None
 		goal = None
