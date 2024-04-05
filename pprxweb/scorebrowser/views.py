@@ -611,7 +611,11 @@ def scores(request):
 	#### DB SCORE RETRIEVAL ####
 
 	current_scores = {}
-	for score in UserScore.objects.filter(user=user, current=True):
+	score_db_query = UserScore.objects.filter(user=user, current=True)
+	if (len(score_db_query) == 0):
+		perform_fetch(user, redirect_uri)
+		score_db_query = UserScore.objects.filter(user=user, current=True)
+	for score in score_db_query:
 		current_scores[score.chart_id] = score
 
 	#### TARGET QUALITY COMPUTATION ####
