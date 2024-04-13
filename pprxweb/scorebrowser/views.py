@@ -585,11 +585,11 @@ def sort_key(searchable_title):
 def scores(request):
 	#### USER RETRIEVAL ####
 
+	redirect_uri = request.build_absolute_uri(reverse('scores'))
 	user = get_user(request)
 	if not user:
 		return redirect('link_sanbai')
 	if not user.webhooked:
-		redirect_uri = request.build_absolute_uri(reverse('scores'))
 		hook_response = register_webhook(user)
 		if hook_response.status_code != 200:
 			refresh_user(user, redirect_uri)
