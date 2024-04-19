@@ -467,7 +467,7 @@ def perform_fetch(user, redirect_uri):
 		if chart.id in current_scores:
 			new_score = scores_lookup[key]
 			old_score = current_scores[chart.id]
-			if new_score[0] > old_score.score:
+			if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type):
 				new_scores.append(UserScore(
 					user=user,
 					chart=chart,
