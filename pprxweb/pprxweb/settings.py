@@ -35,7 +35,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 CLIENT_ID = env("CLIENT_ID")
 CLIENT_SECRET = env("CLIENT_SECRET")
 WEBHOOK_ID = '720h3j70zntvm8kq17wqlmw29v6kymf6'
-DEBUG = env.bool("DEBUG", default=False)
+DEBUG = False
 
 # Application definition
 
