@@ -115,6 +115,28 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 }
 
 
+/*** ma points table ***/
+
+table.ma-points-breakdown {
+	border-collapse: collapse;
+}
+
+table.ma-points-breakdown th {
+	text-align: center;
+	padding-left: 1em;
+	padding-right: 1em;
+	border-bottom: 1px !important;
+	border-bottom-style: solid !important;
+	border-bottom-color: darkgray; !important;
+}
+
+table.ma-points-breakdown td {
+	text-align: center;
+	border-bottom: 1px !important;
+	border-bottom-style: solid !important;
+	border-bottom-color: darkgray; !important;
+}
+
 
 /*** requirements tables ***/
 
