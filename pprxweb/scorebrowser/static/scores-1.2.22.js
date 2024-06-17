@@ -506,6 +506,16 @@ $(document).ready(function () {
 		setFilters(defaultFilters)
 	})
 
+	$('#classic-era').click(function() {
+		setFilters({"version-min": 1, "version-max": 13})
+	})
+	$('#white-era').click(function() {
+		setFilters({"version-min": 14, "version-max": 16})
+	})
+	$('#gold-era').click(function() {
+		setFilters({"version-min": 17, "version-max": 19})
+	})
+
 	var spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
 	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).  If there's not enough data to accurately spice a song yet, it gets automatically assigned the lowest spice for its level for sorting purposes, and your goal will be the lowest for that level.")
