@@ -47,9 +47,7 @@ details .details {
 }
 
 .border-right {
-	border-right: 2px !important;
-	border-right-style: solid !important;
-	border-right-color: darkgray; !important;
+	border-right: 2px solid !important;
 }
 
 .tooltip {
@@ -125,16 +123,12 @@ table.ma-points-breakdown th {
 	text-align: center;
 	padding-left: 1em;
 	padding-right: 1em;
-	border-bottom: 1px !important;
-	border-bottom-style: solid !important;
-	border-bottom-color: darkgray; !important;
+	border-bottom: 1px solid lightgray !important;
 }
 
 table.ma-points-breakdown td {
 	text-align: center;
-	border-bottom: 1px !important;
-	border-bottom-style: solid !important;
-	border-bottom-color: darkgray; !important;
+	border-bottom: 1px solid lightgray !important;
 }
 
 
