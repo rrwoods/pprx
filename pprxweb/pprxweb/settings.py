@@ -104,6 +104,7 @@ if 'RDS_HOSTNAME' in os.environ:
         'pprx-mysql8.eba-hzrcmmit.us-west-2.elasticbeanstalk.com',
         'pprx.gg',
     ]
+    DEBUG=False
 else:
     DATABASES = {
         'default': {
@@ -112,6 +113,7 @@ else:
         }
     }
     ALLOWED_HOSTS = []
+    DEBUG=True
 
     if 'runserver' in sys.argv:
         LOGGING = {
