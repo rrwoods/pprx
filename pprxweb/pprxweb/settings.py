@@ -109,10 +109,10 @@ if 'RDS_HOSTNAME' in os.environ:
     }
     ALLOWED_HOSTS = [
         'pprx-dev.us-west-2.elasticbeanstalk.com',
-        'pprx-mysql8.eba-hzrcmmit.us-west-2.elasticbeanstalk.com',
+        'pprx-prod.us-west-2.elasticbeanstalk.com',
         'pprx.gg',
     ]
-    DEBUG=False
+    DEBUG=True  ### DO NOT COMMIT THIS LINE TO PRODUCTION
 else:
     DATABASES = {
         'default': {
