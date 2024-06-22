@@ -37,6 +37,14 @@ CLIENT_SECRET = env("CLIENT_SECRET")
 WEBHOOK_ID = '720h3j70zntvm8kq17wqlmw29v6kymf6'
 DEBUG = False
 
+EMAIL_BACKEMD = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = env("GOOGLE_USERNAME")
+EMAIL_HOST_PASSWORD = env("GOOGLE_APP_PASSWORD")
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+
 # Application definition
 
 INSTALLED_APPS = [
