@@ -112,7 +112,7 @@ if 'RDS_HOSTNAME' in os.environ:
         'pprx-prod.us-west-2.elasticbeanstalk.com',
         'pprx.gg',
     ]
-    DEBUG=True  ### DO NOT COMMIT THIS LINE TO PRODUCTION
+    DEBUG=False
 else:
     DATABASES = {
         'default': {
