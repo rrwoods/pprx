@@ -852,7 +852,7 @@ $(document).ready(function () {
 							} else if (sayClear) {
 								requirement.row = requirementRow(`Clear ${requirement.qty} ${level}s over ${requirement.threshold/1000}k${exceptions}`, goalId)
 							} else {
-								requirement.row = requirementRow(`${scoreText} ${requirement.qty} ${level}s`)
+								requirement.row = requirementRow(`${scoreText} ${requirement.qty} ${level}s`, goalId)
 							}
 						} else {
 							requirement.row = requirementRow(`All ${level}s over ${requirement.threshold/1000}k${exceptions}`, goalId)
