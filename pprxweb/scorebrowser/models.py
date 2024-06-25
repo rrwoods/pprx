@@ -35,6 +35,7 @@ class Chart(models.Model):
     song = models.ForeignKey(Song, on_delete=models.CASCADE)
     difficulty = models.ForeignKey(Difficulty, on_delete=models.CASCADE)
     rating = models.IntegerField()
+    rerate = models.IntegerField(null=True, default=None)  # for "manual" re-rates, when automatically-updated data is slow to arrive
     spice = models.FloatField(blank=True, null=True)
     tracked = models.BooleanField(default=True)
 

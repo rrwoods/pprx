@@ -12,7 +12,17 @@
 	padding-right: 15px;
 }
 
+.update-message {
+	margin-bottom: 1em;
+	border-radius: 15px;
+	padding: 15px;
+	background-color: skyblue;
+}
 
+.reminder-text {
+	font-style: italic;
+	color: gray;
+}
 
 /*** unlocks page ***/
 

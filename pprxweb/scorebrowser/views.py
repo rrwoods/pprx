@@ -723,7 +723,8 @@ def scores(request):
 
 		if chart.song_id not in all_charts:
 			all_charts[chart.song_id] = [-1, -1, -1, -1, -1]
-		all_charts[chart.song_id][chart.difficulty_id] = chart.rating
+		chart_rating = chart.rerate or chart.rating
+		all_charts[chart.song_id][chart.difficulty_id] = chart_rating
 
 		spice = chart.spice
 
@@ -754,8 +755,8 @@ def scores(request):
 		entry['alternate_title'] = chart.song.alternate_title
 		entry['romanized_title'] = chart.song.romanized_title
 		entry['searchable_title'] = chart.song.searchable_title
-		entry['difficulty'] = { 'id': chart.difficulty_id, 'name': chart.difficulty.name, 'rating': chart.rating }
-		entry['rating'] = chart.rating
+		entry['difficulty'] = { 'id': chart.difficulty_id, 'name': chart.difficulty.name, 'rating': chart_rating }
+		entry['rating'] = chart_rating
 		entry['spice'] = spice
 		entry['score'] = score
 		entry['clear_type'] = clearType
