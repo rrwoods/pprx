@@ -429,6 +429,11 @@ def fetch_scores(request):
 	user = User.objects.get(player_id=player_id)
 	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
 
+# This is for players for whom the webhook wasn't called for some reason
+def force_fetch(request):
+	user = get_user(request)
+	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
+
 def perform_fetch(user, redirect_uri):
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:

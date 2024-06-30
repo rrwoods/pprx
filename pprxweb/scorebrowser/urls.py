@@ -9,6 +9,7 @@ urlpatterns = [
 	path('finish_link', views.finish_link, name='finish_link'),
 	path('logout', views.logout_user, name='logout'),
 
+	path('force_fetch', views.force_fetch, name='force_fetch'),
 	path('fetch_scores', views.fetch_scores, name='fetch_scores'),
 	path('scores', views.scores, name='scores'),
 	path('unlocks', views.unlocks, name='unlocks'),
