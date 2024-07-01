@@ -28,6 +28,8 @@ requests==2.25.1
     # via -r requirements.in
 scipy==1.11.4
     # via -r requirements.in
+six==1.16.0
+    # via -r requirements.in
 sqlparse==0.4.3
     # via
     #   -r requirements.in

@@ -1,0 +1,18 @@
+{% load static %}
+<html>
+	<head>
+		<title>PPR X Email Update</title>
+		<link rel="stylesheet" href="{% static 'styles-register-1.2.21.css' %}">
+	</head>
+	<body>
+		<form method='POST'>
+			{% csrf_token %}
+			<h1>Update Email Address</h1>
+			{% for field in form %}
+				<div class="form-label"><label for="{{ field.auto_id }}">{{ field.label }}</label></div>
+				<div class="form-control">{{ field }}</div>
+			{% endfor %}
+			<button type="submit">Update</button>
+		</form>
+	</body>
+</html>

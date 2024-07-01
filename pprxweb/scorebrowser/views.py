@@ -2,32 +2,83 @@ from collections import OrderedDict
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User as DjangoUser
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMessage
 from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt
+from .forms import UpdateEmailForm, UserRegistrationForm
 from .models import *
+from .tokens import ACCOUNT_ACTIVATION_TOKEN_GENERATOR
 import json
 import math
 import requests
 import time
 
+
 def hello(request):
 	return render(request, 'scorebrowser/hello.html')
 
 def register(request):
+	if request.user.is_authenticated:
+		return redirect('/')
+
 	if request.method == 'POST':
-		form = UserCreationForm(request.POST)
+		form = UserRegistrationForm(request.POST)
 		if form.is_valid():
 			django_user = form.save(commit=False)
+			django_user.is_active = False
+			django_user.save()
+			if activate_email(request, django_user, form.cleaned_data.get('email')):
+				return render(request, 'scorebrowser/check_your_email.html')
+			else:
+				return render(request, 'scorebrowser/activation_error.html', {
+					'error_message': "Couldn't send email -- make sure you typed the address correctly."
+				})
+
+	return render(request, 'scorebrowser/register.html', {'form': UserRegistrationForm()})
+
+def activate_email(request, django_user, email):
+	message = render_to_string('scorebrowser/activate_account.html', {
+		'username': django_user.username,
+		'domain': get_current_site(request).domain,
+		'uid': urlsafe_base64_encode(force_bytes(django_user.pk)),
+		'token': ACCOUNT_ACTIVATION_TOKEN_GENERATOR.make_token(django_user),
+		'protocol': 'https' if request.is_secure() else 'http',
+	})
+
+	email = EmailMessage('Activate your PPR X account', message, to=[email])
+	return email.send()
+
+def activate(request, uidb64, token):
+	try:
+		uid = force_str(urlsafe_base64_decode(uidb64))
+		django_user = DjangoUser.objects.get(pk=uid)
+
+		if ACCOUNT_ACTIVATION_TOKEN_GENERATOR.check_token(django_user, token):
+			django_user.is_active = True
 			django_user.save()
 			login(request, django_user)
+
+			# if this activation was part of registration, they now need to link their sanbai
+			# if this activation was post-registration, they probably already have done that
+			if User.objects.filter(django_user=django_user).exists():
+				return render(request, 'scorebrowser/loggedin.html')
 			return redirect('link_sanbai')
 
-	return render(request, 'scorebrowser/register.html', {'form': UserCreationForm()})
+	except:
+		pass  # just fall through to error case below.
+
+	return render(request, 'scorebrowser/activation_error.html', {
+		'error_message': 'You clicked an invalid or expired activation link.'
+	})
 
 def login_user(request):
 	if request.method == 'POST':
@@ -102,6 +153,21 @@ def register_webhook(user):
 		'access_token': user.access_token,
 	})
 
+@login_required(login_url='login')
+def update_email_form(request):
+	if request.method == 'POST':
+		form = UpdateEmailForm(request.POST, instance=request.user)
+		if form.is_valid():
+			django_user = form.save()
+			if activate_email(request, django_user, form.cleaned_data.get('email')):
+				return render(request, 'scorebrowser/check_your_email.html')
+			else:
+				return render(request, 'scorebrowser/update_email.html', {
+					'form': UpdateEmailForm(),
+					'message': "Couldn't send email -- make sure you typed your email correctly."
+				})
+
+	return render(request, 'scorebrowser/update_email.html', {'form': UpdateEmailForm()})
 
 @login_required(login_url='login')
 def landing(request):
@@ -181,6 +247,9 @@ def unlocks(request):
 	user = get_user(request)
 	if not user:
 		return redirect('link_sanbai')
+
+	if not request.user.email:
+		return redirect('update_email')
 
 	allGroups = UnlockGroup.objects.all().order_by('ordering')
 	allEvents = UnlockEvent.objects.filter(group__isnull=False).select_related('version').order_by('ordering')
@@ -612,6 +681,12 @@ def scores(request):
 			user = get_user(request)
 			if not user.pulling_scores:
 				break
+
+	#### POST-CREATION EMAIL REGISTRATION ####
+	# this is for users that signed up before I introduced email validation.
+	if not request.user.email:
+		return redirect('update_email')
+
 
 	#### DB SCORE RETRIEVAL ####
 

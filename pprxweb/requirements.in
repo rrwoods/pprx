@@ -4,6 +4,7 @@ mysqlclient==2.2.4
 numpy==1.26.3
 pytz==2022.7.1
 requests==2.25.1
+six==1.16.0
 scipy==1.11.4
 sqlparse==0.4.3
 typing-extensions==4.4.0
