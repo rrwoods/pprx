@@ -19,6 +19,22 @@
 	background-color: skyblue;
 }
 
+.user-message {
+	margin-bottom: 1em;
+	border-radius: 15px;
+	padding: 15px;
+	background-color: seagreen;
+	color: white;
+}
+
+.error-message {
+	margin-bottom: 1em;
+	border-radius: 15px;
+	padding: 15px;
+	background-color: darkred;
+	color: white;
+}
+
 .reminder-text {
 	font-style: italic;
 	color: gray;

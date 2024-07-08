@@ -2,7 +2,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt
-from .forms import UpdateEmailForm, UserRegistrationForm
+from .forms import SetPasswordForm, UpdateEmailForm, UserRegistrationForm
 from .models import *
 from .tokens import ACCOUNT_ACTIVATION_TOKEN_GENERATOR
 import json
@@ -37,7 +37,7 @@ def register(request):
 			django_user.is_active = False
 			django_user.save()
 			if activate_email(request, django_user, form.cleaned_data.get('email')):
-				return render(request, 'scorebrowser/check_your_email.html')
+				return render(request, 'scorebrowser/check_your_email.html', {'message_type': 'an activation message'})
 			else:
 				return render(request, 'scorebrowser/activation_error.html', {
 					'error_message': "Couldn't send email -- make sure you typed the address correctly."
@@ -160,7 +160,7 @@ def update_email_form(request):
 		if form.is_valid():
 			django_user = form.save()
 			if activate_email(request, django_user, form.cleaned_data.get('email')):
-				return render(request, 'scorebrowser/check_your_email.html')
+				return render(request, 'scorebrowser/check_your_email.html', {'message_type': 'a confirmation message'})
 			else:
 				return render(request, 'scorebrowser/update_email.html', {
 					'form': UpdateEmailForm(),
@@ -168,6 +168,61 @@ def update_email_form(request):
 				})
 
 	return render(request, 'scorebrowser/update_email.html', {'form': UpdateEmailForm()})
+
+@login_required(login_url='login')
+def update_password(request):
+	django_user = request.user
+	if request.method == 'POST':
+		form = SetPasswordForm(django_user, request.POST)
+		if form.is_valid():
+			form.save()
+			return redirect('login')
+
+	return render(request, 'scorebrowser/set_password.html', {'form': SetPasswordForm(django_user)})
+
+def reset_password(request):
+	if request.method == 'POST':
+		form = PasswordResetForm(request.POST)
+		if form.is_valid():
+			user_email = form.cleaned_data.get('email')
+			django_user = DjangoUser.objects.filter(email=user_email).first()
+			if django_user:
+				message = render_to_string('scorebrowser/reset_password_email.html', {
+					'username': django_user.username,
+					'domain': get_current_site(request).domain,
+					'uid': urlsafe_base64_encode(force_bytes(django_user.pk)),
+					'token': ACCOUNT_ACTIVATION_TOKEN_GENERATOR.make_token(django_user),
+					'protocol': 'https' if request.is_secure() else 'http',
+				})
+
+				email = EmailMessage('Reset your PPR X password', message, to=[user_email])
+				if email.send():
+					return render(request, 'scorebrowser/check_your_email.html', {'message_type': 'a password reset link'})
+
+	return render(request, "scorebrowser/reset_password.html", {'form': PasswordResetForm()})
+
+def finish_reset(request, uidb64, token):
+	try:
+		uid = force_str(urlsafe_base64_decode(uidb64))
+		django_user = DjangoUser.objects.get(pk=uid)
+
+		if ACCOUNT_ACTIVATION_TOKEN_GENERATOR.check_token(django_user, token):
+			if request.method == 'POST':
+				form = SetPasswordForm(django_user, request.POST)
+				if form.is_valid():
+					form.save()
+					return redirect('login')
+
+			form = SetPasswordForm(django_user)
+			return render(request, 'scorebrowser/set_password.html', {'form': form})
+		else:
+			return render(request, 'scorebrowser/activation_error.html', {
+				'error_message': 'That reset link has been used already.'
+			})
+
+	except:
+		return redirect("/")
+
 
 @login_required(login_url='login')
 def landing(request):

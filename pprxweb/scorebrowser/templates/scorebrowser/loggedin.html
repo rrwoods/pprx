@@ -2,4 +2,7 @@
 
 {% block content %}
 <p>Welcome to PPR X!  Click "browse scores" to check out your scores!</p>
+{% if message %}
+	<div class="user-message">{{ message }}</div>
+{% endif %}
 {% endblock %}

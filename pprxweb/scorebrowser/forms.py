@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import SetPasswordForm, UserCreationForm
 from django.contrib.auth.models import User as DjangoUser
 
 
@@ -9,6 +9,12 @@ class UserRegistrationForm(UserCreationForm):
 	class Meta:
 		model = DjangoUser
 		fields = ['username', 'email', 'password1', 'password2']
+
+	def clean_email(self):
+		email = self.cleaned_data['email']
+		if DjangoUser.objects.filter(email=email).exists():
+			raise forms.ValidationError("That email is already registered!")
+		return self.cleaned_data['email']
 
 	def save(self, commit=True):
 		user = super(UserRegistrationForm, self).save(commit=False)
@@ -24,3 +30,9 @@ class UpdateEmailForm(forms.ModelForm):
 	class Meta:
 		model = DjangoUser
 		fields = ['email']
+
+
+class SetPasswordForm(SetPasswordForm):
+	class Meta:
+		model = DjangoUser
+		fields = ['new_password1', 'new_password2']

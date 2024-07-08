@@ -15,7 +15,7 @@
 			})
 		</script>
 		{% block scripts %}{% endblock %}
-		<link rel="stylesheet" href="{% static 'styles-1.2.24.css' %}">
+		<link rel="stylesheet" href="{% static 'styles-1.2.25.css' %}">
 	</head>
 	<body>
 		<div class="update-message">
@@ -29,6 +29,7 @@
 			</span>
 			<span class="navbar-extra">
 				<span class="navbar-link"><a href="{% url 'hello' %}">Explanation and credits</a></span>
+				<span class="navbar-link"><a href="{% url 'update_password' %}">Change password</a></span>
 				<span class="navbar-link"><a href="{% url 'logout' %}">Logout</a></span>
 			</span>
 		</div>
