@@ -4,11 +4,6 @@ import json
 import requests
 
 
-# song_ids that 3icecream doesn't report as deleted, but are definitely gone
-DELETED_SONGS = [
-	#'blDbDqdo1D0odlQd9biIoio8ioQPb80i',
-]
-
 class Command(BaseCommand):
 	help = 'Use https://3icecream.com/js/songdata.js to refresh the songs and charts in the db'
 
@@ -26,9 +21,12 @@ class Command(BaseCommand):
 			if song is None:
 				song = Song(id=fetched_song['song_id'], version_id=fetched_song['version_num'], title=fetched_song['song_name'])
 				print("Creating song {}".format(song.title))
-			if (not song.removed) and (('deleted' in fetched_song) or (fetched_song['song_id'] in DELETED_SONGS)):
+			if (not song.removed) and ('deleted' in fetched_song):
 				print("Song {} is now removed".format(song.title))
 				song.removed = True
+			if (song.removed) and ('deleted' not in fetched_song):
+				print("Song {} is now revived".format(song.title))
+				song.removed = False
 
 			for sanbai_k, db_k in [('alternate_name', 'alternate_title'), ('romanized_name', 'romanized_title'), ('searchable_name', 'searchable_title')]:
 				v = fetched_song.get(sanbai_k, '')

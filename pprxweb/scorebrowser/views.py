@@ -868,20 +868,19 @@ def scores(request):
 			score = db_score.score
 			timestamp = db_score.timestamp
 			clearType = db_score.clear_type
+			quality = db_score.quality
 		else:
 			score = 0
 			timestamp = 0
 			clearType = 0
+			quality = None
 
 		if (clearType == 1) and (chart.id in aux) and (aux[chart.id].life4_clear):
 			clearType = 2
 
-		quality = None
 		goal = None
 		if spice is not None:
 			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			if score > 0:
-				quality = chart.spice - math.log2((1000001 - min(score, 999000))/1000000)
 			goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
 
 		entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }

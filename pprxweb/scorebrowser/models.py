@@ -118,6 +118,7 @@ class UserScore(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
     score = models.IntegerField()
+    quality = models.FloatField(null=True, default=None)
     clear_type = models.IntegerField()
     timestamp = models.IntegerField()
     current = models.BooleanField(null=True)
