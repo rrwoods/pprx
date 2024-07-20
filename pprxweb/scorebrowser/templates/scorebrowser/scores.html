@@ -29,7 +29,6 @@
 		Version:
 		{% with versions|first as first %}
 			<select autocomplete="off" id="version-min" class="filter min" data-max="version-max" data-default="{{ first.id }}">
-				<option hidden selected value=0>All</option>
 				{% for version in versions %}
 					<option value="{{ version.id }}">{{ version.name }}</option>
 				{% endfor %}
