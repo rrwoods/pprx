@@ -56,4 +56,5 @@ class Command(BaseCommand):
 					print("Updating chart rating {} -- {} from {} to {}".format(song.title, difficulty, chart.rating, rating))
 					chart.rating = rating
 					chart.tracked = tracked   # a 13->14 or 14->13 rerate might require this!
+					chart.hidden = False
 					chart.save()

@@ -570,15 +570,25 @@ def perform_fetch(user, redirect_uri):
 	user.pulling_scores = True
 	user.save()
 
+	all_chart_ids = {(chart.song_id, chart.difficulty_id): chart.id for chart in Chart.objects.all()}
+	all_song_ids = [song.id for song in Song.objects.all()]
 	scores_lookup = {}
 	for score in scores_response.json():
 		song_id = score['song_id']
+		title = score['song_name']
 		difficulty = score['difficulty']
 		timestamp = score['time_played'] or score['time_uploaded']
 		lamp = score['lamp']
 		score = score['score']
-		key = '{}-{}'.format(song_id, difficulty)
-		scores_lookup[key] = (score, timestamp, lamp)
+
+		key = (song_id, difficulty)
+		scores_lookup[key] = (score, timestamp, lamp, title)
+
+		if key not in all_chart_ids:
+			if song_id not in all_song_ids:
+				Song.objects.create(id=song_id, version_id=20, title=title)
+			chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
+			all_chart_ids[key] = chart.id
 
 	current_scores = {}
 	for score in UserScore.objects.filter(user=user, current=True):
@@ -587,19 +597,15 @@ def perform_fetch(user, redirect_uri):
 	formerly_current_scores = []
 	new_scores = []
 
-	all_charts = Chart.objects.all()
-	for chart in all_charts:
-		key = '{}-{}'.format(chart.song_id, chart.difficulty_id)
-		if key not in scores_lookup:
-			continue
-
-		if chart.id in current_scores:
+	for key in scores_lookup:
+		chart_id = all_chart_ids[key]
+		if chart_id in current_scores:
 			new_score = scores_lookup[key]
-			old_score = current_scores[chart.id]
+			old_score = current_scores[chart_id]
 			if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type):
 				new_scores.append(UserScore(
 					user=user,
-					chart=chart,
+					chart_id=chart_id,
 					score=new_score[0],
 					timestamp=new_score[1],
 					clear_type=new_score[2],
@@ -611,7 +617,7 @@ def perform_fetch(user, redirect_uri):
 			new_score = scores_lookup[key]
 			new_scores.append(UserScore(
 				user=user,
-				chart=chart,
+				chart_id=chart_id,
 				score=new_score[0],
 				timestamp=new_score[1],
 				clear_type=new_score[2],
@@ -811,7 +817,8 @@ def scores(request):
 	all_charts = {}
 
 	chart_query = Chart.objects  \
-		.select_related("song", "song__version", "difficulty")
+		.select_related("song", "song__version", "difficulty")  \
+		.filter(hidden=False)
 
 	for chart in chart_query:
 		entry = {}

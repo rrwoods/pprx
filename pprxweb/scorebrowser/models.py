@@ -38,6 +38,7 @@ class Chart(models.Model):
     rerate = models.IntegerField(null=True, default=None)  # for "manual" re-rates, when automatically-updated data is slow to arrive
     spice = models.FloatField(blank=True, null=True)
     tracked = models.BooleanField(default=True)
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'charts'

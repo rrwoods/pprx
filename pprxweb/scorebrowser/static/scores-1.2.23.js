@@ -513,7 +513,7 @@ $(document).ready(function () {
 		setFilters({"version-min": 14, "version-max": 16})
 	})
 	$('#gold-era').click(function() {
-		setFilters({"version-min": 17, "version-max": 19})
+		setFilters({"version-min": 17, "version-max": 20})
 	})
 
 	var spiceHeader = scoresTable.column(8).header()
