@@ -574,9 +574,12 @@ def perform_fetch(user, redirect_uri):
 	all_song_ids = [song.id for song in Song.objects.all()]
 	scores_lookup = {}
 	for score in scores_response.json():
+		difficulty = score['difficulty']
+		if (difficulty > 4):
+			continue
+
 		song_id = score['song_id']
 		title = score['song_name']
-		difficulty = score['difficulty']
 		timestamp = score['time_played'] or score['time_uploaded']
 		lamp = score['lamp']
 		score = score['score']
@@ -587,6 +590,8 @@ def perform_fetch(user, redirect_uri):
 		if key not in all_chart_ids:
 			if song_id not in all_song_ids:
 				Song.objects.create(id=song_id, version_id=20, title=title)
+
+			# IMPORTANT!! updatecharts assumes that for hidden charts, rating = 0 -- update it if this changes!
 			chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
 			all_chart_ids[key] = chart.id
 
