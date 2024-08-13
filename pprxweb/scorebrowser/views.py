@@ -570,44 +570,57 @@ def perform_fetch(user, redirect_uri):
 	user.pulling_scores = True
 	user.save()
 
-	all_chart_ids = {(chart.song_id, chart.difficulty_id): chart.id for chart in Chart.objects.all()}
-	all_song_ids = [song.id for song in Song.objects.all()]
-	scores_lookup = {}
-	for score in scores_response.json():
-		difficulty = score['difficulty']
-		if (difficulty > 4):
-			continue
+	try:
+		all_chart_ids = {(chart.song_id, chart.difficulty_id): chart.id for chart in Chart.objects.all()}
+		all_song_ids = [song.id for song in Song.objects.all()]
+		scores_lookup = {}
+		for score in scores_response.json():
+			difficulty = score['difficulty']
+			if (difficulty > 4):
+				continue
 
-		song_id = score['song_id']
-		title = score['song_name']
-		timestamp = score['time_played'] or score['time_uploaded']
-		lamp = score['lamp']
-		score = score['score']
+			song_id = score['song_id']
+			title = score['song_name']
+			timestamp = score['time_played'] or score['time_uploaded']
+			lamp = score['lamp']
+			score = score['score']
 
-		key = (song_id, difficulty)
-		scores_lookup[key] = (score, timestamp, lamp, title)
+			key = (song_id, difficulty)
+			scores_lookup[key] = (score, timestamp, lamp, title)
 
-		if key not in all_chart_ids:
-			if song_id not in all_song_ids:
-				Song.objects.create(id=song_id, version_id=20, title=title)
+			if key not in all_chart_ids:
+				if song_id not in all_song_ids:
+					Song.objects.create(id=song_id, version_id=20, title=title)
 
-			# IMPORTANT!! updatecharts assumes that for hidden charts, rating = 0 -- update it if this changes!
-			chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
-			all_chart_ids[key] = chart.id
+				# IMPORTANT!! updatecharts assumes that for hidden charts, rating = 0 -- update it if this changes!
+				chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
+				all_chart_ids[key] = chart.id
 
-	current_scores = {}
-	for score in UserScore.objects.filter(user=user, current=True):
-		current_scores[score.chart_id] = score
+		current_scores = {}
+		for score in UserScore.objects.filter(user=user, current=True):
+			current_scores[score.chart_id] = score
 
-	formerly_current_scores = []
-	new_scores = []
+		formerly_current_scores = []
+		new_scores = []
 
-	for key in scores_lookup:
-		chart_id = all_chart_ids[key]
-		if chart_id in current_scores:
-			new_score = scores_lookup[key]
-			old_score = current_scores[chart_id]
-			if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type):
+		for key in scores_lookup:
+			chart_id = all_chart_ids[key]
+			if chart_id in current_scores:
+				new_score = scores_lookup[key]
+				old_score = current_scores[chart_id]
+				if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type):
+					new_scores.append(UserScore(
+						user=user,
+						chart_id=chart_id,
+						score=new_score[0],
+						timestamp=new_score[1],
+						clear_type=new_score[2],
+						current=True,
+					))
+					old_score.current = None
+					formerly_current_scores.append(old_score)
+			else:
+				new_score = scores_lookup[key]
 				new_scores.append(UserScore(
 					user=user,
 					chart_id=chart_id,
@@ -616,26 +629,14 @@ def perform_fetch(user, redirect_uri):
 					clear_type=new_score[2],
 					current=True,
 				))
-				old_score.current = None
-				formerly_current_scores.append(old_score)
-		else:
-			new_score = scores_lookup[key]
-			new_scores.append(UserScore(
-				user=user,
-				chart_id=chart_id,
-				score=new_score[0],
-				timestamp=new_score[1],
-				clear_type=new_score[2],
-				current=True,
-			))
 
-	UserScore.objects.bulk_update(formerly_current_scores, ['current'])
-	UserScore.objects.bulk_create(new_scores)
+		UserScore.objects.bulk_update(formerly_current_scores, ['current'])
+		UserScore.objects.bulk_create(new_scores)
+		return HttpResponse("Pulled new scores")
 
-	user.pulling_scores = False
-	user.save()
-
-	return HttpResponse("Pulled new scores")
+	finally:
+		user.pulling_scores = False
+		user.save()
 
 
 def check_locks(song_id, song_locks, cabinet):
