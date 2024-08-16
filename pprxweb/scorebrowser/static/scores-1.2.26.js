@@ -219,7 +219,7 @@ $(document).ready(function () {
 	const loadTimestamp = Math.floor(Date.now()/1000)
 
 	whiteVersion = $('#white-version').data('json')
-	reqsPromise = fetch("/static/rank-requirements-1.2.22.json")
+	reqsPromise = fetch("/static/rank-requirements-1.2.26.json")
 		.then(x => x.json())
 		.then(json => rankRequirements = json[whiteVersion])
 

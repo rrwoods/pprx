@@ -71,29 +71,56 @@
 								<summary><h3>{{ groups|dict_key:group_id }}</h3></summary>
 								<div class="details">
 									{% for event in grouped_events %}
-										<h4>
-											{{ event.name }}
-											<button class="all-button" data-event="{{ event.id }}">All</button>
-											<button class="none-button" data-event="{{ event.id }}">None</button>
-										</h4>
-										<div data-event="{{ event.id }}">
-											{% for task in tasks|dict_key:event.id %}
+										{% if event.progressive %}
+											<h4>{{ event.name }}</h4>
+											<div data-event="{{ event.id }}">
 												<form method="POST" class="inline-form">
-													<input
-														type="checkbox"
-														{% if task.id in userUnlocks %}checked{% endif %}
-														name="pref_value"
-														id="{{ task.id }}"
-														hx-post="{% url 'update_unlock' %}"
+													<select
+														autocomplete="off"
+														hx-post="{% url 'update_progressive_unlock' %}"
+														hx-trigger="change"
+														name="taskId"
 														hx-target="#saved-pref"
 													>
-													<label for="{{ task.id }}">{{ task.name }}</label>
-													<input type="hidden" name="taskId" value="{{ task.id }}">
+														<option value="-1">None</option>
+														{% for task in tasks|dict_key:event.id %}
+															<option
+																value="{{ task.id }}"
+																{% if task.id in userUnlocks %}selected{% endif %}
+															>
+																{{ task.name }}
+															</option>
+														{% endfor %}
+													</select>
+													<input type="hidden" name="eventId" value="{{ event.id }}">
 													{% csrf_token %}
 												</form>
-												<br/>
-											{% endfor %}
-										</div>
+											</div>
+										{% else %}
+											<h4>
+												{{ event.name }}
+												<button class="all-button" data-event="{{ event.id }}">All</button>
+												<button class="none-button" data-event="{{ event.id }}">None</button>
+											</h4>
+											<div data-event="{{ event.id }}">
+												{% for task in tasks|dict_key:event.id %}
+													<form method="POST" class="inline-form">
+														<input
+															type="checkbox"
+															{% if task.id in userUnlocks %}checked{% endif %}
+															name="pref_value"
+															id="{{ task.id }}"
+															hx-post="{% url 'update_unlock' %}"
+															hx-target="#saved-pref"
+														>
+														<label for="{{ task.id }}">{{ task.name }}</label>
+														<input type="hidden" name="taskId" value="{{ task.id }}">
+														{% csrf_token %}
+													</form>
+													<br/>
+												{% endfor %}
+											</div>
+										{% endif %}
 									{% endfor %}
 								</div>
 							</details>

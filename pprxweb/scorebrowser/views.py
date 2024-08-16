@@ -274,6 +274,20 @@ def update_unlock(request):
 		UserUnlock.objects.filter(user=user, task_id=task_id).delete()
 	return HttpResponse("Updated unlock status.")
 
+def update_progressive_unlock(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	task_id = int(request.POST['taskId'])
+	event_id = int(request.POST['eventId'])
+
+	UserProgressiveUnlock.objects.filter(user=user, event_id=event_id).delete()
+	if task_id != -1:
+		UserProgressiveUnlock.objects.create(user=user, event_id=event_id, task_id=task_id).create()
+
+	return HttpResponse("Updated progressive unlock status.")
+
 def update_unlock_event(request):
 	if request.method != 'POST':
 		return
@@ -327,6 +341,9 @@ def unlocks(request):
 		for task in eventTasks:
 			if any(u.task_id == task.id for u in allUserUnlocks):
 				userUnlocks.append(task.id)
+
+	progressive_tasks = [u.task_id for u in UserProgressiveUnlock.objects.filter(user=user)]
+	userUnlocks.extend(progressive_tasks)
 
 	ordered_events = OrderedDict()
 	for version_id in versions:
@@ -814,6 +831,10 @@ def scores(request):
 
 	# set of task ids this user has completed
 	user_unlocks = set(u.task_id for u in UserUnlock.objects.filter(user=user))
+
+	for u in UserProgressiveUnlock.objects.filter(user=user).select_related("task__event"):
+		# this is `set` update, not queryset.update -- just a local variable.
+		user_unlocks.update(v.id for v in UnlockTask.objects.filter(event=u.task.event, ordering__lte=u.task.ordering))
 	
 	#### DATATABLE ENTRY GENERATION ####
 
