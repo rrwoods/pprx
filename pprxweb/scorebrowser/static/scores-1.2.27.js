@@ -219,6 +219,11 @@ $(document).ready(function () {
 	const loadTimestamp = Math.floor(Date.now()/1000)
 
 	whiteVersion = $('#white-version').data('json')
+	if (whiteVersion > 18) {
+		clearTypeIcons[1] = '<img src="/static/pass.png" class="inline-image">'
+		clearTypeIcons[2] = '<img src="/static/hard.png" class="inline-image">'
+	}
+
 	reqsPromise = fetch("/static/rank-requirements-1.2.26.json")
 		.then(x => x.json())
 		.then(json => rankRequirements = json[whiteVersion])
