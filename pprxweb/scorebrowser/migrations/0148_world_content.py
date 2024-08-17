@@ -99,6 +99,7 @@ def forward(apps, schema_editor):
 
     def createExtraSaviors(event, title):
         for chart in findCharts(title):
+            # WHEN COPYING THIS METHOD, REORDER THE CHARTS BY DIFFICULTY_ID!
             task = UnlockTask.objects.create(event=event, name='{} ({} {})'.format(title, chart.difficulty.name, chart.rating), ordering=createExtraSaviors.nextOrdering)
             ChartUnlock.objects.create(task=task, chart=chart, extra=True)
             createExtraSaviors.nextOrdering += 10
