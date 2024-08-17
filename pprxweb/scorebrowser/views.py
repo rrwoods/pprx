@@ -560,14 +560,18 @@ def user_targets(user, version_id, add = None, remove = None):
 # see https://3icecream.com/dev/docs for full details
 @csrf_exempt
 def fetch_scores(request):
+	print("Webhook: enter")
 	body = request.body.decode('utf-8')
+	print("Webhook: decoded body")
 	player_id = None
 	for component in body.split('&'):
 		[key, value] = component.split('=')
 		if key == 'player_id':
 			player_id = value
 			break
+	print("Webhook: Got player_id = {}".format(player_id))
 	user = User.objects.get(player_id=player_id)
+	print("Webhook: Got user")
 	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
 
 # This is for players for whom the webhook wasn't called for some reason
@@ -576,20 +580,25 @@ def force_fetch(request):
 	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
 
 def perform_fetch(user, redirect_uri):
+	print("perform_fetch: enter")
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
 		refresh_user(user, redirect_uri)
 		scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
+	print("perform_fetch: got scores response")
 
 	if scores_response.status_code != 200:
 		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
 
 	user.pulling_scores = True
 	user.save()
+	print("perform_fetch: pulling_scores set")
 
 	try:
-		all_chart_ids = {(chart.song_id, chart.difficulty_id): chart.id for chart in Chart.objects.all()}
+		all_charts = {(chart.song_id, chart.difficulty_id): chart for chart in Chart.objects.all()}
+		print("perform_fetch: got chart ids")
 		all_song_ids = [song.id for song in Song.objects.all()]
+		print("perform_fetch: got song ids")
 		scores_lookup = {}
 		for score in scores_response.json():
 			difficulty = score['difficulty']
@@ -605,50 +614,49 @@ def perform_fetch(user, redirect_uri):
 			key = (song_id, difficulty)
 			scores_lookup[key] = (score, timestamp, lamp, title)
 
-			if key not in all_chart_ids:
+			if key not in all_charts:
 				if song_id not in all_song_ids:
 					Song.objects.create(id=song_id, version_id=20, title=title)
 
 				# IMPORTANT!! updatecharts assumes that for hidden charts, rating = 0 -- update it if this changes!
 				chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
-				all_chart_ids[key] = chart.id
+				all_charts[key] = chart
+		print("perform_fetch: built scores dict")
 
 		current_scores = {}
 		for score in UserScore.objects.filter(user=user, current=True):
 			current_scores[score.chart_id] = score
+		print("perform_fetch: got current scores")
 
 		formerly_current_scores = []
 		new_scores = []
 
 		for key in scores_lookup:
-			chart_id = all_chart_ids[key]
-			if chart_id in current_scores:
-				new_score = scores_lookup[key]
-				old_score = current_scores[chart_id]
+			chart = all_charts[key]
+			new_score = scores_lookup[key]
+			new_entry = UserScore(
+				user=user,
+				chart_id=chart.id,
+				score=new_score[0],
+				timestamp=new_score[1],
+				clear_type=new_score[2],
+				quality=(chart.spice - math.log2((1000001 - min(new_score[0], 999000))/1000000)) if chart.spice else None,
+				current=True,
+			)
+			if chart.id in current_scores:
+				old_score = current_scores[chart.id]
 				if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type):
-					new_scores.append(UserScore(
-						user=user,
-						chart_id=chart_id,
-						score=new_score[0],
-						timestamp=new_score[1],
-						clear_type=new_score[2],
-						current=True,
-					))
+					new_scores.append(new_entry)
 					old_score.current = None
 					formerly_current_scores.append(old_score)
 			else:
-				new_score = scores_lookup[key]
-				new_scores.append(UserScore(
-					user=user,
-					chart_id=chart_id,
-					score=new_score[0],
-					timestamp=new_score[1],
-					clear_type=new_score[2],
-					current=True,
-				))
+				new_scores.append(new_entry)
+		print("perform_fetch: built score updates")
 
 		UserScore.objects.bulk_update(formerly_current_scores, ['current'])
+		print("perform_fetch: cleared current on outdated scores")
 		UserScore.objects.bulk_create(new_scores)
+		print("perform_fetch: created new scores")
 		return HttpResponse("Pulled new scores")
 
 	finally:
