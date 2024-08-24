@@ -152,7 +152,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (score < currentFilters["min-score"]) {
 		return false
 	}
-	if (score > currentFilters["max-score"]) {
+	if (score >= currentFilters["max-score"]) {
 		return false
 	}
 
