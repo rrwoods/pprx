@@ -17,6 +17,7 @@ def forward(apps, schema_editor):
         name="MYSTICAL Re:UNION",
         progressive=True,
         ordering=0,
+        # amethyst_required=False -- forgot this!
     )
 
     def findChart(title, difficulty_id):
