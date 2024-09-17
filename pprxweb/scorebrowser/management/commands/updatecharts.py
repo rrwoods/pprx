@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
 		# TODO : this suffix is variable length now; find some method of doing this that parses the .js more properly
 		prefix = b'var ALL_SONG_DATA='
-		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210,220,230,240,250];const SONG_DATA_LAST_UPDATED_unixms=1720673925390;'
+		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210,220,230,240,250,260];const SONG_DATA_LAST_UPDATED_unixms=1726194759304;'
 
 		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
 			song = Song.objects.filter(id=fetched_song['song_id']).first()
