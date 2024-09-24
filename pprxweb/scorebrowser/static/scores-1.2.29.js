@@ -1112,12 +1112,12 @@ $(document).ready(function () {
 		})
 
 		for (var level = 1; level < 20; level++) {
-			scoresByLevel[level].all.sort()
-			scoresByLevel[level].cleared.sort()
-			scoresByLevel[level].default.sort()
-			scoresByLevel[level].non_default.sort()
-			scoresByLevel[level].amethyst_required.sort()
-			scoresByLevel[level].hard_unlocks.sort()
+			scoresByLevel[level].all.sort((a, b) => (a - b))
+			scoresByLevel[level].cleared.sort((a, b) => (a - b))
+			scoresByLevel[level].default.sort((a, b) => (a - b))
+			scoresByLevel[level].non_default.sort((a, b) => (a - b))
+			scoresByLevel[level].amethyst_required.sort((a, b) => (a - b))
+			scoresByLevel[level].hard_unlocks.sort((a, b) => (a - b))
 
 			var defaultTotal = scoresByLevel[level].default.reduce((acc, cur) => acc + cur)
 			var defaultCount = scoresByLevel[level].default.length
