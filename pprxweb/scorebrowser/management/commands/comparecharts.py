@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.db import connection, transaction
+from django.db import transaction
 from scorebrowser.models import *
 from scipy.odr import Model, Data, ODR
 import math
@@ -11,51 +11,38 @@ def scale(parameters, data):
 	return parameters[0] * data
 scale_model = Model(scale)
 
-query = """
-	select x.score as xscore, y.score as yscore
-	from scores x, scores y
-	where
-		x.chart_id=%s and
-		y.chart_id=%s and
-		x.player_id=y.player_id and
-		x.score<999000 and x.score>800000 and
-		y.score<999000 and y.score>800000
-"""
-
-def report(start, done, remaining):
-	current = datetime.now()
-	each = (current - start) / done
-	when = (each * remaining) + current
-	print ("{} done, {} remaining; estimated completion at {}".format(done, remaining, when))
 
 class Command(BaseCommand):
 	help = 'Iterate through unprocessed_pairs and compare the indicated charts'
 
 	def handle(self, *args, **options):
-		cursor = connection.cursor()
+		public_scores = Score.objects.filter(score__gt=800000, score__lt=999000)
+		player_scores = {}
+		for entry in public_scores:
+			if entry.player_id not in player_scores:
+				player_scores[entry.player_id] = {}
+			player_scores[entry.player_id][entry.chart_id] = entry.score
+
 		unprocessed_pairs = list(UnprocessedPair.objects.all())
-		done = 0
-		skipped = 0
 		remaining = len(unprocessed_pairs)
-		start = datetime.now()
+		skipped = 0
 
 		for unprocessed in unprocessed_pairs:
-			print('comparing {} and {}'.format(unprocessed.x_chart.song.title, unprocessed.y_chart.song.title))
-			cursor.execute(query, (unprocessed.x_chart_id, unprocessed.y_chart_id))
-			scores = cursor.fetchall()
-			print(scores)
-			done += 1
+			score_pairs = []
+			for (player_id, chart_scores) in player_scores.items():
+				if (unprocessed.x_chart_id in chart_scores) and (unprocessed.y_chart_id in chart_scores):
+					score_pairs.append((chart_scores[unprocessed.x_chart_id], chart_scores[unprocessed.y_chart_id]))
+
 			remaining -= 1
-			if len(scores) < 10:
+			if len(score_pairs) < 10:
 				skipped += 1
-				report(start, done, remaining)
 				unprocessed.delete()
 				continue
 
 			x = []
 			y = []
 			w = []
-			for pair in scores:
+			for pair in score_pairs:
 				x.append(1000000 - pair[0])
 				y.append(1000000 - pair[1])
 				best = max(pair)
@@ -67,12 +54,12 @@ class Command(BaseCommand):
 			odr = ODR(data, scale_model, beta0=[1.])
 			out = odr.run()
 
-			strength = len(scores)*10000 / math.sqrt(out.res_var)
+			strength = len(score_pairs)*10000 / math.sqrt(out.res_var)
 			with transaction.atomic():
 				ChartPair.objects.create(x_chart_id=unprocessed.x_chart_id, y_chart_id=unprocessed.y_chart_id, slope=out.beta[0], strength=strength)
 				ChartPair.objects.create(x_chart_id=unprocessed.y_chart_id, y_chart_id=unprocessed.x_chart_id, slope=1/out.beta[0], strength=strength)
 				unprocessed.delete()
 
-			report(start, done, remaining)
+			print(remaining)
 
 		print("{} skipped.".format(skipped))

@@ -37,6 +37,8 @@ class Chart(models.Model):
     rating = models.IntegerField()
     rerate = models.IntegerField(null=True, default=None)  # for "manual" re-rates, when automatically-updated data is slow to arrive
     spice = models.FloatField(blank=True, null=True)
+    normscore_breakpoints = models.TextField(default="")
+    quality_breakpoints = models.TextField(default="")
     tracked = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
 
@@ -77,6 +79,7 @@ class Score(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
     score = models.IntegerField()
+    normalized = models.FloatField(default=0)
 
     class Meta:
         db_table = 'scores'
@@ -113,6 +116,7 @@ class User(models.Model):
     best_two_consecutive = models.IntegerField(default=0)
     best_three_consecutive = models.IntegerField(default=0)
     best_calorie_burn = models.IntegerField(default=0)
+
 
 class UserScore(models.Model):
     id = models.AutoField(primary_key=True)
