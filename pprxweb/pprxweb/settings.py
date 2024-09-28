@@ -35,7 +35,6 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 CLIENT_ID = env("CLIENT_ID")
 CLIENT_SECRET = env("CLIENT_SECRET")
 WEBHOOK_ID = '720h3j70zntvm8kq17wqlmw29v6kymf6'
-DEBUG = False
 
 EMAIL_BACKEMD = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -113,7 +112,7 @@ if 'RDS_HOSTNAME' in os.environ:
         'pprx-prod.us-west-2.elasticbeanstalk.com',
         'pprx.gg',
     ]
-    DEBUG=False
+    DEBUG = False
 else:
     DATABASES = {
         'default': {
@@ -122,7 +121,7 @@ else:
         }
     }
     ALLOWED_HOSTS = []
-    DEBUG=True
+    DEBUG = True
 
     if 'runserver' in sys.argv:
         LOGGING = {

@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt
+from numpy import interp
 from .forms import SetPasswordForm, UpdateEmailForm, UserRegistrationForm
 from .models import *
 from .tokens import ACCOUNT_ACTIVATION_TOKEN_GENERATOR
@@ -375,7 +376,22 @@ def set_goal(request):
 	user.goal_chart_id = requestBody['chart_id']
 	user.save()
 
-	return HttpResponse('Set goal.')
+	target_quality = interp(
+		-math.log2(1000000 - user.goal_score) if user.goal_score < 999999 else -2.323,
+		json.loads(user.goal_chart.normscore_breakpoints),
+		json.loads(user.goal_chart.quality_breakpoints),
+	)
+	response = {}
+	for chart in Chart.objects.exclude(spice=None):
+		normalized_goal = interp(
+			target_quality,
+			json.loads(chart.quality_breakpoints),
+			json.loads(chart.normscore_breakpoints),
+		)
+		goal = (int(-(2**(-normalized_goal))/10)*10) + 1000000
+		response[chart.id] = goal
+
+	return JsonResponse(response)
 
 def set_chart_notes(request):
 	if request.method != 'POST':
@@ -592,7 +608,7 @@ def perform_fetch(user, redirect_uri):
 
 	user.pulling_scores = True
 	user.save()
-	print("perform_fetch: pulling_scores set")
+	print("perform_fetch: pulling_scores set - username = {}".format(user.django_user.username))
 
 	try:
 		all_charts = {(chart.song_id, chart.difficulty_id): chart for chart in Chart.objects.all()}
@@ -633,14 +649,20 @@ def perform_fetch(user, redirect_uri):
 
 		for key in scores_lookup:
 			chart = all_charts[key]
+			normscore_breakpoints = json.loads(chart.normscore_breakpoints) if chart.normscore_breakpoints else None
+			quality_breakpoints = json.loads(chart.quality_breakpoints) if chart.quality_breakpoints else None
+
 			new_score = scores_lookup[key]
+			normalized = (-2.323) if (new_score[0] == 1000000) else (-math.log2(1000000 - new_score[0]))
+			quality = interp(normalized, normscore_breakpoints, quality_breakpoints) if quality_breakpoints else None
 			new_entry = UserScore(
 				user=user,
 				chart_id=chart.id,
 				score=new_score[0],
+				normalized=normalized,
 				timestamp=new_score[1],
 				clear_type=new_score[2],
-				quality=(chart.spice - math.log2((1000001 - min(new_score[0], 999000))/1000000)) if chart.spice else None,
+				quality=quality,
 				current=True,
 			)
 			if chart.id in current_scores:
@@ -794,8 +816,13 @@ def scores(request):
 
 	target_quality = None
 	if user.goal_chart:
-		goal_score = sorted([0, user.goal_score, 999000])[1]
-		target_quality = user.goal_chart.spice - math.log2((1000001 - goal_score)/1000000)
+		goal_score = sorted([0, user.goal_score, 1000000])[1]
+		normalized = -math.log2(1000000 - goal_score) if goal_score < 999999 else -2.323
+		target_quality = interp(
+			normalized,
+			json.loads(user.goal_chart.normscore_breakpoints),
+			json.loads(user.goal_chart.quality_breakpoints),
+		)
 
 	#### PER-USER CHART DATA RETRIEVAL ####
 
@@ -921,9 +948,13 @@ def scores(request):
 			clearType = 2
 
 		goal = None
-		if spice is not None:
-			goal = 1000001 - 15625*math.pow(2, 6 + chart.spice - target_quality) if target_quality else None
-			goal = sorted((0, math.ceil(goal/10) * 10, 999000))[1] if target_quality else None
+		if (spice is not None) and (target_quality is not None):
+			normalized_goal = interp(
+				target_quality,
+				json.loads(chart.quality_breakpoints),
+				json.loads(chart.normscore_breakpoints),
+			)
+			goal = (int(-(2**(-normalized_goal))/10)*10) + 1000000
 
 		entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }
 		entry['song_id'] = chart.song_id

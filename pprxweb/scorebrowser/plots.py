@@ -1,21 +1,19 @@
 from matplotlib.ticker import FuncFormatter
 import json
 import math
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as plt
 
 
 def tickformat(normscore, tickpos):
-	score = 1000000 - (2**(-normscore))
-	if score < 999000:
-		return str(int(score/1000)) + 'k'
-	return str(int((1000000 - score)/10)) + 'p'
+	return str((int(-(2**(-normscore))/10)*10) + 1000000)
 
 
 def breakpoints(chart):
-	x = json.loads(chart.normscore_breakpoints)
-	y = json.loads(chart.quality_breakpoints)
+	return json.loads(chart.normscore_breakpoints), json.loads(chart.quality_breakpoints)
 
-	fig, ax = plot.subplots()
+
+def plot(x, y, spice):
+	fig, ax = plt.subplots()
 
 	fmt = FuncFormatter(tickformat)
 	ax.xaxis.set_major_formatter(fmt)
@@ -23,8 +21,13 @@ def breakpoints(chart):
 	ax.set_xticks([-math.log2(10000)], minor=True)
 	ax.xaxis.grid(True, which='minor')
 
-	ax.set_yticks([chart.spice], minor=True)
+	ax.set_yticks([spice], minor=True)
 	ax.yaxis.grid(True, which='minor')
 
-	plot.plot(x, y, '-o')
-	plot.show()
+	plt.plot(x, y, '-o')
+	plt.show()
+
+
+def display(chart):
+	x, y = breakpoints(chart)
+	plot(x, y, chart.spice)

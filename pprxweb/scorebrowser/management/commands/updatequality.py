@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from scorebrowser.models import *
-import math
+from numpy import interp
+import json
 
 
 class Command(BaseCommand):
@@ -8,9 +9,18 @@ class Command(BaseCommand):
 
 	def handle(self, *args, **options):
 		updated_quality = []
-		for score in UserScore.objects.all().select_related('chart'):
-			if not score.chart.spice:
-				continue
-			score.quality = score.chart.spice - math.log2((1000001 - min(score.score, 999000))/1000000)
-			updated_quality.append(score)
-		UserScore.objects.bulk_update(updated_quality, ['quality'])
+		all_scores = UserScore.objects.all().select_related('chart')
+		count = all_scores.count()
+		batch_size = 1000
+		for i in range(0, count, batch_size):
+			print(count - i)
+			batch = all_scores[i:i+batch_size]
+			for score in batch:
+				if not score.chart.spice:
+					continue
+				score.quality = interp(
+					score.normalized,
+					json.loads(score.chart.normscore_breakpoints),
+					json.loads(score.chart.quality_breakpoints)
+				)
+			UserScore.objects.bulk_update(batch, ['quality'])

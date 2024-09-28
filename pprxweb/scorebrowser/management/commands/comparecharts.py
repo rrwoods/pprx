@@ -23,20 +23,40 @@ class Command(BaseCommand):
 				player_scores[entry.player_id] = {}
 			player_scores[entry.player_id][entry.chart_id] = entry.score
 
-		unprocessed_pairs = list(UnprocessedPair.objects.all())
+		tracked_chart_ids = {}
+		for chart in Chart.objects.filter(tracked=True):
+			if chart.rating not in tracked_chart_ids:
+				tracked_chart_ids[chart.rating] = []
+			tracked_chart_ids[chart.rating].append(chart.id)
+
+		unprocessed_pairs = []
+		for level, chart_ids in tracked_chart_ids.items():
+			for chart_id in chart_ids:
+				for other_chart_id in chart_ids:
+					if chart_id != other_chart_id:
+						unprocessed_pairs.append((chart_id, other_chart_id))
+				if (level + 1) in tracked_chart_ids:
+					for other_chart_id in tracked_chart_ids[level + 1]:
+						unprocessed_pairs.append((chart_id, other_chart_id))
+
+		#unprocessed_pairs = list(UnprocessedPair.objects.all())
 		remaining = len(unprocessed_pairs)
 		skipped = 0
+		print("Made {} pairs.  Clearing previous run's pairs...".format(remaining))
 
+		ChartPair.objects.all().delete()
+		new_pairs = []
 		for unprocessed in unprocessed_pairs:
 			score_pairs = []
 			for (player_id, chart_scores) in player_scores.items():
-				if (unprocessed.x_chart_id in chart_scores) and (unprocessed.y_chart_id in chart_scores):
-					score_pairs.append((chart_scores[unprocessed.x_chart_id], chart_scores[unprocessed.y_chart_id]))
+				if (unprocessed[0] in chart_scores) and (unprocessed[1] in chart_scores):
+					score_pairs.append((chart_scores[unprocessed[0]], chart_scores[unprocessed[1]]))
 
 			remaining -= 1
+			if (remaining % 1000) == 0:
+				print(remaining)
 			if len(score_pairs) < 10:
 				skipped += 1
-				unprocessed.delete()
 				continue
 
 			x = []
@@ -55,11 +75,14 @@ class Command(BaseCommand):
 			out = odr.run()
 
 			strength = len(score_pairs)*10000 / math.sqrt(out.res_var)
-			with transaction.atomic():
-				ChartPair.objects.create(x_chart_id=unprocessed.x_chart_id, y_chart_id=unprocessed.y_chart_id, slope=out.beta[0], strength=strength)
-				ChartPair.objects.create(x_chart_id=unprocessed.y_chart_id, y_chart_id=unprocessed.x_chart_id, slope=1/out.beta[0], strength=strength)
-				unprocessed.delete()
-
-			print(remaining)
+			new_pairs.append(ChartPair(x_chart_id=unprocessed[0], y_chart_id=unprocessed[1], slope=out.beta[0], strength=strength))
+			new_pairs.append(ChartPair(x_chart_id=unprocessed[1], y_chart_id=unprocessed[0], slope=1/out.beta[0], strength=strength))
 
 		print("{} skipped.".format(skipped))
+		print("Writing to db...")
+		batch_size = 1000
+		i = int(len(new_pairs)/batch_size) * batch_size
+		while i >= 0:
+			print(i)
+			ChartPair.objects.bulk_create(new_pairs[i:i+batch_size])
+			i -= batch_size

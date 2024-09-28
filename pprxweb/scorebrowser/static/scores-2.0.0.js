@@ -523,11 +523,11 @@ $(document).ready(function () {
 
 	var spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
-	$(spiceHeader).attr('title', "How hard a chart is, relative to all other charts (not just of the same rating).")
+	$(spiceHeader).attr('title', "How hard a chart is to score, relative to all other charts (not just of the same rating).")
 
 	var qualityHeader = scoresTable.column(10).header()
 	$(qualityHeader).addClass('tooltip')
-	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, normalized against how spicy the chart is.  Points beyond 999,000 do not contribute to quality rating, and goals will never be over 999,000.')
+	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, based on similarly skilled players\' scores.')
 
 	function applyRowClasses(table) {
 		var cab = currentFilters["cabinet-select"]
@@ -557,28 +557,25 @@ $(document).ready(function () {
 		if (isNaN(newGoal)) {
 			return
 		}
-		newGoal = Math.min(999000, Math.max(1, newGoal)) - 1
-
-		targetQuality = row.spice - Math.log2((1000001 - newGoal)/1000000)
-		scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
-			d = this.data()
-			if (!d.spiced) {
-				return
-			}
-
-			d.goal = 1000001 - 15625*Math.pow(2, 6 + d.spice - targetQuality)
-			d.goal = Math.min(999000, Math.max(0, Math.ceil(d.goal/10) * 10))
-			d.distance = d.goal - d.score
-			this.invalidate()
-		})
-		redrawTable(true)
+		newGoal = Math.min(1000000, Math.max(1, newGoal)) - 1
 
 		$.ajax({
 			url: '/scorebrowser/set_goal',
 			type: 'POST',
 			headers: {'X-CSRFToken': csrfToken},
-			data: JSON.stringify({'chart_id': row.chart_id, 'target_score': newGoal})
+			data: JSON.stringify({'chart_id': row.chart_id, 'target_score': newGoal}),
+			success: function(response) {
+				scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
+					d = this.data()
+					if (!d.spiced) {
+						return
+					}
+					d.goal = response[d.chart_id]
+					this.invalidate()
+				})
+			}
 		})
+		redrawTable(true)
 	})
 
 	$('#scores').on('click', 'button.hide-button', function() {

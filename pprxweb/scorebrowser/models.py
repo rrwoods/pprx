@@ -57,15 +57,6 @@ class ChartPair(models.Model):
         db_table = 'chart_pairs'
 
 
-class UnprocessedPair(models.Model):
-    id = models.AutoField(primary_key=True)
-    x_chart = models.ForeignKey(Chart, related_name='x_u', on_delete=models.CASCADE)
-    y_chart = models.ForeignKey(Chart, related_name='y_u', on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'unprocessed_pairs'
-
-
 class Player(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.TextField()
@@ -122,9 +113,13 @@ class UserScore(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
+
     score = models.IntegerField()
+    normalized = models.FloatField(default=0)
     quality = models.FloatField(null=True, default=None)
+
     clear_type = models.IntegerField()
+    
     timestamp = models.IntegerField()
     current = models.BooleanField(null=True)
 

@@ -59,27 +59,36 @@ class Command(BaseCommand):
 		print("Building initial quality assumptions...")
 		initial_quality = {}
 		public_scores = Score.objects.all().prefetch_related('chart')
+		public_count = public_scores.count()
+		batch_size = 1000
+		print("Working with {} public scores.".format(public_count))
 
 		# Additionally, to make step 2 easier, we pre-group all the public scores by player
 		# id and chart id.
 		player_scores = {}
-		for entry in public_scores:
-			if not entry.chart.spice:
-				continue
+		for i in range(0, public_count, batch_size):
+			print(public_count - i)
+			batch = public_scores[i:i+batch_size]
+			for entry in batch:
+				if not entry.chart.spice:
+					continue
 
-			if entry.player_id not in player_scores:
-				player_scores[entry.player_id] = {}
-			player_scores[entry.player_id][entry.chart_id] = entry.normalized
+				if entry.player_id not in player_scores:
+					player_scores[entry.player_id] = {}
+				player_scores[entry.player_id][entry.chart_id] = entry.normalized
 
-			if entry.chart_id not in initial_quality:
-				initial_quality[entry.chart_id] = {}
-			if entry.normalized not in initial_quality[entry.chart_id]:
-				initial_quality[entry.chart_id][entry.normalized] = [entry.normalized + entry.chart.spice]
+				if entry.chart_id not in initial_quality:
+					initial_quality[entry.chart_id] = {}
+				if entry.normalized not in initial_quality[entry.chart_id]:
+					initial_quality[entry.chart_id][entry.normalized] = [entry.normalized + entry.chart.spice]
+			del batch
 
 		# re-sort each of the quality dictionaries by key, so that the lowest score is first.
+		print("Constructing assumptions map...")
 		assumed_quality = {}
 		for chart_id, assumptions in initial_quality.items():
 			assumed_quality[chart_id] = {k: v for k, v in sorted(assumptions.items())}
+		del initial_quality
 
 
 
@@ -113,7 +122,7 @@ class Command(BaseCommand):
 				if (chart_pair[0] in chart_scores) and (chart_pair[1] in chart_scores):
 					xnormalized = chart_scores[chart_pair[0]]
 					ynormalized = chart_scores[chart_pair[1]]
-					weight = 4 - abs(xnormalized - ynormalized)
+					weight = 3.600 - abs(xnormalized - ynormalized)
 					if weight <= 0:
 						continue
 
@@ -123,6 +132,8 @@ class Command(BaseCommand):
 						derived_quality[chart_pair[0]].append((xnormalized, assumed_quality[chart_pair[1]][ynormalized], weight))
 			n -= 1
 			print(n)
+		del player_scores  # this thing is massive
+		del chart_pairs
 
 
 
@@ -137,6 +148,9 @@ class Command(BaseCommand):
 			# normalized scores on X and the derived quality values on Y.
 			models = {}
 			for chart_id, estimates in derived_quality.items():
+				if (len(estimates) == 0):
+					chart = Chart.objects.get(id=chart_id)
+					print("No estimates for {} {}".format(chart.song.title, chart.difficulty.name))
 				x = [e[0] for e in estimates]
 				y = [e[1][0] for e in estimates]
 				weights = [e[2] for e in estimates]
@@ -189,6 +203,10 @@ class Command(BaseCommand):
 				for normalized_score, quality_pointer in assumptions.items():
 					quality_pointer[0] = (quality_pointer[0] + translate_amt) * scale_factor
 
+			### DEBUG STATEMENTS ###
+			print("MAX 300 AAA =", interp(final_anchor_ten, list(assumed_quality[final_anchor_chart_id].keys()), [y[0] for y in assumed_quality[final_anchor_chart_id].values()]))
+
+
 
 		# STEP 6: DATA TRANSFORM + FINAL QUALITY SHIFT FOR CONSUMPTION
 		# Shift all the quality values so that a MAX 300 AAA is 10.0.
@@ -209,6 +227,12 @@ class Command(BaseCommand):
 		for chart_id, estimates in final_quality.items():
 			for i, quality in enumerate(estimates[1]):
 				estimates[1][i] = quality + translate_amt
+			highest_score = estimates[0][-1]
+			if highest_score < -2.322:
+				highest_quality = estimates[1][-1]
+				boost = -2.322 - highest_score
+				estimates[0].append(-2.322)
+				estimates[1].append(highest_quality + boost)
 
 
 

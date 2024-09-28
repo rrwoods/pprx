@@ -8,7 +8,9 @@ class Command(BaseCommand):
 
 	def handle(self, *args, **options):
 		with connection.cursor() as cursor:
+			print("Normalizing non-MFCs")
 			cursor.execute('update scores set normalized = -log(2, 1000000 - score) where score < 1000000')
 
+			print("Normalizing MFCs")
 			# this value is 1.000 more than the normalized value for one perfect.
-			cursor.execute('update scores set normalized = -2.3219280948873626 where score = 1000000')
+			cursor.execute('update scores set normalized = -2.322 where score = 1000000')
