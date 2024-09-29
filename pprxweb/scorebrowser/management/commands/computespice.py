@@ -8,6 +8,44 @@ class Command(BaseCommand):
 	help = "Recompute all songs' spice ratings using the current chart_pairs data"
 
 	def handle(self, *args, **options):
+		chart_ratings = {c.id: c.rating for c in Chart.objects.filter(tracked=True).filter(hidden=False)}
+		initial_spice = {
+			7: 2,
+			8: 3,
+			9: 4,
+			10: 5,
+			11: 6,
+			12: 7,
+			13: 8,
+			14: 9,
+			15: 10,
+			16: 11,
+			17: 12,
+			18: 13.5,
+			19: 15,
+		}
+
+		# de-emphasize inter-level comparisons, to help alleviate several effects related
+		# to players' play and grinding patterns.  values are divisors, 1 = no penalty.
+		# each key is the lower level of the pair.
+		# the 13-14 barrier is deliberately massive to help "cleave off" 14+ spice ratings
+		# from the rest, because play patterns are such that 14+ get _much_ more play from
+		# grinders than the rest of the game does.
+		barrier_penalties = {
+			7: 1, # there is only one expert 7 so i am hestant to penalize it at all.
+			8: 25,
+			9: 25,
+			10: 25,
+			11: 25,
+			12: 25,
+			13: 1000,
+			14: 25,
+			15: 32,
+			16: 50,
+			17: 75,
+			18: 100,
+		}
+
 		print("Building pairs dictionary...")
 		pairs = {}
 		for pair in ChartPair.objects.all():
@@ -15,8 +53,8 @@ class Command(BaseCommand):
 				pairs[pair.y_chart_id] = []
 			pairs[pair.y_chart_id].append(pair)
 
-		current = {c.id: c.rating for c in Chart.objects.filter(tracked=True)}
-		reps = 500
+		current = {chart_id: 2**initial_spice[rating] for chart_id, rating in chart_ratings.items()}
+		reps = 100
 		for i in range(reps):
 			print('{} iterations remaining'.format(reps-i))
 			previous = current
@@ -24,11 +62,19 @@ class Command(BaseCommand):
 			for chart_id, raw_spice in previous.items():
 				if chart_id not in pairs:
 					continue
-				weights = [c.strength for c in pairs[chart_id] if c.x_chart_id in previous]
-				if sum(weights) < 200:
+				weights = []
+				for pair in pairs[chart_id]:
+					if pair.x_chart_id not in previous:
+						continue
+					weight = pair.strength
+					ratings = (chart_ratings[pair.x_chart_id], chart_ratings[pair.y_chart_id])
+					if ratings[0] != ratings[1]:
+						weight /= barrier_penalties[min(ratings)]
+					weights.append(weight)
+				if sum(weights) < 50:
 					continue
 
-				values = [c.slope * previous[c.x_chart_id] for c in pairs[chart_id] if c.x_chart_id in previous]
+				values = [pair.slope * previous[pair.x_chart_id] for pair in pairs[chart_id] if pair.x_chart_id in previous]
 				current[chart_id] = gmean(values, weights=weights)
 		
 		anchor_value = 10.0
@@ -55,11 +101,11 @@ class Command(BaseCommand):
 		hardest19spice = normalized[hardest19id]
 		hardest20spice = normalized[hardest20id]
 
-		target_quality = hardest16spice - math.log2((1000001 - 990000)/1000000)
-		hardest17target = target_quality + math.log2((1000001 - 975000)/1000000)
-		hardest18target = target_quality + math.log2((1000001 - 950000)/1000000)
-		hardest19target = target_quality + math.log2((1000001 - 825000)/1000000)
-		hardest20target = target_quality + math.log2((1000001 - 760000)/1000000)
+		target_quality = hardest16spice - math.log2((1000000 - 990000)/1000000)
+		hardest17target = target_quality + math.log2((1000000 - 975000)/1000000)
+		hardest18target = target_quality + math.log2((1000000 - 950000)/1000000)
+		hardest19target = target_quality + math.log2((1000000 - 825000)/1000000)
+		hardest20target = target_quality + math.log2((1000000 - 760000)/1000000)
 
 		for chart_id in normalized:
 			pre_fudge = normalized[chart_id]

@@ -17,10 +17,13 @@ class Command(BaseCommand):
 			batch = all_scores[i:i+batch_size]
 			for score in batch:
 				if not score.chart.spice:
-					continue
-				score.quality = interp(
-					score.normalized,
-					json.loads(score.chart.normscore_breakpoints),
-					json.loads(score.chart.quality_breakpoints)
-				)
+					score.quality = None
+				elif score.clear_type == 0:
+					score.quality = None
+				else:	
+					score.quality = interp(
+						score.normalized,
+						json.loads(score.chart.normscore_breakpoints),
+						json.loads(score.chart.quality_breakpoints)
+					)
 			UserScore.objects.bulk_update(batch, ['quality'])

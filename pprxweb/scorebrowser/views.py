@@ -948,7 +948,7 @@ def scores(request):
 			clearType = 2
 
 		goal = None
-		if (spice is not None) and (target_quality is not None):
+		if (target_quality is not None) and (chart.quality_breakpoints):
 			normalized_goal = interp(
 				target_quality,
 				json.loads(chart.quality_breakpoints),

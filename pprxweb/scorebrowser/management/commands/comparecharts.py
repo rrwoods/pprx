@@ -13,7 +13,7 @@ scale_model = Model(scale)
 
 
 class Command(BaseCommand):
-	help = 'Iterate through unprocessed_pairs and compare the indicated charts'
+	help = 'Compare each tracked chart to each other tracked chart within 1 level and assign a relative difficulty and confidence'
 
 	def handle(self, *args, **options):
 		public_scores = Score.objects.filter(score__gt=800000, score__lt=999000)
@@ -24,7 +24,7 @@ class Command(BaseCommand):
 			player_scores[entry.player_id][entry.chart_id] = entry.score
 
 		tracked_chart_ids = {}
-		for chart in Chart.objects.filter(tracked=True):
+		for chart in Chart.objects.filter(tracked=True).filter(hidden=False):
 			if chart.rating not in tracked_chart_ids:
 				tracked_chart_ids[chart.rating] = []
 			tracked_chart_ids[chart.rating].append(chart.id)

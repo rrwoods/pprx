@@ -7,7 +7,7 @@ import math
 
 
 class Command(BaseCommand):
-	help = 'Give each tracked chart a set of quality benchmarks by pairwise comparison and centered isotonic regression.'
+	help = 'Give each spiced chart a set of quality benchmarks by pairwise comparison and centered isotonic regression.'
 
 	def handle(self, *args, **options):
 		# these values are hand-picked for quality range decompression (see step 5 below).
@@ -122,7 +122,7 @@ class Command(BaseCommand):
 				if (chart_pair[0] in chart_scores) and (chart_pair[1] in chart_scores):
 					xnormalized = chart_scores[chart_pair[0]]
 					ynormalized = chart_scores[chart_pair[1]]
-					weight = 3.600 - abs(xnormalized - ynormalized)
+					weight = 2 - abs(xnormalized - ynormalized)
 					if weight <= 0:
 						continue
 
@@ -138,7 +138,7 @@ class Command(BaseCommand):
 
 
 		# ITERATION STARTS
-		max_iterations = 10
+		max_iterations = 3
 		for iteration in range(max_iterations):
 			print("Running regressions, {} iterations remaining".format(max_iterations - iteration))
 
@@ -214,25 +214,28 @@ class Command(BaseCommand):
 		# The [xs], [ys] structure is preparation for final storage, as it's
 		# the form numpy.interp will want when we use these values to compute
 		# the quality of a score for the player.
+		# We also round all these values to the nearest three decimals for storage,
+		# since they are stored as strings and more fidelity than that is not
+		# necessary.
 		print("Final normalization for display")
 		final_quality = {}
 		for chart_id, estimates in assumed_quality.items():
 			normalized_scores = list(sorted(estimates.keys()))
 			qualities = [estimates[x][0] for x in normalized_scores]
-			final_quality[chart_id] = (normalized_scores, qualities)
+			final_quality[chart_id] = ([int(1000*x)/1000 for x in normalized_scores], qualities)
 
 		anchor_estimates = final_quality[final_anchor_chart_id]
 		current_anchor = interp(final_anchor_ten, anchor_estimates[0], anchor_estimates[1])
 		translate_amt = 10.0 - current_anchor
 		for chart_id, estimates in final_quality.items():
 			for i, quality in enumerate(estimates[1]):
-				estimates[1][i] = quality + translate_amt
+				estimates[1][i] = int(1000*(quality + translate_amt))/1000
 			highest_score = estimates[0][-1]
 			if highest_score < -2.322:
 				highest_quality = estimates[1][-1]
 				boost = -2.322 - highest_score
 				estimates[0].append(-2.322)
-				estimates[1].append(highest_quality + boost)
+				estimates[1].append(int(1000*(highest_quality + boost))/1000)
 
 
 
