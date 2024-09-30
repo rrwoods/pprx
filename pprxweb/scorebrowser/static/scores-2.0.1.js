@@ -425,6 +425,10 @@ $(document).ready(function () {
 				title: 'Dist.',
 				type: 'nonzero-number',
 				render: function(data, type, row, meta) {
+					if (type === "sort" && data <= 0) {
+						return 0
+					}
+
 					if (type === "sort" || type === "type" || type === "filter") {
 						return data
 					}
@@ -571,6 +575,11 @@ $(document).ready(function () {
 						return
 					}
 					d.goal = response[d.chart_id]
+					if (d.goal) {
+						d.distance = d.goal - d.score
+					} else {
+						d.distance = 0
+					}
 					this.invalidate()
 				})
 			}

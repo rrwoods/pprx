@@ -10,6 +10,19 @@
 
 .navbar-link {
 	padding-right: 15px;
+	vertical-align: middle;
+	float: none;
+	
+	line-height: 30px;
+	height: 30px;
+	display: inline-block;
+}
+
+.hidden-navbar-link {
+	padding-right: 15px;
+	vertical-align: middle;
+	float: none;
+	display: none;
 }
 
 .update-message {
@@ -43,7 +56,7 @@
 /*** unlocks page ***/
 
 .inline-form {  /* for unlock checkboxes etc */
-	display: inline;
+	display: inline-block;
 }
 
 summary {

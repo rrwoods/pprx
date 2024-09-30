@@ -366,6 +366,20 @@ def unlocks(request):
 	}
 	return render(request, 'scorebrowser/unlocks.html', unlockData)
 
+def compute_goal(target_quality, chart):
+	quality_breakpoints = json.loads(chart.quality_breakpoints)
+	if (target_quality < quality_breakpoints[0]):
+		return None
+	if (target_quality > quality_breakpoints[-1]):
+		return 1000000
+
+	normalized_goal = interp(
+		target_quality,
+		quality_breakpoints,
+		json.loads(chart.normscore_breakpoints),
+	)
+	return (int(-(2**(-normalized_goal))/10)*10) + 1000000
+
 def set_goal(request):
 	if request.method != 'POST':
 		return
@@ -381,16 +395,7 @@ def set_goal(request):
 		json.loads(user.goal_chart.normscore_breakpoints),
 		json.loads(user.goal_chart.quality_breakpoints),
 	)
-	response = {}
-	for chart in Chart.objects.exclude(spice=None):
-		normalized_goal = interp(
-			target_quality,
-			json.loads(chart.quality_breakpoints),
-			json.loads(chart.normscore_breakpoints),
-		)
-		goal = (int(-(2**(-normalized_goal))/10)*10) + 1000000
-		response[chart.id] = goal
-
+	response = {chart.id: compute_goal(target_quality, chart) for chart in Chart.objects.exclude(quality_breakpoints='')}
 	return JsonResponse(response)
 
 def set_chart_notes(request):
@@ -949,12 +954,7 @@ def scores(request):
 
 		goal = None
 		if (target_quality is not None) and (chart.quality_breakpoints):
-			normalized_goal = interp(
-				target_quality,
-				json.loads(chart.quality_breakpoints),
-				json.loads(chart.normscore_breakpoints),
-			)
-			goal = (int(-(2**(-normalized_goal))/10)*10) + 1000000
+			goal = compute_goal(target_quality, chart)
 
 		entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }
 		entry['song_id'] = chart.song_id
