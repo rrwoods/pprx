@@ -27,3 +27,5 @@ class Command(BaseCommand):
 						json.loads(score.chart.quality_breakpoints)
 					)
 			UserScore.objects.bulk_update(batch, ['quality'])
+
+		print("DID YOU DOWNSIZE THE INSTANCE?!  t3.micro in us-west-2c")

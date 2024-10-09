@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
+from scorebrowser.misc import sort_key
 from scorebrowser.models import *
 import json
 import requests
@@ -33,6 +34,9 @@ class Command(BaseCommand):
 				if v != getattr(song, db_k):
 					setattr(song, db_k, v)
 					print("Song {} has {} = {}".format(song.title, db_k, v))
+
+					if db_k == 'searchable_title':
+						song.sort_key = sort_key(v)
 
 			song.save()
 

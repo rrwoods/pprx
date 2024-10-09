@@ -54,6 +54,7 @@ class Command(BaseCommand):
 			pairs[pair.y_chart_id].append(pair)
 
 		current = {chart_id: 2**initial_spice[rating] for chart_id, rating in chart_ratings.items()}
+		low_conf = set()
 		reps = 100
 		for i in range(reps):
 			print('{} iterations remaining'.format(reps-i))
@@ -73,6 +74,9 @@ class Command(BaseCommand):
 					weights.append(weight)
 				if sum(weights) < 50:
 					continue
+				if sum(weights) < 200:
+					low_conf.append(chart_id)
+					print("low conf", chart_id)
 
 				values = [pair.slope * previous[pair.x_chart_id] for pair in pairs[chart_id] if pair.x_chart_id in previous]
 				current[chart_id] = gmean(values, weights=weights)
@@ -139,5 +143,6 @@ class Command(BaseCommand):
 		for chart_id, spice in normalized.items():
 			chart = Chart.objects.get(id=chart_id)
 			chart.spice = spice
+			chart.low_conf = chart_id in low_conf
 			bulk.append(chart)
-		Chart.objects.bulk_update(bulk, ['spice'])
+		Chart.objects.bulk_update(bulk, ['spice', 'low_conf'])

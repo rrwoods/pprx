@@ -12,6 +12,7 @@ class Song(models.Model):
     version = models.ForeignKey(Version, on_delete=models.CASCADE, default=1)
     
     title = models.TextField()
+    sort_key = models.TextField(default="")
     searchable_title = models.TextField(default="")
     romanized_title = models.TextField(default="")
     alternate_title = models.TextField(default="")
@@ -37,6 +38,7 @@ class Chart(models.Model):
     rating = models.IntegerField()
     rerate = models.IntegerField(null=True, default=None)  # for "manual" re-rates, when automatically-updated data is slow to arrive
     spice = models.FloatField(blank=True, null=True)
+    low_conf = models.BooleanField(default=False)
     normscore_breakpoints = models.TextField(default="")
     quality_breakpoints = models.TextField(default="")
     tracked = models.BooleanField(default=True)

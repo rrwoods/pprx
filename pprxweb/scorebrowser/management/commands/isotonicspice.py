@@ -251,3 +251,5 @@ class Command(BaseCommand):
 			chart.quality_breakpoints = json.dumps(estimates[1])
 			spice_updates.append(chart)
 		Chart.objects.bulk_update(spice_updates, ['normscore_breakpoints', 'quality_breakpoints'])
+
+		print("REMEMBER TO DOWNSIZE THE INSTANCE!  t3.micro in us-west-2c")
