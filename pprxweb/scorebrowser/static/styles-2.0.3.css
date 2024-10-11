@@ -172,6 +172,26 @@ table.ma-points-breakdown td {
 }
 
 
+/*** averages table ***/
+
+table.averages-breakdown {
+	border-collapse: collapse;
+}
+
+table.averages-breakdown th {
+	text-align: center;
+
+	padding-left: 1em;
+	padding-right: 1em;
+	border-bottom: 1px solid lightgray !important;
+}
+
+table.averages-breakdown td {
+	text-align: center;
+	border-bottom: 1px solid lightgray !important;
+}
+
+
 /*** requirements tables ***/
 
 table.requirements {

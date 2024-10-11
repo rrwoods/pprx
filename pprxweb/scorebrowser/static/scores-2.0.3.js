@@ -1003,6 +1003,7 @@ $(document).ready(function () {
 		selectedRank = rankRequirements[initialSelectedRank]
 		$('#rank-select').val(initialSelectedRank)
 		selectedRank.container.show()
+		//showAverages(selectedRank)
 
 		$('.requirements').on('click', '.targetable', function() {
 			goalId = $(this).data('goal-id')
@@ -1019,6 +1020,13 @@ $(document).ready(function () {
 			})
 		})
 
+		function showAverages(rank) {
+			segment = rank.amethyst ? 'amethyst' : 'default'
+			for (let level = 14; level < 20; level++) {
+				$(`#average-${level}`).text(Math.floor(averages[level][segment]).toLocaleString())
+			}
+		}
+
 		function selectRank() {
 			selectedRank.container.hide()
 
@@ -1026,6 +1034,7 @@ $(document).ready(function () {
 			rank = rankRequirements[rankIndex]
 			selectedRank = rank
 			rank.container.show()
+			showAverages(rank)
 
 			redrawTable() // might change what "required songs" means
 
@@ -1440,5 +1449,6 @@ $(document).ready(function () {
 			}
 		}
 		evaluateRanks()
+		showAverages(selectedRank)
 	})
 })

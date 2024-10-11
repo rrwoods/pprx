@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-2.0.2.js' %}"></script>
+	<script src="{% static 'scores-2.0.3.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -230,6 +230,39 @@
 	<p>
 		NOTE: PPR X is not maintained by or affiliated with LIFE4, and the information presented here is not a substitute for submission proof.  This is a tool to help you figure out which requirements you are missing and how you can satisfy them.
 	</p>
+	<p><details>
+		<summary>Level averages:</summary>
+		<div class="details"><table class="averages-breakdown">
+			<tr>
+				<th class="border-right">Level</th>
+				<th>Average</th>
+			</tr>
+			<tr>
+				<td class="border-right">14</td>
+				<td id="average-14"></td>
+			</tr>
+			<tr>
+				<td class="border-right">15</td>
+				<td id="average-15"></td>
+			</tr>
+			<tr>
+				<td class="border-right">16</td>
+				<td id="average-16"></td>
+			</tr>
+			<tr>
+				<td class="border-right">17</td>
+				<td id="average-17"></td>
+			</tr>
+			<tr>
+				<td class="border-right">18</td>
+				<td id="average-18"></td>
+			</tr>
+			<tr>
+				<td class="border-right">19</td>
+				<td id="average-19"></td>
+			</tr>
+		</table></div>
+	</details></p>
 	<p><details>
 		<summary>Total MA points: <span id="ma-points-display"></span></summary>
 		<div class="details"><table class="ma-points-breakdown">
