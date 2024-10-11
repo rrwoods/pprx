@@ -1232,7 +1232,7 @@ $(document).ready(function () {
 			}
 			if (moreParams.shadow) {
 				if (needs.length) {
-					needs.push('plus')
+					needs.push(',')
 				}
 				var needLink = $('<button>', {class: 'need-link'})
 				needLink.data('filters', moreParams.shadowFilters)
@@ -1304,8 +1304,8 @@ $(document).ready(function () {
 									var shadow = undefined
 									var shadowFilters = undefined
 									if (requirement.exceptions > 0) {
-										var shadowPotentials = scoresByLevel[level][segment].slice(0, qtyUnmet - softUnmet)
-										var shadowUnmet = shadowPotentials.findLastIndex(s => s < requirement.exception_score) + 1
+										let shadowMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.exception_score)
+										let shadowUnmet = scoresByLevel[level][segment].length - shadowMet
 										if (shadowUnmet > 0) {
 											shadow = shadowUnmet
 											shadowFilters = Object.assign({"max-score": requirement.exception_score}, levelFilters)
@@ -1319,7 +1319,7 @@ $(document).ready(function () {
 									}
 								} else {
 									var needFilters = Object.assign({"max-score": requirement.threshold}, levelFiltersWithOptional)
-									var qtyMet = qtyAboveThreshold(scoresByLevel[level].all, requirement.threshold)
+									var qtyMet = qtyAboveThreshold(scoresByLevel[level].cleared, requirement.threshold)
 									var shadow = undefined
 									var shadowFilters = undefined
 									if (requirement.exceptions > 0) {
