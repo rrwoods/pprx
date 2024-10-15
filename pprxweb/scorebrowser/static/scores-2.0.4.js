@@ -808,28 +808,22 @@ $(document).ready(function () {
 	})
 	$("#target-flare-rank").val($('#selected-flare').data('x')).change()
 
-
 	var spiceHeader = scoresTable.column(8).header()
-	$(spiceHeader).addClass('tooltip')
-	$(spiceHeader).attr('title', "How hard a chart is to score, relative to all other charts (not just of the same rating).")
+	$(spiceHeader).addClass('tooltip').attr('title', "How hard a chart is to score, relative to all other charts (not just of the same rating).")
 
 	var qualityHeader = scoresTable.column(10).header()
-	$(qualityHeader).addClass('tooltip')
-	$(qualityHeader).attr('title', 'How good your score is, relative to your other scores on other songs, based on similarly skilled players\' scores.')
+	$(qualityHeader).addClass('tooltip').attr('title', 'How good your score is, relative to your other scores on other songs, based on similarly skilled players\' scores.')
 
 	function applyRowClasses(table) {
 		var cab = currentFilters["cabinet-select"]
 		table.rows().every(function(rowIdx, tableLoop, rowLoop) {
 			visibility = parseInt(this.data()[cab])
 			if (visibility === 1) {
-				$(this.node()).addClass('extra-exclusive')
-				$(this.node()).removeClass('locked-chart')				
+				$(this.node()).addClass('extra-exclusive').removeClass('locked-chart')				
 			} else if (visibility === 2) {
-				$(this.node()).removeClass('extra-exclusive')
-				$(this.node()).addClass('locked-chart')				
+				$(this.node()).removeClass('extra-exclusive').addClass('locked-chart')				
 			} else {
-				$(this.node()).removeClass('extra-exclusive')				
-				$(this.node()).removeClass('locked-chart')				
+				$(this.node()).removeClass('extra-exclusive').removeClass('locked-chart')				
 			}
 		})
 	}
@@ -1503,8 +1497,7 @@ $(document).ready(function () {
 			var targetCell = requirement.row.find('.target-cell')
 
 			if (!moreParams.additional && !moreParams.shadow && (distance <= 0) && (distance != null)) {
-				requirement.row.removeClass('unmet')
-				requirement.row.addClass('met')
+				requirement.row.removeClass('unmet').addClass('met')
 				targetCell.removeClass('targetable')
 				checkbox.prop('checked', true)
 				requirement.met = true
@@ -1550,8 +1543,7 @@ $(document).ready(function () {
 				togo.append(')')
 			}
 
-			requirement.row.removeClass('met')
-			requirement.row.addClass('unmet')
+			requirement.row.removeClass('met').addClass('unmet')
 			targetCell.addClass('targetable')
 			checkbox.prop('checked', false)
 			requirement.met = false
