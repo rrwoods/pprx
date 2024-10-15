@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-2.0.3.js' %}"></script>
+	<script src="{% static 'scores-2.0.4.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -211,8 +211,11 @@
 		<button id="reset-filters">Reset all filters</button>
 	</p>
 
+	<p id="column-toggles">Show/hide: </p>
+
 	<div style="display: none" id="romanize-titles" data-x="{{ romanized_titles }}"></div>
 	<div style="display: none" id="selected-rank" data-x="{{ selected_rank }}"></div>
+	<div style="display: none" id="selected-flare" data-x="{{ selected_flare }}"></div>
 	<div style="display: none" id="jsonData" data-json="{{ scores }}"></div>
 	<div style="display: none" id="white-version" data-json="{{ white_version }}"></div>
 	<div style="display: none" id="all-charts" data-json="{{ all_charts }}"></div>
@@ -226,13 +229,29 @@
 
 	<p id="goals-summary"></p>
 
+	<h1>Flare Skill Summary</h1>
+	<details>
+		<summary><span id="total-flare-points"></span> pts: <span id="flare-rank"></span></summary>
+		<div class="details">
+			<p>
+				Target Flare rank:
+				<select autocomplete="off" id="target-flare-rank"></select>
+				<span id="min-flare-points" class="tooltip" title="The minimum flare skill you need on each chart in your top 30 of each era to hit the selected flare rank, taking into account any buffer provided from your better flare clears."></span>
+				<br />
+				Hide songs that <span class="tooltip" title="A chart &quot;can't help you&quot; if it is impossible for an EX clear on that chart to break into your top 30 for that era, or to reach the indicated floor, or you already have an EX clear.">can't help you</span>:
+				<input autocomplete="off" type="checkbox" id="flare-helps-only" class="filter" data-default="false">
+			</p>
+			<table id="flare-summary" class="summary-table"></table>
+		</div>
+	</details>
+
 	<h1>LIFE4 Rank Evaluation</h1>
 	<p>
 		NOTE: PPR X is not maintained by or affiliated with LIFE4, and the information presented here is not a substitute for submission proof.  This is a tool to help you figure out which requirements you are missing and how you can satisfy them.
 	</p>
 	<p><details>
 		<summary>Level averages:</summary>
-		<div class="details"><table class="averages-breakdown">
+		<div class="details"><table class="summary-table">
 			<tr>
 				<th class="border-right">Level</th>
 				<th>Average</th>
@@ -265,7 +284,7 @@
 	</details></p>
 	<p><details>
 		<summary>Total MA points: <span id="ma-points-display"></span></summary>
-		<div class="details"><table class="ma-points-breakdown">
+		<div class="details"><table class="summary-table">
 			<tr>
 				<td class="border-right"></td>
 				<th class="border-right" colspan="2">SDPs</th>

@@ -104,6 +104,7 @@ class User(models.Model):
     romanized_titles = models.BooleanField(default=False)
 
     selected_rank = models.IntegerField(default=0)
+    selected_flare = models.IntegerField(default=0)
     best_trial = models.IntegerField(default=0)
     second_best_trial = models.IntegerField(default=0)
     best_two_consecutive = models.IntegerField(default=0)
@@ -121,6 +122,7 @@ class UserScore(models.Model):
     quality = models.FloatField(null=True, default=None)
 
     clear_type = models.IntegerField()
+    flare_gauge = models.IntegerField(null=True, default=None)
     
     timestamp = models.IntegerField()
     current = models.BooleanField(null=True)

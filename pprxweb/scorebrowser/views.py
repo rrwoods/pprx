@@ -457,7 +457,19 @@ def set_selected_rank(request):
 	user.selected_rank = requestBody["rank"]
 	user.save()
 
-	return HttpResponse('Set selected rank.')		
+	return HttpResponse('Set selected rank.')
+
+def set_selected_flare(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	requestBody = json.loads(request.body)
+	print(requestBody)
+	user.selected_flare = requestBody["flare"]
+	user.save()
+
+	return HttpResponse('Set selected flare rank.')
 
 def set_trials(request):
 	if request.method != 'POST':
@@ -631,10 +643,11 @@ def perform_fetch(user, redirect_uri):
 			title = score['song_name']
 			timestamp = score['time_played'] or score['time_uploaded']
 			lamp = score['lamp']
+			flare_gauge = score['flare'] if 'flare' in score else None
 			score = score['score']
 
 			key = (song_id, difficulty)
-			scores_lookup[key] = (score, timestamp, lamp, title)
+			scores_lookup[key] = (score, timestamp, lamp, flare_gauge)
 
 			if key not in all_charts:
 				if song_id not in all_song_ids:
@@ -652,6 +665,7 @@ def perform_fetch(user, redirect_uri):
 
 		formerly_current_scores = []
 		new_scores = []
+		new_flares = []
 
 		for key in scores_lookup:
 			chart = all_charts[key]
@@ -668,15 +682,19 @@ def perform_fetch(user, redirect_uri):
 				normalized=normalized,
 				timestamp=new_score[1],
 				clear_type=new_score[2],
+				flare_gauge=new_score[3],
 				quality=quality,
 				current=True,
 			)
 			if chart.id in current_scores:
 				old_score = current_scores[chart.id]
-				if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type):
+				if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type) or ((old_score.flare_gauge is not None) and (new_score[3] > old_score.flare_gauge)):
 					new_scores.append(new_entry)
 					old_score.current = None
 					formerly_current_scores.append(old_score)
+				elif (old_score.flare_gauge is None) and (new_score[3] is not None):
+					old_score.flare_gauge = new_score[3]
+					new_flares.append(old_score)
 			else:
 				new_scores.append(new_entry)
 		print("perform_fetch: built score updates")
@@ -685,6 +703,8 @@ def perform_fetch(user, redirect_uri):
 		print("perform_fetch: cleared current on outdated scores")
 		UserScore.objects.bulk_create(new_scores)
 		print("perform_fetch: created new scores")
+		UserScore.objects.bulk_update(new_flares, ['flare_gauge'])
+		print("perform_fetch: set flare gauges of old scores")
 		return HttpResponse("Pulled new scores")
 
 	finally:
@@ -872,11 +892,13 @@ def scores(request):
 			timestamp = db_score.timestamp
 			clearType = db_score.clear_type
 			quality = db_score.quality
+			flare_gauge = db_score.flare_gauge
 		else:
 			score = 0
 			timestamp = 0
 			clearType = 0
 			quality = None
+			flare_gauge = None
 
 		if (clearType == 1) and (chart.id in aux) and (aux[chart.id].life4_clear):
 			clearType = 2
@@ -897,6 +919,7 @@ def scores(request):
 		entry['score'] = score
 		entry['clear_type'] = clearType
 		entry['quality'] = quality
+		entry['flare_gauge'] = flare_gauge
 		entry['goal'] = goal
 		entry['spiced'] = spice is not None
 		entry['chart_id'] = chart.id
@@ -932,4 +955,5 @@ def scores(request):
 		'life4_reqs': json.dumps(life4_reqs),
 		'requirement_targets': json.dumps(requirement_targets),
 		'selected_rank': user.selected_rank,
+		'selected_flare': user.selected_flare,
 	})

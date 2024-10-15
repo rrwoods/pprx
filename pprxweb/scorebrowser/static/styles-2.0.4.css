@@ -50,7 +50,7 @@
 
 .reminder-text {
 	font-style: italic;
-	color: gray;
+	opacity: 25%;
 }
 
 /*** unlocks page ***/
@@ -61,6 +61,7 @@
 
 summary {
 	cursor: pointer;
+	padding-bottom: 1em;
 }
 
 summary > * {
@@ -83,6 +84,10 @@ details .details {
 
 .scores-table {
 	white-space: nowrap;
+}
+
+.border-left {
+	border-left: 2px solid !important;
 }
 
 .border-right {
@@ -142,23 +147,23 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 
 /* goal styling (for scores table and requirements tables) */
 
-.met .req-description, button.met {
+button.met, .met .req-description, #flare-summary .met {
 	color: seagreen;
 	font-style: italic;
 }
 
-.unmet .req-description, button.unmet {
+button.unmet, .unmet .req-description, #flare-summary .unmet {
 	font-weight: bold;
 }
 
 
-/*** ma points table ***/
+/*** summary tables ***/
 
-table.ma-points-breakdown {
+table.summary-table {
 	border-collapse: collapse;
 }
 
-table.ma-points-breakdown th {
+table.summary-table th {
 	text-align: center;
 
 	padding-left: 1em;
@@ -166,28 +171,11 @@ table.ma-points-breakdown th {
 	border-bottom: 1px solid lightgray !important;
 }
 
-table.ma-points-breakdown td {
-	text-align: center;
-	border-bottom: 1px solid lightgray !important;
-}
-
-
-/*** averages table ***/
-
-table.averages-breakdown {
-	border-collapse: collapse;
-}
-
-table.averages-breakdown th {
+table.summary-table td {
 	text-align: center;
 
 	padding-left: 1em;
 	padding-right: 1em;
-	border-bottom: 1px solid lightgray !important;
-}
-
-table.averages-breakdown td {
-	text-align: center;
 	border-bottom: 1px solid lightgray !important;
 }
 

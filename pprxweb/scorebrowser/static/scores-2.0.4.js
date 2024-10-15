@@ -47,6 +47,64 @@ const sdpPoints = [0, 0.01, 0.025, 0.025, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.15,
 
 var romanizeTitles = false
 
+const MAX_VERSION = 20
+const classicEra = [1, 13]
+const whiteEra = [14, 16]
+const goldEra = [17, MAX_VERSION]
+const eras = {
+	"Classic era": {versionRange: classicEra, top30: []},
+	"White era": {versionRange: whiteEra, top30: []},
+	"Gold era": {versionRange: goldEra, top30: []},
+}
+var totalFlarePoints = 0
+var flareTargetFloor = 0
+var versionFlareTargets = false
+
+const baseFlarePoints = [undefined, 145, 155, 170, 185, 205, 230, 225, 290, 335, 400, 465, 510, 545, 575, 600, 620, 635, 650, 665]
+const flareSymbols = ["—", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "EX"]
+const flareRanks = {
+	"None+": 500,
+	"None++": 1000,
+	"None+++": 1500,
+	"Mercury": 2000,
+	"Mercury+": 3000,
+	"Mercury++": 4000,
+	"Mercury+++": 5000,
+	"Venus": 6000,
+	"Venus+": 7000,
+	"Venus++": 8000,
+	"Venus+++": 9000,
+	"Earth": 10000,
+	"Earth+": 11500,
+	"Earth++": 13000,
+	"Earth+++": 14500,
+	"Mars": 16000,
+	"Mars+": 18000,
+	"Mars++": 20000,
+	"Mars+++": 22000,
+	"Jupiter": 24000,
+	"Jupiter+": 26500,
+	"Jupiter++": 29000,
+	"Jupiter+++": 31500,
+	"Saturn": 34000,
+	"Saturn+": 36750,
+	"Saturn++": 39500,
+	"Saturn+++": 42250,
+	"Uranus": 45000,
+	"Uranus+": 48750,
+	"Uranus++": 52500,
+	"Uranus+++": 56250,
+	"Neptune": 60000,
+	"Neptune+": 63750,
+	"Neptune++": 67500,
+	"Neptune+++": 71250,
+	"Sun": 75000,
+	"Sun+": 78750,
+	"Sun++": 82500,
+	"Sun+++": 86250,
+	"WORLD": 90000,
+}
+
 var currentFilters = {}
 var baseFilters = {}
 var defaultFilters = {}
@@ -78,7 +136,7 @@ function escapeHtml(unsafe) {
 }
 
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-	if (userHidChartIds.includes(parseInt(data[15]))) {
+	if (userHidChartIds.includes(parseInt(data[17]))) {
 		return false
 	}
 
@@ -86,13 +144,9 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	// if ((data[26] === "true") && !currentFilters["show-removed"]) {
-	// 	return false
-	// }
-
 	visibility = parseInt(data[currentFilters["cabinet-select"]])
 	if (visibility === 3) {
-		if (data[26] === "true") {
+		if (data[28] === "true") {
 			if (!currentFilters["show-removed"]) {
 				return false
 			}
@@ -115,7 +169,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	song_level_met = false
-	song_levels = allCharts[data[20]]
+	song_levels = allCharts[data[22]]
 	for (var i = (currentFilters["song-beginner"] ? 0 : 1); i < song_levels.length; i++) {
 		if ((song_levels[i] >= currentFilters["song-level-min"]) && (song_levels[i] <= currentFilters["song-level-max"])) {
 			song_level_met = true
@@ -127,15 +181,15 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	if (currentFilters["hide-optional"]) {
-		var optional = selectedRank.amethyst ? (data[25] === "false") : (data[24] === "false")
+		var optional = selectedRank.amethyst ? (data[27] === "false") : (data[26] === "false")
 		if (optional) {
 			return false
 		}
 	}
 
-	const is_spiced = data[14] === "true"
+	const is_spiced = data[16] === "true"
 	if (currentFilters["spice-status"] == 1) {
-		if (data[27] !== "true") {
+		if (data[29] !== "true") {
 			return false
 		}
 	} else if (currentFilters["spice-status"] == 2) {
@@ -144,7 +198,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		}
 	}
 
-	if (currentFilters["bookmarks-only"] && (data[23] === "false")) {
+	if (currentFilters["bookmarks-only"] && (data[25] === "false")) {
 		return false
 	}
 
@@ -156,7 +210,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	var clear_type = (score === 0) ? -1 : parseInt(data[22])
+	var clear_type = (score === 0) ? -1 : parseInt(data[24])
 	if (clear_type < currentFilters["clear-type-min"]) {
 		return false
 	}
@@ -164,10 +218,14 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
+	var flare_target = parseInt(data[13])
+	if ((flare_target === 0) && currentFilters["flare-helps-only"]) {
+		return false
+	}
 
 	if (is_spiced) {
 		totalGoals++
-		var goal_met = (score >= parseFloat(data[12])) && (score > 0)
+		var goal_met = (score >= parseFloat(data[14])) && (score > 0)
 		if (goal_met) {
 			metGoals++
 			if (currentFilters["hide-met-goals"]) {
@@ -292,7 +350,7 @@ $(document).ready(function () {
 			// 3: (buttons)
 			{
 				data: null,
-				title: '',
+				name: 'tools',
 				orderable: false,
 				searchable: false,
 				className: 'buttons-cell',
@@ -310,12 +368,16 @@ $(document).ready(function () {
 				}
 			},
 			// 4:
-			{ data: 'game_version', title: 'Version', render: { display: 'name', sort: 'id', type: 'id', filter: 'id' } },
+			{
+				data: 'game_version',
+				name: 'version',
+				title: 'Version',
+				render: { display: 'name', sort: 'id', type: 'id', filter: 'id' },
+			},
 			// 5:
 			{ 
 				data: 'song_name',
 				title: 'Song',
-				className: 'border-right',
 				render: function(data, type, row, meta) {
 					if (type === "display") {
 						romanizeTitle = row.romanized_title && romanizeTitles
@@ -333,6 +395,7 @@ $(document).ready(function () {
 			{
 				data: 'difficulty',
 				title: 'Difficulty',
+				className: 'border-left',
 				searchable: false,
 				render: function(data, type, row, meta) {
 					if (type === 'display') {
@@ -346,15 +409,16 @@ $(document).ready(function () {
 			// 8:
 			{
 				data: 'spice',
+				name: 'spice',
 				title: 'Spice',
 				type: 'nonzero-number',
-				className: 'border-right',
 				render: DataTable.render.number('', '.', 2),
 			},
 			// 9:
 			{
 				data: 'score',
 				title: 'Score',
+				className: 'border-left',
 				render: function(data, type, row, meta) {
 					if (type !== 'display') {
 						return data
@@ -367,6 +431,7 @@ $(document).ready(function () {
 			// 10:
 			{
 				data: 'quality',
+				name: 'quality', 
 				title: 'Quality',
 				type: 'nonzero-number',
 				render: function(data, type, row, meta) {
@@ -384,8 +449,8 @@ $(document).ready(function () {
 			// 11:
 			{
 				data: 'timestamp',
+				name: 'age',
 				title: 'Age',
-				className: 'border-right',
 				type: 'nonzero-number',
 				render: function(data, type, row, meta) {
 					if (type === "sort" || type === "type" || type === "filter") {
@@ -397,8 +462,65 @@ $(document).ready(function () {
 			},
 			// 12:
 			{
+				data: 'flare_gauge',
+				name: 'flare',
+				title: 'Flare',
+				className: 'border-left',
+				render: function(data, type, row, meta) {
+					if (data === null || row.flare_points === undefined) {
+						return ''
+					}
+					if (type === "display") {
+						if (row.flare_counts) {
+							return `${flareSymbols[data]} (${row.flare_points} pts)`
+						}
+						return `${flareSymbols[data]} <span class="reminder-text">(${row.flare_points} pts)</span>`
+					}
+					if (type === "sort") {
+						return row.flare_points + (row.flare_counts ? 0.1 : 0)
+					}
+					return row.flare_points
+				},
+			},
+			// 13:
+			{
+				data: null,
+				name: 'flare_target',
+				title: 'Flare Target',
+				type: 'nonzero-number',
+				render: function(data, type, row, meta) {
+					if (!versionFlareTargets) {
+						return 0
+					}
+					
+					let eraTarget = versionFlareTargets[row.game_version.id]
+					let targetPoints = Math.max(flareTargetFloor, eraTarget, row.flare_points + 1)
+					let targetGauge = Math.ceil(((targetPoints / baseFlarePoints[row.rating]) - 1) / 0.06)
+					if (targetGauge > 10) {
+						if (type === "display") {
+							return '<span class="reminder-text">N/A</span>'
+						}
+						return 0
+					}
+
+					if (targetGauge < 0) {
+						targetGauge = 0
+					}
+					targetPoints = Math.floor(baseFlarePoints[data.rating] * (1 + (0.06 * targetGauge)))
+					let exceeding = Math.max(eraTarget - 1, row.flare_points)
+					let increase = targetPoints - exceeding
+					if (type === "display") {
+						return `${flareSymbols[targetGauge]} (+${increase})`
+					}
+					return increase
+				},
+			},
+			// 14:
+			{
 				data: 'goal',
+				name: 'goal',
 				title: 'Goal',
+				className: 'border-left',
 				type: 'nonzero-number',
 				render: function(data, type, row, meta) {
 					if (type === "sort" || type === "type" || type === "filter") {
@@ -419,9 +541,10 @@ $(document).ready(function () {
 					return `<button${styles}>${text}</button>`
 				},
 			},
-			// 13:
+			// 15:
 			{
 				data: 'distance',
+				name: 'distance',
 				title: 'Dist.',
 				type: 'nonzero-number',
 				render: function(data, type, row, meta) {
@@ -437,35 +560,35 @@ $(document).ready(function () {
 						return ""
 					}
 					return "+" + data.toLocaleString()
-				}
+				},
 			},
-			// 14:
-			{ data: 'spiced', visible: false },
-			// 15:
-			{ data: 'chart_id', visible: false },
 			// 16:
-			{ data: 'rank', visible: false },
+			{ data: 'spiced', visible: false },
 			// 17:
-			{ data: 'alternate_title', visible: false },
+			{ data: 'chart_id', visible: false },
 			// 18:
-			{ data: 'romanized_title', visible: false },
+			{ data: 'rank', visible: false },
 			// 19:
-			{ data: 'searchable_title', visible: false },
+			{ data: 'alternate_title', visible: false },
 			// 20:
-			{ data: 'song_id', visible: false },
+			{ data: 'romanized_title', visible: false },
 			// 21:
-			{ data: 'notes', visible: false },
+			{ data: 'searchable_title', visible: false },
 			// 22:
-			{ data: 'clear_type', visible: false },
+			{ data: 'song_id', visible: false },
 			// 23:
-			{ data: 'bookmarked', visible: false },
+			{ data: 'notes', visible: false },
 			// 24:
-			{ data: 'default_chart', visible: false },
+			{ data: 'clear_type', visible: false },
 			// 25:
-			{ data: 'amethyst_required', visible: false },
+			{ data: 'bookmarked', visible: false },
 			// 26:
-			{ data: 'removed', visible: false },
+			{ data: 'default_chart', visible: false },
 			// 27:
+			{ data: 'amethyst_required', visible: false },
+			// 28:
+			{ data: 'removed', visible: false },
+			// 29:
 			{ data: 'tracked', visible: false },
 		],
 		createdRow: function(row, data, index) {
@@ -479,9 +602,31 @@ $(document).ready(function () {
 				$(row).addClass('removed-song')
 			}
 		},
-		order: [[16, 'asc']],
+		order: [[18, 'asc']],
 	})
 	setFilters()
+
+	let hideableColumns = {
+		'Tools/Version': ['tools:name', 'version:name'],
+		'Spice/Quality': ['spice:name', 'quality:name'],
+		'Age': ['age:name'],
+		'Flare': ['flare:name', 'flare_target:name'],
+		'Goals': ['goal:name', 'distance:name'],
+	}
+
+	for (groupName in hideableColumns) {
+		let label = $("<label>")
+		let toggle = $('<input type="checkbox" checked>')
+		let thisGroupName = groupName
+		toggle.change(function() {
+			for (columnSelector of hideableColumns[thisGroupName]) {
+				scoresTable.columns(columnSelector).visible(this.checked)
+			}
+		})
+		label.append(toggle)
+		label.append(groupName + ' ')
+		$("#column-toggles").append(label)
+	}
 
 	function setGoalSummary() {
 		$("#goals-summary").text(`${metGoals} goals met, ${totalGoals - metGoals} remaining`)
@@ -516,14 +661,153 @@ $(document).ready(function () {
 	})
 
 	$('#classic-era').click(function() {
-		setFilters({"version-min": 1, "version-max": 13})
+		setFilters({"version-min": classicEra[0], "version-max": classicEra[1]})
 	})
 	$('#white-era').click(function() {
-		setFilters({"version-min": 14, "version-max": 16})
+		setFilters({"version-min": whiteEra[0], "version-max": whiteEra[1]})
 	})
 	$('#gold-era').click(function() {
-		setFilters({"version-min": 17, "version-max": 20})
+		setFilters({"version-min": goldEra[0], "version-max": goldEra[1]})
 	})
+
+
+
+	scoresTable.rows().every(function() {
+		let points = 0
+		let data = this.data()
+		if (data.flare_gauge !== null) {
+			points = Math.floor(baseFlarePoints[data.rating] * (1 + (0.06 * data.flare_gauge)))
+		}
+		data.flare_points = points
+
+		gameVersion = data.game_version.id
+		for (eraName in eras) {
+			let range = eras[eraName].versionRange
+			if ((gameVersion < range[0]) || (gameVersion > range[1])) {
+				continue
+			}
+
+			let top30 = eras[eraName].top30
+			if (top30.length < 30) {
+				top30.push(this)
+				break
+			}
+			let thirtieth = top30.reduce((a, b) => a.data().flare_points < b.data().flare_points ? a : b)
+			if (points > thirtieth.data().flare_points) {
+				top30.push(this)
+				eras[eraName].top30 = top30.filter(item => item !== thirtieth)
+			}
+			break
+		}
+	})
+
+	versionFlareTargets = []
+	let flareHeader = $("<tr>")
+	for (eraName in eras) {
+		flareHeader.append(`<th colspan=3 class="border-right border-left">${eraName}</th>`)
+
+		eras[eraName].top30.sort((a, b) => b.data().flare_points - a.data().flare_points)
+		let target = eras[eraName].top30[29].data().flare_points + 1
+		for (let version = eras[eraName].versionRange[0]; version <= eras[eraName].versionRange[1]; version++) {
+			versionFlareTargets[version] = target
+		}
+
+		for (row of eras[eraName].top30) {
+			totalFlarePoints += row.data().flare_points
+			row.data().flare_counts = true
+		}
+	}
+	$("#flare-summary").append(flareHeader)
+
+	let allFlarePoints = []
+	for (let i = 0; i < 30; i++) {
+		let flareRow = $("<tr>")
+		for (eraName in eras) {
+			if (eras[eraName].top30.length <= i) {
+				flareRow.append('<td class="border-left"></td>')
+				flareRow.append('<td></td>')
+				flareRow.append('<td class="border-right"></td>')
+				continue
+			}
+
+			let data = eras[eraName].top30[i].data()
+			romanizeTitle = data.romanized_title && romanizeTitles
+			displayTitle = romanizeTitle ? data.romanized_title : data.song_name.title
+			displayClass = romanizeTitle ? ' romanized-title' : ""
+			flareRow.append(`<td data-points="${data.flare_points}" class="border-left${displayClass}">${displayTitle}</td>`)
+			flareRow.append(`<td data-points="${data.flare_points}">${data.difficulty.name} ${data.rating}</td>`)
+			flareRow.append(`<td data-points="${data.flare_points}" class="border-right">${flareSymbols[data.flare_gauge]} (${data.flare_points})</td>`)
+			allFlarePoints.push(data.flare_points)
+		}
+		$("#flare-summary").append(flareRow)
+	}
+	allFlarePoints.sort((a, b) => b - a)
+
+	$("#total-flare-points").text(totalFlarePoints.toLocaleString())
+	$("#target-flare-rank").append('<option value="0">Any improvement</option>')
+	let currentFlareRank = "None"
+	for (flareRank in flareRanks) {
+		if (flareRanks[flareRank] <= totalFlarePoints) {
+			currentFlareRank = flareRank
+			continue
+		}
+		$("#target-flare-rank").append(`<option value="${flareRanks[flareRank]}">${flareRank}</option>`)
+	}
+	$("#flare-rank").text(currentFlareRank)
+
+	function targetFlareRankChange(targetPoints) {
+		$.ajax({
+			url: '/scorebrowser/set_selected_flare',
+			type: 'POST',
+			headers: {'X-CSRFToken': csrfToken},
+			data: JSON.stringify({'flare': targetPoints})
+		})
+
+		if (targetPoints === 0) {
+			flareTargetFloor = 0
+			$("#min-flare-points").text("")
+			return
+		}
+
+		if (totalFlarePoints >= targetPoints) {
+			flareTargetFloor = 0
+			$("#min-flare-points").text("Achieved!")
+			return
+		}
+
+		let remainingPoints = targetPoints
+		for (let i = 0; i < allFlarePoints.length; i++) {
+			let progressiveFloor = Math.ceil(remainingPoints / (90 - i))
+			if (allFlarePoints[i] < progressiveFloor) {
+				flareTargetFloor = progressiveFloor
+				break;
+			}
+			remainingPoints -= allFlarePoints[i]
+		}
+		$("#min-flare-points").text(`(Target Flare floor: ${flareTargetFloor} pts)`)
+	}
+	$("#target-flare-rank").change(function() {
+		targetFlareRankChange(parseInt($(this).val()))
+		scoresTable.rows().invalidate()
+		redrawTable(true)
+
+		if (flareTargetFloor === 0) {
+			$("#flare-summary td").each(function() {
+				$(this).removeClass("unmet").removeClass("met")
+			})
+		} else {
+			$("#flare-summary td").each(function() {
+				chartPoints = $(this).data("points")
+				if (chartPoints < flareTargetFloor) {
+					$(this).removeClass("met").addClass("unmet")
+				} else {
+					$(this).removeClass("unmet").addClass("met")
+				}
+			})
+		}
+	})
+	$("#target-flare-rank").val($('#selected-flare').data('x')).change()
+
 
 	var spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip')
