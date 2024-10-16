@@ -1,3 +1,14 @@
+/* https://adrianroselli.com/2024/03/the-ultimate-ideal-bestest-base-font-size-that-everyone-is-keeping-a-secret-especially-chet.html */
+
+html {
+	font-size: 100%;
+}
+
+select, textarea, input, button, label {
+	font: inherit;
+}
+
+
 /* navbar and other base template styles */
 
 .navbar-main {
