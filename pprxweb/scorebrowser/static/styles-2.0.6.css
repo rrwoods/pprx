@@ -4,10 +4,14 @@ html {
 	font-size: 100%;
 }
 
-select, textarea, input, button, label {
+html * {
 	font: inherit;
 }
 
+h1 {
+	font-weight: bold;
+	font-size: 2rem;
+}
 
 /* navbar and other base template styles */
 
