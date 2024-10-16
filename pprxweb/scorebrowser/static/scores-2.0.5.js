@@ -1071,7 +1071,7 @@ $(document).ready(function () {
 			description = $('<span>', {class: 'req-description'})
 		}
 
-		description.text(text)
+		description.html(text)
 		td.append(description)
 
 		var togo = $('<span>', {class: 'togo'})
@@ -1148,14 +1148,20 @@ $(document).ready(function () {
 						}
 						break
 					case 'clears':
+						var ttStart = ''
+						var ttEnd = ''
+						if (requirement.threshold === 2) {
+							ttStart = '<span class="tooltip" title="Since Flare VIII and higher fail you at four misses, rank evaluation counts a Flare VIII, IX, or EX clear as a LIFE4 clear.">'
+							ttEnd = '</span>'
+						}
 						if (requirement.qty == 0) {
-							requirement.row = requirementRow(`${level} ${lampTypes[requirement.threshold]} Lamp`, goalId)
+							requirement.row = requirementRow(`${level} ${ttStart}${lampTypes[requirement.threshold]} Lamp${ttEnd}`, goalId)
 						} else {
 							var mandatory = requirement.mandatory ? '[MANDATORY] ' : ''
 							var qtyText = requirement.qty == 1 ? aAn : requirement.qty
 							var plural = requirement.qty == 1 ? '' : 's'
 							var orHigher = requirement.or_higher ? '+' : ''
-							requirement.row = requirementRow(`${mandatory}${clearTypes[requirement.threshold]} ${qtyText} ${level}${plural}${orHigher}`, goalId)
+							requirement.row = requirementRow(`${mandatory}${ttStart}${clearTypes[requirement.threshold]}${ttEnd} ${qtyText} ${level}${plural}${orHigher}`, goalId)
 						}
 						break
 					case 'consecutives':
@@ -1361,11 +1367,16 @@ $(document).ready(function () {
 				return
 			}
 
+			real_clear_type = d.clear_type
+			if ((real_clear_type === 1) && (d.flare_gauge >= 8)) {
+				real_clear_type = 2
+			}
+
 			if (isLachEndy(d)) {
 				lachendyScores.push(d.score)
 			} else {
 				scoresByLevel[d.difficulty.rating].all.push(d.score)
-				if (d.clear_type >= 1) {
+				if (real_clear_type >= 1) {
 					scoresByLevel[d.difficulty.rating].cleared.push(d.score)
 				}
 
@@ -1376,7 +1387,7 @@ $(document).ready(function () {
 				scoresByLevel[d.difficulty.rating][segment].push(d.score)
 			}
 
-			for (var clearType = 1; clearType <= d.clear_type; clearType++) {
+			for (var clearType = 1; clearType <= real_clear_type; clearType++) {
 				clears[d.difficulty.rating][clearType].total++
 				for (var level = 1; level <= d.difficulty.rating; level++) {
 					clears[level][clearType].totalIncludingHigher++
@@ -1384,18 +1395,18 @@ $(document).ready(function () {
 			}
 
 			if (d.default_chart) {
-				for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
+				for (var clearType = real_clear_type + 1; clearType <= 6; clearType++) {
 					clears[d.difficulty.rating][clearType].distanceToLamp++
 				}
 			}
 
 			if (d.amethyst_required) {
-				for (var clearType = d.clear_type + 1; clearType <= 6; clearType++) {
+				for (var clearType = real_clear_type + 1; clearType <= 6; clearType++) {
 					clears[d.difficulty.rating][clearType].distanceToAmethystLamp++
 				}
 			}
 
-			if (d.clear_type == 6) {
+			if (real_clear_type == 6) {
 				maPointsEarned += mfcPoints[d.difficulty.rating]
 				mfcs[d.difficulty.rating] += 1
 			} else if (d.score >= 999910) {

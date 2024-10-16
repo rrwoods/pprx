@@ -674,7 +674,9 @@ def perform_fetch(user, redirect_uri):
 
 			new_score = scores_lookup[key]
 			normalized = (-2.323) if (new_score[0] == 1000000) else (-math.log2(1000000 - new_score[0]))
-			quality = interp(normalized, normscore_breakpoints, quality_breakpoints) if quality_breakpoints else None
+			quality = None
+			if (new_score[2] > 0) and quality_breakpoints:
+				quality = interp(normalized, normscore_breakpoints, quality_breakpoints)
 			new_entry = UserScore(
 				user=user,
 				chart_id=chart.id,
