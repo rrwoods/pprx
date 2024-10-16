@@ -623,8 +623,8 @@ $(document).ready(function () {
 				scoresTable.columns(columnSelector).visible(this.checked)
 			}
 		})
+		label.append(` ${groupName}:`)
 		label.append(toggle)
-		label.append(groupName + ' ')
 		$("#column-toggles").append(label)
 	}
 
@@ -1604,7 +1604,8 @@ $(document).ready(function () {
 									}
 								} else {
 									var needFilters = Object.assign({"max-score": requirement.threshold}, levelFiltersWithOptional)
-									var qtyMet = qtyAboveThreshold(scoresByLevel[level].cleared, requirement.threshold)
+									var segment = (requirement.qty === 1) ? 'all' : 'cleared'
+									var qtyMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.threshold)
 									var shadow = undefined
 									var shadowFilters = undefined
 									if (requirement.exceptions > 0) {
