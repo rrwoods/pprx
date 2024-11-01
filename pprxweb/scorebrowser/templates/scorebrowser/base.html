@@ -16,34 +16,31 @@
 		</script>
 		{% block scripts %}{% endblock %}
 		<link rel="stylesheet" href="{% static 'normalize.css' %}">
-		<link rel="stylesheet" href="{% static 'styles-2.0.8.css' %}">
+		<link rel="stylesheet" href="{% static 'styles-2.0.9.css' %}">
 	</head>
 	<body>
 		<div class="update-message">
 			NOTE: The Sanbai webhook is currently broken.  After pushing scores to Sanbai, go to Unlocks and Preferences and click on Fetch scores.
 		</div>
-		<div class="navbar-main">
-			<span>
-				<span class="navbar-link"><a href="{% url 'unlocks' %}">Unlocks and preferences</a></span>
-				<span class="navbar-link"><a href="{% url 'scores' %}" id="score-browser-link">Browse scores</a></span>
-				<span class="hidden-navbar-link" id="loading-message">Fetching your scores from database, please wait...</span>
-			</span>
-			<span class="navbar-extra">
-				<span class="navbar-link">
-					<form class="inline-form" action="https://www.paypal.com/donate" method="post" target="_top">
-						<input type="hidden" name="business" value="WX5QPWZNN7CHS" />
-						<input type="hidden" name="no_recurring" value="0" />
-						<input type="hidden" name="item_name" value="Helping DDR players identify their improvement opportunities and most impressive scores, and meet their LIFE4 rank goals!" />
-						<input type="hidden" name="currency_code" value="USD" />
-						<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
-						<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-					</form>
-				</span>
-				<span class="navbar-link"><a href="{% url 'hello' %}">Explanation and credits</a></span>
-				<span class="navbar-link"><a href="{% url 'update_password' %}">Change password</a></span>
-				<span class="navbar-link"><a href="{% url 'logout' %}">Logout</a></span>
-			</span>
-		</div>
+		<table class="navbar-main"><tr>
+			<td class="navbar-link"><a href="{% url 'unlocks' %}">Unlocks and preferences</a></td>
+			<td class="navbar-link"><a href="{% url 'scores' %}" id="score-browser-link">Browse scores</a></td>
+			<td class="hidden-navbar-link" id="loading-message">Fetching your scores from database, please wait...</td>
+			<td class="navbar-fill"></td>
+			<td class="navbar-link">
+				<form class="inline-form" action="https://www.paypal.com/donate" method="post" target="_top">
+					<input type="hidden" name="business" value="WX5QPWZNN7CHS" />
+					<input type="hidden" name="no_recurring" value="0" />
+					<input type="hidden" name="item_name" value="Helping DDR players identify their improvement opportunities and most impressive scores, and meet their LIFE4 rank goals!" />
+					<input type="hidden" name="currency_code" value="USD" />
+					<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+					<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+				</form>
+			</td>
+			<td class="navbar-link"><a href="{% url 'hello' %}">Explanation and credits</a></td>
+			<td class="navbar-link"><a href="{% url 'update_password' %}">Change password</a></td>
+			<td class="navbar-link"><a href="{% url 'logout' %}">Logout</a></td>
+		</tr></table>
 		{% block content %}{% endblock %}
 	</body>
 </html>

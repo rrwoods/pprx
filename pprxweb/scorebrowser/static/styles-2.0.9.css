@@ -2,18 +2,18 @@
 
 .navbar-main {
 	margin-bottom: 50px;
+	width: 100%;
 }
 
-.navbar-extra {
-	float: right;
+.navbar-fill {
+	width: 100%;
 }
 
 .navbar-link {
 	padding-right: 15px;
 	vertical-align: middle;
-	float: none;
 	
-	display: inline-block;
+	white-space: nowrap;
 }
 
 .hidden-navbar-link {
