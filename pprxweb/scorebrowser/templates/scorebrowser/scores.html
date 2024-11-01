@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-2.0.5.js' %}"></script>
+	<script src="{% static 'scores-2.0.7.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -238,8 +238,10 @@
 				<select autocomplete="off" id="target-flare-rank"></select>
 				<span id="min-flare-points" class="tooltip" title="The minimum flare skill you need on each chart in your top 30 of each era to hit the selected flare rank, taking into account any buffer provided from your better flare clears."></span>
 				<br />
-				Hide songs that <span class="tooltip" title="A chart &quot;can't help you&quot; if it is impossible for an EX clear on that chart to break into your top 30 for that era, or to reach the indicated floor, or you already have an EX clear.">can't help you</span>:
-				<input autocomplete="off" type="checkbox" id="flare-helps-only" class="filter" data-default="false">
+				<label>
+					Hide songs that <span class="tooltip" title="A chart &quot;can't help you&quot; if it is impossible for an EX clear on that chart to break into your top 30 for that era, or to reach the indicated floor, or you already have an EX clear.">can't help you</span>:
+					<input autocomplete="off" type="checkbox" id="flare-helps-only" class="filter" data-default="false">
+				</label>
 			</p>
 			<table id="flare-summary" class="summary-table"></table>
 		</div>
@@ -254,31 +256,33 @@
 		<div class="details"><table class="summary-table">
 			<tr>
 				<th class="border-right">Level</th>
-				<th>Average</th>
+				<th class="border-right">Average</th>
+				<th>For +10 avg</th>
 			</tr>
 			<tr>
 				<td class="border-right">14</td>
-				<td id="average-14"></td>
+				<td class="border-right" id="average-14"></td>
+				<td id="raise-14"></td>
 			</tr>
 			<tr>
 				<td class="border-right">15</td>
-				<td id="average-15"></td>
+				<td class="border-right" id="average-15"></td>
+				<td id="raise-15"></td>
 			</tr>
 			<tr>
 				<td class="border-right">16</td>
-				<td id="average-16"></td>
+				<td class="border-right" id="average-16"></td>
+				<td id="raise-16"></td>
 			</tr>
 			<tr>
 				<td class="border-right">17</td>
-				<td id="average-17"></td>
+				<td class="border-right" id="average-17"></td>
+				<td id="raise-17"></td>
 			</tr>
 			<tr>
 				<td class="border-right">18</td>
-				<td id="average-18"></td>
-			</tr>
-			<tr>
-				<td class="border-right">19</td>
-				<td id="average-19"></td>
+				<td class="border-right" id="average-18"></td>
+				<td id="raise-18"></td>
 			</tr>
 		</table></div>
 	</details></p>

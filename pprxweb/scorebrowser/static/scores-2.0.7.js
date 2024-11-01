@@ -56,9 +56,9 @@ const eras = {
 	"White era": {versionRange: whiteEra, top30: []},
 	"Gold era": {versionRange: goldEra, top30: []},
 }
-var totalFlarePoints = 0
-var flareTargetFloor = 0
-var versionFlareTargets = false
+let totalFlarePoints = 0
+let flareTargetFloor = 0
+let versionFlareTargets = false
 
 const baseFlarePoints = [undefined, 145, 155, 170, 185, 205, 230, 225, 290, 335, 400, 465, 510, 545, 575, 600, 620, 635, 650, 665]
 const flareSymbols = ["—", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "EX"]
@@ -211,6 +211,10 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	}
 
 	var clear_type = (score === 0) ? -1 : parseInt(data[24])
+	// count flare VIII+ as at worst life4 clear when filtering
+	if ((clear_type === 1) && (parseInt(data[12]) >= 8)) {
+		clear_type = 2
+	}
 	if (clear_type < currentFilters["clear-type-min"]) {
 		return false
 	}
@@ -467,6 +471,12 @@ $(document).ready(function () {
 				title: 'Flare',
 				className: 'border-left',
 				render: function(data, type, row, meta) {
+					if (type === "filter") {
+						if (data === null || row.flare_points === undefined) {
+							return -1
+						}
+						return data
+					}
 					if (data === null || row.flare_points === undefined) {
 						return ''
 					}
@@ -495,7 +505,7 @@ $(document).ready(function () {
 					
 					let eraTarget = versionFlareTargets[row.game_version.id]
 					let targetPoints = Math.max(flareTargetFloor, eraTarget, row.flare_points + 1)
-					let targetGauge = Math.ceil(((targetPoints / baseFlarePoints[row.rating]) - 1) / 0.06)
+					let targetGauge = Math.ceil((((targetPoints / baseFlarePoints[row.rating]) - 1) / 0.06) - 0.0001)
 					if (targetGauge > 10) {
 						if (type === "display") {
 							return '<span class="reminder-text">N/A</span>'
@@ -510,7 +520,7 @@ $(document).ready(function () {
 					let exceeding = Math.max(eraTarget - 1, row.flare_points)
 					let increase = targetPoints - exceeding
 					if (type === "display") {
-						return `${flareSymbols[targetGauge]} (+${increase})`
+						return `${flareSymbols[targetGauge]} (+${increase}) <button class="hit-flare" data-target="${targetGauge}">✅</button>`
 					}
 					return increase
 				},
@@ -670,92 +680,9 @@ $(document).ready(function () {
 		setFilters({"version-min": goldEra[0], "version-max": goldEra[1]})
 	})
 
-
-
-	scoresTable.rows().every(function() {
-		let points = 0
-		let data = this.data()
-		if (data.flare_gauge !== null) {
-			points = Math.floor(baseFlarePoints[data.rating] * (1 + (0.06 * data.flare_gauge)))
-		}
-		data.flare_points = points
-
-		gameVersion = data.game_version.id
-		for (eraName in eras) {
-			let range = eras[eraName].versionRange
-			if ((gameVersion < range[0]) || (gameVersion > range[1])) {
-				continue
-			}
-
-			let top30 = eras[eraName].top30
-			if (top30.length < 30) {
-				top30.push(this)
-				break
-			}
-			let thirtieth = top30.reduce((a, b) => a.data().flare_points < b.data().flare_points ? a : b)
-			if (points > thirtieth.data().flare_points) {
-				top30.push(this)
-				eras[eraName].top30 = top30.filter(item => item !== thirtieth)
-			}
-			break
-		}
-	})
-
-	versionFlareTargets = []
-	let flareHeader = $("<tr>")
-	for (eraName in eras) {
-		flareHeader.append(`<th colspan=3 class="border-right border-left">${eraName}</th>`)
-
-		eras[eraName].top30.sort((a, b) => b.data().flare_points - a.data().flare_points)
-		let target = eras[eraName].top30[29].data().flare_points + 1
-		for (let version = eras[eraName].versionRange[0]; version <= eras[eraName].versionRange[1]; version++) {
-			versionFlareTargets[version] = target
-		}
-
-		for (row of eras[eraName].top30) {
-			totalFlarePoints += row.data().flare_points
-			row.data().flare_counts = true
-		}
-	}
-	$("#flare-summary").append(flareHeader)
-
-	let allFlarePoints = []
-	for (let i = 0; i < 30; i++) {
-		let flareRow = $("<tr>")
-		for (eraName in eras) {
-			if (eras[eraName].top30.length <= i) {
-				flareRow.append('<td class="border-left"></td>')
-				flareRow.append('<td></td>')
-				flareRow.append('<td class="border-right"></td>')
-				continue
-			}
-
-			let data = eras[eraName].top30[i].data()
-			romanizeTitle = data.romanized_title && romanizeTitles
-			displayTitle = romanizeTitle ? data.romanized_title : data.song_name.title
-			displayClass = romanizeTitle ? ' romanized-title' : ""
-			flareRow.append(`<td data-points="${data.flare_points}" class="border-left${displayClass}">${displayTitle}</td>`)
-			flareRow.append(`<td data-points="${data.flare_points}">${data.difficulty.name} ${data.rating}</td>`)
-			flareRow.append(`<td data-points="${data.flare_points}" class="border-right">${flareSymbols[data.flare_gauge]} (${data.flare_points})</td>`)
-			allFlarePoints.push(data.flare_points)
-		}
-		$("#flare-summary").append(flareRow)
-	}
-	allFlarePoints.sort((a, b) => b - a)
-
-	$("#total-flare-points").text(totalFlarePoints.toLocaleString())
-	$("#target-flare-rank").append('<option value="0">Any improvement</option>')
-	let currentFlareRank = "None"
-	for (flareRank in flareRanks) {
-		if (flareRanks[flareRank] <= totalFlarePoints) {
-			currentFlareRank = flareRank
-			continue
-		}
-		$("#target-flare-rank").append(`<option value="${flareRanks[flareRank]}">${flareRank}</option>`)
-	}
-	$("#flare-rank").text(currentFlareRank)
-
 	function targetFlareRankChange(targetPoints) {
+		$("#selected-flare").data("x", targetPoints)
+
 		$.ajax({
 			url: '/scorebrowser/set_selected_flare',
 			type: 'POST',
@@ -806,7 +733,110 @@ $(document).ready(function () {
 			})
 		}
 	})
-	$("#target-flare-rank").val($('#selected-flare').data('x')).change()
+
+	let allFlarePoints
+	function computeFlareSummary() {
+		$('#flare-summary').empty()
+		for (eraName in eras) {
+			eras[eraName].top30.length = 0
+		}
+
+		scoresTable.rows().every(function() {
+			let points = 0
+			let data = this.data()
+			if (data.flare_gauge !== null) {
+				points = Math.floor(baseFlarePoints[data.rating] * (1 + (0.06 * data.flare_gauge)))
+			}
+			data.flare_points = points
+
+			gameVersion = data.game_version.id
+			for (eraName in eras) {
+				let range = eras[eraName].versionRange
+				if ((gameVersion < range[0]) || (gameVersion > range[1])) {
+					continue
+				}
+
+				let top30 = eras[eraName].top30
+				if (top30.length < 30) {
+					top30.push(this)
+					break
+				}
+				let thirtieth = top30.reduce((a, b) => a.data().flare_points < b.data().flare_points ? a : b)
+				if (points > thirtieth.data().flare_points) {
+					top30.push(this)
+					eras[eraName].top30 = top30.filter(item => item !== thirtieth)
+				}
+				break
+			}
+		})
+
+		versionFlareTargets = []
+		totalFlarePoints = 0
+
+		let flareHeader = $("<tr>")
+		for (eraName in eras) {
+			eras[eraName].top30.sort((a, b) => b.data().flare_points - a.data().flare_points)
+			let target = eras[eraName].top30[29].data().flare_points + 1
+			for (let version = eras[eraName].versionRange[0]; version <= eras[eraName].versionRange[1]; version++) {
+				versionFlareTargets[version] = target
+			}
+
+			let eraPoints = 0
+			for (row of eras[eraName].top30) {
+				totalFlarePoints += row.data().flare_points
+				eraPoints += row.data().flare_points
+				row.data().flare_counts = true
+			}
+
+			flareHeader.append(`<th colspan=3 class="border-right border-left">${eraName} (${eraPoints.toLocaleString()} pts)</th>`)
+		}
+		$("#flare-summary").append(flareHeader)
+
+		allFlarePoints = []
+		for (let i = 0; i < 30; i++) {
+			let flareRow = $("<tr>")
+			for (eraName in eras) {
+				if (eras[eraName].top30.length <= i) {
+					flareRow.append('<td class="border-left"></td>')
+					flareRow.append('<td></td>')
+					flareRow.append('<td class="border-right"></td>')
+					continue
+				}
+
+				let data = eras[eraName].top30[i].data()
+				romanizeTitle = data.romanized_title && romanizeTitles
+				displayTitle = romanizeTitle ? data.romanized_title : data.song_name.title
+				displayClass = romanizeTitle ? ' romanized-title' : ""
+				flareRow.append(`<td data-points="${data.flare_points}" class="border-left${displayClass}">${displayTitle}</td>`)
+				flareRow.append(`<td data-points="${data.flare_points}">${data.difficulty.name} ${data.rating}</td>`)
+				flareRow.append(`<td data-points="${data.flare_points}" class="border-right">${flareSymbols[data.flare_gauge]} (${data.flare_points})</td>`)
+				allFlarePoints.push(data.flare_points)
+			}
+			$("#flare-summary").append(flareRow)
+		}
+		allFlarePoints.sort((a, b) => b - a)
+
+		$("#total-flare-points").text(totalFlarePoints.toLocaleString())
+		$("#target-flare-rank").empty()
+		$("#target-flare-rank").append('<option value="0">Any improvement</option>')
+		let currentFlareRank = "None"
+		for (flareRank in flareRanks) {
+			if (flareRanks[flareRank] <= totalFlarePoints) {
+				currentFlareRank = flareRank
+				continue
+			}
+			$("#target-flare-rank").append(`<option value="${flareRanks[flareRank]}">${flareRank}</option>`)
+		}
+
+		let selectedFlare = $('#selected-flare').data('x')
+		if ($(`#target-flare-rank option[value='${selectedFlare}']`).length === 0) {
+			selectedFlare = 0
+		}
+		$("#target-flare-rank").val(selectedFlare).change()
+		
+		$("#flare-rank").text(currentFlareRank)
+	}
+	computeFlareSummary()
 
 	var spiceHeader = scoresTable.column(8).header()
 	$(spiceHeader).addClass('tooltip').attr('title', "How hard a chart is to score, relative to all other charts (not just of the same rating).")
@@ -862,6 +892,15 @@ $(document).ready(function () {
 				})
 			}
 		})
+		redrawTable(true)
+	})
+
+	$('#scores').on('click', 'button.hit-flare', function() {
+		row = scoresTable.row($(this).parents('tr'))
+		targetGauge = $(this).data("target")
+		row.data().flare_gauge = targetGauge
+		row.invalidate()
+		computeFlareSummary()
 		redrawTable(true)
 	})
 
@@ -1306,8 +1345,10 @@ $(document).ready(function () {
 
 		function showAverages(rank) {
 			segment = rank.amethyst ? 'amethyst' : 'default'
-			for (let level = 14; level < 20; level++) {
+			countSegment = rank.amethyst ? 'amethystCount' : 'defaultCount'
+			for (let level = 14; level < 19; level++) {
 				$(`#average-${level}`).text(Math.floor(averages[level][segment]).toLocaleString())
+				$(`#raise-${level}`).text(`+${(scoresByLevel[level][countSegment] * 10).toLocaleString()}`)
 			}
 		}
 
@@ -1415,7 +1456,7 @@ $(document).ready(function () {
 			}
 		})
 
-		for (var level = 1; level < 20; level++) {
+		for (var level = 1; level < 19; level++) {
 			scoresByLevel[level].all.sort((a, b) => (a - b))
 			scoresByLevel[level].cleared.sort((a, b) => (a - b))
 			scoresByLevel[level].default.sort((a, b) => (a - b))
@@ -1435,6 +1476,7 @@ $(document).ready(function () {
 				defaultCount++
 				defaultAverage = defaultTotal / defaultCount
 			}
+			scoresByLevel[level].defaultCount = defaultCount
 
 			var amethystTotal = scoresByLevel[level].amethyst_required.reduce((acc, cur) => acc + cur)
 			var amethystCount = scoresByLevel[level].amethyst_required.length
@@ -1448,6 +1490,7 @@ $(document).ready(function () {
 				amethystCount++
 				amethystAverage = amethystTotal / amethystCount
 			}
+			scoresByLevel[level].amethystCount = amethystCount
 
 			averages[level] = {
 				'default': defaultAverage,
@@ -1648,8 +1691,10 @@ $(document).ready(function () {
 							break
 						case 'averages':
 							var segment = amethyst ? 'amethyst' : 'default'
+							var countSegment = amethyst ? 'amethystCount' : 'defaultCount'
 							var needFilters = Object.assign({"max-score": requirement.threshold}, levelFilters)
-							styleReq(requirement, Math.ceil(requirement.threshold - averages[level][segment]), needFilters)
+							var avgGap = requirement.threshold - averages[level][segment]
+							styleReq(requirement, Math.ceil(avgGap * scoresByLevel[level][countSegment]), needFilters)
 							break
 						}
 					}
