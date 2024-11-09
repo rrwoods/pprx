@@ -120,6 +120,11 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 	color: white !important;
 }
 
+.manual-flare {
+	background-color: #58d58d !important;
+	color: white !important;
+}
+
 /* cell-level */
 
 .notes-field {
@@ -183,6 +188,7 @@ table.summary-table td {
 table.requirements {
 	display: grid;
 	grid-auto-rows: 1fr;
+	align-items: center;
 	table-layout: fixed;
 
 	border-collapse: collapse;

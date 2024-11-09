@@ -481,10 +481,12 @@ $(document).ready(function () {
 						return ''
 					}
 					if (type === "display") {
+						var startSpan = row.manual_flare ? '<span class="manual-flare">' : ''
+						var endSpan = row.manual_flare ? '</span>' : ''
 						if (row.flare_counts) {
-							return `${flareSymbols[data]} (${row.flare_points} pts)`
+							return `${startSpan}${flareSymbols[data]} (${row.flare_points} pts)${endSpan}`
 						}
-						return `${flareSymbols[data]} <span class="reminder-text">(${row.flare_points} pts)</span>`
+						return `${startSpan}${flareSymbols[data]} <span class="reminder-text">(${row.flare_points} pts)</span>${endSpan}`
 					}
 					if (type === "sort") {
 						return row.flare_points + (row.flare_counts ? 0.1 : 0)
@@ -899,9 +901,12 @@ $(document).ready(function () {
 		row = scoresTable.row($(this).parents('tr'))
 		targetGauge = $(this).data("target")
 		row.data().flare_gauge = targetGauge
+		row.data().manual_flare = true
 		row.invalidate()
 		computeFlareSummary()
 		redrawTable(true)
+
+		$("#manual-flare-explanation").show()
 	})
 
 	$('#scores').on('click', 'button.hide-button', function() {

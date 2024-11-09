@@ -7,7 +7,7 @@
 
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-	<script src="{% static 'scores-2.0.7.js' %}"></script>
+	<script src="{% static 'scores-2.0.10.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -212,6 +212,8 @@
 	</p>
 
 	<p id="column-toggles">Show/hide: </p>
+
+	<p id="manual-flare-explanation" hidden>Flare targets that you have ✅<span class="manual-flare">manually indicated</span> are not persistent and will be cleared the next time you load this page.</p>
 
 	<div style="display: none" id="romanize-titles" data-x="{{ romanized_titles }}"></div>
 	<div style="display: none" id="selected-rank" data-x="{{ selected_rank }}"></div>
