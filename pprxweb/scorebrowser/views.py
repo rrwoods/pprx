@@ -690,7 +690,11 @@ def perform_fetch(user, redirect_uri):
 			)
 			if chart.id in current_scores:
 				old_score = current_scores[chart.id]
-				if (new_score[0] > old_score.score) or (new_score[2] > old_score.clear_type) or ((old_score.flare_gauge is not None) and (new_score[3] > old_score.flare_gauge)):
+				if (
+					(new_score[0] > old_score.score) or
+					(new_score[2] > old_score.clear_type) or
+					((old_score.flare_gauge is not None) and (new_score[3] is not None) and (new_score[3] > old_score.flare_gauge))
+				):
 					new_scores.append(new_entry)
 					old_score.current = None
 					formerly_current_scores.append(old_score)
@@ -710,9 +714,9 @@ def perform_fetch(user, redirect_uri):
 		return HttpResponse("Pulled new scores")
 
 	except Exception:
-		print("\n\n\n----------")
+		print("----------")
 		traceback.print_exc()
-		print("----------\n\n\n")
+		print("----------")
 
 	finally:
 		user.pulling_scores = False
