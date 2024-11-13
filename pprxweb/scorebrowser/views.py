@@ -23,6 +23,7 @@ import json
 import math
 import requests
 import time
+import traceback
 
 
 def hello(request):
@@ -465,7 +466,6 @@ def set_selected_flare(request):
 
 	user = get_user(request)
 	requestBody = json.loads(request.body)
-	print(requestBody)
 	user.selected_flare = requestBody["flare"]
 	user.save()
 
@@ -708,6 +708,11 @@ def perform_fetch(user, redirect_uri):
 		UserScore.objects.bulk_update(new_flares, ['flare_gauge'])
 		print("perform_fetch: set flare gauges of old scores")
 		return HttpResponse("Pulled new scores")
+
+	except Exception:
+		print("\n\n\n----------")
+		traceback.print_exc()
+		print("----------\n\n\n")
 
 	finally:
 		user.pulling_scores = False
