@@ -1162,7 +1162,7 @@ $(document).ready(function () {
 						var exceptions = ''
 						if (requirement.exceptions > 0) {
 							exceptions = ` (${requirement.exceptions} exceptions over ${requirement.exception_score/1000}k)`
-						} else if (level === 19) {
+						} else if ((level === 19) && (requirement.qty === 0)) {
 							lach = whiteVersion > 18 ? 'Lachryma《Re:Queen’M》 & ' : ''
 							exceptions = ` (ex. ${lach}ENDYMION over ${requirement.exception_score/1000}k)`
 						}
