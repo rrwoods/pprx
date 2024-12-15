@@ -1461,7 +1461,7 @@ $(document).ready(function () {
 			}
 		})
 
-		for (var level = 1; level < 19; level++) {
+		for (var level = 1; level <= 19; level++) {
 			scoresByLevel[level].all.sort((a, b) => (a - b))
 			scoresByLevel[level].cleared.sort((a, b) => (a - b))
 			scoresByLevel[level].default.sort((a, b) => (a - b))
@@ -1502,7 +1502,7 @@ $(document).ready(function () {
 				'amethyst': amethystAverage,
 			}
 		}
-		lachendyScores.sort()
+		lachendyScores.sort((a, b) => (a - b))
 
 		$("#ma-points-display").text(+(maPointsEarned.toFixed(3)))
 		$("#table-total-points").text(+(maPointsEarned.toFixed(3)))
@@ -1650,6 +1650,13 @@ $(document).ready(function () {
 									if (requirement.exceptions > 0) {
 										let shadowMet = qtyAboveThreshold(scoresByLevel[level][segment], requirement.exception_score)
 										let shadowUnmet = scoresByLevel[level][segment].length - shadowMet
+										if (shadowUnmet > 0) {
+											shadow = shadowUnmet
+											shadowFilters = Object.assign({"max-score": requirement.exception_score}, levelFilters)
+										}
+									} else if (level === 19) {
+										let shadowMet = qtyAboveThreshold(lachendyScores, requirement.exception_score)
+										let shadowUnmet = 2 - shadowMet
 										if (shadowUnmet > 0) {
 											shadow = shadowUnmet
 											shadowFilters = Object.assign({"max-score": requirement.exception_score}, levelFilters)
