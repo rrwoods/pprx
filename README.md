@@ -32,7 +32,7 @@ To install `pprx`, clone the repository and install the required dependencies.
 
 ```bash
 git clone https://github.com/rrwoods/pprx.git
-cd pprxweb
+cd pprx/pprxweb
 pip install -r requirements.txt
 ```
 
