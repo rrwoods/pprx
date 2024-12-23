@@ -26,5 +26,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Run Tests
+      env:
+        DJANGO_SECRET_KEY: "test"
+        CLIENT_ID: "test"
+        CLIENT_SECRET: "test"
+        GOOGLE_USERNAME: "test"
+        GOOGLE_APP_PASSWORD: "test"
       run: |
         python manage.py test
