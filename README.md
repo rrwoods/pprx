@@ -1,7 +1,3 @@
-Here is a README for the `pprx` repository:
-
----
-
 # pprx
 
 [![GitHub stars](https://img.shields.io/github/stars/rrwoods/pprx.svg)](https://github.com/rrwoods/pprx/stargazers)
@@ -36,7 +32,7 @@ To install `pprx`, clone the repository and install the required dependencies.
 
 ```bash
 git clone https://github.com/rrwoods/pprx.git
-cd pprx
+cd pprxweb
 pip install -r requirements.txt
 ```
 
