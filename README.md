@@ -28,7 +28,7 @@ The `pprx` project is designed for DDR (Dance Dance Revolution) players who use 
 
 ## Development
 
-To install `pprx`, clone the repository and install the required dependencies.
+To develop `pprx`, clone the repository and install the required dependencies.
 
 ```bash
 git clone https://github.com/rrwoods/pprx.git
