@@ -44,7 +44,6 @@ To run the tool, use the following command:
 python manage.py runserver
 ```
 
-
 ## Contributing
 
 Contributions are welcome! Please follow these steps:
