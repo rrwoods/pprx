@@ -41,7 +41,7 @@ pip install -r requirements.txt
 To run the tool, use the following command:
 
 ```bash
-python main.py
+python manage.py runserver
 ```
 
 Follow the on-screen instructions to link your 3icecream account and start analyzing your scores.
