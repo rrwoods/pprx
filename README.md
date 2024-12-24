@@ -44,7 +44,6 @@ To run the tool, use the following command:
 python manage.py runserver
 ```
 
-Follow the on-screen instructions to link your 3icecream account and start analyzing your scores.
 
 ## Contributing
 
