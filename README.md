@@ -26,7 +26,7 @@ The `pprx` project is designed for DDR (Dance Dance Revolution) players who use 
 - Identify most improvable scores
 - Easy integration with 3icecream
 
-## Installation
+## Development
 
 To install `pprx`, clone the repository and install the required dependencies.
 
