@@ -4,7 +4,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/rrwoods/pprx.svg)](https://github.com/rrwoods/pprx/network)
 [![GitHub issues](https://img.shields.io/github/issues/rrwoods/pprx.svg)](https://github.com/rrwoods/pprx/issues)
 
-DDR players who use 3icecream can see their most impressive and most improvable scores!
+DDR players who use 3icecream can see their most impressive and most improvable scores! Visit https://pprx.gg/ to get started.
 
 ## Table of Contents
 
