@@ -17,6 +17,7 @@ class Command(BaseCommand):
 		prefix = b'var ALL_SONG_DATA='
 		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210,220,230,240,260,270];const SONG_DATA_LAST_UPDATED_unixms=1733276149422;'
 
+		challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
 			song = Song.objects.filter(id=fetched_song['song_id']).first()
 			if song is None:
@@ -28,6 +29,9 @@ class Command(BaseCommand):
 			if (song.removed) and ('deleted' not in fetched_song):
 				print("Song {} is now revived".format(song.title))
 				song.removed = False
+			if song.version_id != fetched_song['version_num']:
+				song.version_id = fetched_song['version_num']
+				print("Song {} moved to {}".format(song.title, song.version.name))
 
 			for sanbai_k, db_k in [('alternate_name', 'alternate_title'), ('romanized_name', 'romanized_title'), ('searchable_name', 'searchable_title')]:
 				v = fetched_song.get(sanbai_k, '')
@@ -52,13 +56,20 @@ class Command(BaseCommand):
 					tracked = False
 
 				chart = Chart.objects.filter(song__id=song.id).filter(difficulty__id=difficulty).first()
+				new_chart = False
 				if chart is None:
+					new_chart = True
 					print("Creating {}chart {} -- {} -- {}".format(("" if tracked else "untracked "), song.title, difficulty, rating))
 					chart = Chart(song_id=song.id, difficulty_id=difficulty, rating=rating, tracked=tracked)
 					chart.save()
 				elif chart.rating != rating:
 					print("Updating chart rating {} -- {} from {} to {}".format(song.title, difficulty, chart.rating, rating))
+					if chart.hidden:
+						new_chart = True
 					chart.rating = rating
 					chart.tracked = tracked   # a 13->14 or 14->13 rerate might require this!
 					chart.hidden = False
 					chart.save()
+
+				if new_chart and song.version_id <= 18:
+					ChartUnlock.objects.create(task=challenge_task, chart=chart)
