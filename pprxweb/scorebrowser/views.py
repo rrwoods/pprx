@@ -12,7 +12,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode, url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from numpy import interp
 from .forms import SetPasswordForm, UpdateEmailForm, UserRegistrationForm
@@ -92,7 +92,9 @@ def login_user(request):
 
 			users = User.objects.filter(django_user=django_user)
 			next_url = request.POST.get('next')
-			return redirect(next_url or 'landing') if users else redirect('link_sanbai')
+			if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+				next_url = 'landing'
+			return redirect(next_url) if users else redirect('link_sanbai')
 	else:
 		form = AuthenticationForm(request)
 
