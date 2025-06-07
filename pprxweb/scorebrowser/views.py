@@ -84,6 +84,17 @@ def activate(request, uidb64, token):
 	})
 
 def login_user(request):
+	# this creates a bit of metaprogramming i'm not sure how to avoid --
+	# whenever we add a new `@login_required` endpoint, it needs to be in this list.
+	allowed_next = [
+		'/scorebrowser/',
+		'/scorebrowser/link_sanbai',
+		'/scorebrowser/update_email_form',
+		'/scorebrowser/update_password',
+		'/scorebrowser/landing',
+		'/scorebrowser/unlocks',
+		'/scorebrowser/scores',
+	]
 	if request.method == 'POST':
 		form = AuthenticationForm(request, data=request.POST)
 		if form.is_valid():
@@ -92,7 +103,9 @@ def login_user(request):
 
 			users = User.objects.filter(django_user=django_user)
 			next_url = request.POST.get('next')
-			return redirect(next_url or 'landing') if users else redirect('link_sanbai')
+			if next_url not in allowed_next:
+				next_url = 'landing'
+			return redirect(next_url) if users else redirect('link_sanbai')
 	else:
 		form = AuthenticationForm(request)
 
