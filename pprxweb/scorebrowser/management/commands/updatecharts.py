@@ -20,9 +20,10 @@ class Command(BaseCommand):
 
 		challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
+			title=fetched_song['song_name'].replace("&amp;", "&")
 			song = Song.objects.filter(id=fetched_song['song_id']).first()
 			if song is None:
-				song = Song(id=fetched_song['song_id'], version_id=fetched_song['version_num'], title=fetched_song['song_name'])
+				song = Song(id=fetched_song['song_id'], version_id=fetched_song['version_num'], title=title)
 				print("Creating song {}".format(song.title))
 			if (not song.removed) and ('deleted' in fetched_song):
 				print("Song {} is now removed".format(song.title))
