@@ -150,12 +150,12 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 
 /* goal styling (for scores table and requirements tables) */
 
-button.met, .met .req-description, #flare-summary .met {
+span.met, button.met, .met .req-description, #flare-summary .met {
 	color: seagreen;
 	font-style: italic;
 }
 
-button.unmet, .unmet .req-description, #flare-summary .unmet {
+span.unmet, button.unmet, .unmet .req-description, #flare-summary .unmet {
 	font-weight: bold;
 }
 

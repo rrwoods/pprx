@@ -87,11 +87,18 @@ def default_region():
     return Region.objects.get(user_default=True).id
 
 
+class ProfileVisibility(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.TextField()
+
+
 # the player_id field here is a 3icecream player ID -- it is *not* a reference to a Player model object.
 # the Player model object is used in spice rating computation and is not related to a logged-in User in any way.
 class User(models.Model):
     id = models.AutoField(primary_key=True)
     django_user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True, default=None)
+    visibility = models.ForeignKey(ProfileVisibility, on_delete=models.SET_DEFAULT, default=0)
+
     player_id = models.TextField()
     access_token = models.TextField(null=True)
     refresh_token = models.TextField(null=True)

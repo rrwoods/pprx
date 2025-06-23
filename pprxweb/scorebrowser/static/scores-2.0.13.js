@@ -125,6 +125,7 @@ var lachendyScores = []
 var maPointsEarned = 0
 var checkedRequirements = null
 var whiteVersion = 0
+var allowAjax = true
 
 function escapeHtml(unsafe) {
     return unsafe
@@ -280,10 +281,14 @@ function getCookie(name) {
 $(document).ready(function () {
 	const loadTimestamp = Math.floor(Date.now()/1000)
 
+	allowAjax = ($("#allow-ajax").data('x') === "True")
+
 	whiteVersion = $('#white-version').data('json')
 	if (whiteVersion > 18) {
 		clearTypeIcons[1] = '<img src="/static/pass.png" class="inline-image">'
 		clearTypeIcons[2] = '<img src="/static/hard.png" class="inline-image">'
+	} else if (!allowAjax) {
+		clearTypeIcons[2] = ' ❗'
 	}
 
 	reqsPromise = fetch("/static/rank-requirements-1.2.26.json")
@@ -364,6 +369,10 @@ $(document).ready(function () {
 						return 0
 					}
 					var hideButton = '<button class="hide-button">X</button>'
+					if (!allowAjax) {
+						return hideButton
+					}
+
 					var notesIcon = row.notes ? '📋' : '✏️'
 					var notesButton = `<button class="notes-button">${notesIcon}</button>`
 					var bookmarkFile = row.bookmarked ? 'saved.png' : 'save.png'
@@ -550,7 +559,10 @@ $(document).ready(function () {
 							styles = ' class="met goal"'
 						}
 					}
-					return `<button${styles}>${text}</button>`
+					if (allowAjax) {
+						return `<button${styles}>${text}</button>`
+					}
+					return `<span${styles}>${text}</span>`
 				},
 			},
 			// 15:
@@ -1109,6 +1121,9 @@ $(document).ready(function () {
 		var description
 		if (checkable) {
 			var checkbox = $('<input>', {type: 'checkbox', id: reqId})
+			if (!allowAjax) {
+				checkbox.attr("disabled", true)
+			}
 			td.append(checkbox)
 			description = $('<label>', {class: 'req-description', for: reqId})
 		} else {
@@ -1368,12 +1383,14 @@ $(document).ready(function () {
 
 			redrawTable() // might change what "required songs" means
 
-			$.ajax({
-				url: '/scorebrowser/set_selected_rank',
-				type: 'POST',
-				headers: {'X-CSRFToken': csrfToken},
-				data: JSON.stringify({'rank': rankIndex})
-			})
+			if (allowAjax) {
+				$.ajax({
+					url: '/scorebrowser/set_selected_rank',
+					type: 'POST',
+					headers: {'X-CSRFToken': csrfToken},
+					data: JSON.stringify({'rank': rankIndex})
+				})
+			}
 		}
 		$('#rank-select').change(selectRank)
 
@@ -1603,7 +1620,9 @@ $(document).ready(function () {
 			}
 
 			requirement.row.removeClass('met').addClass('unmet')
-			targetCell.addClass('targetable')
+			if (allowAjax) {
+				targetCell.addClass('targetable')
+			}
 			checkbox.prop('checked', false)
 			requirement.met = false
 		}

@@ -256,6 +256,16 @@ def get_user(request):
 		return None
 	return users[0]
 
+def set_profile_visibility(request):
+	if request.method != 'POST':
+		return
+
+	user = get_user(request)
+	selected_visibility_id = int(request.POST['visibility'])
+	user.visibility_id = selected_visibility_id
+	user.save()
+	return HttpResponse("Updated visibility.")
+
 def set_region(request):
 	if request.method != 'POST':
 		return
@@ -375,6 +385,8 @@ def unlocks(request):
 		'events': ordered_events,
 		'tasks': tasks,
 		'userUnlocks': userUnlocks,
+		'selectedVisibilityId': user.visibility_id,
+		'visibilities': ProfileVisibility.objects.all().order_by('id'),
 		'selectedRegionId': user.region_id,
 		'regions': Region.objects.all().order_by('id'),
 		'romanized_titles': user.romanized_titles,
@@ -746,32 +758,50 @@ def check_locks(song_id, song_locks, cabinet):
 				return True
 	return False
 
+@login_required(login_url='login')
+def my_scores(request):
+	user = get_user(request)
+	return redirect('scores/{}'.format(user.id))
+
+
+def forbidden(request):
+	return HttpResponse("That user's selected profile visibility does not allow you to view their scores page.")
+
 
 @login_required(login_url='login')
-def scores(request):
+def scores(request, user_id):
 	#### USER RETRIEVAL ####
+	user_id = int(user_id)
+	scores_user = User.objects.get(id=user_id)
 
 	redirect_uri = request.build_absolute_uri(reverse('scores'))
-	user = get_user(request)
-	if not user:
+	logged_in_user = get_user(request)
+	if not logged_in_user:
 		return redirect('link_sanbai')
-	if not user.webhooked:
-		hook_response = register_webhook(user)
+	if not scores_user.webhooked:
+		hook_response = register_webhook(scores_user)
 		if hook_response.status_code != 200:
-			refresh_user(user, redirect_uri)
-			hook_response = register_webhook(user)
+			refresh_user(scores_user, redirect_uri)
+			hook_response = register_webhook(scores_user)
 			if hook_response.status_code != 200:
 				return redirect('link_sanbai')
-		user.webhooked = True
-		user.save()
+		scores_user.webhooked = True
+		scores_user.save()
 
-		perform_fetch(user, redirect_uri)
+		perform_fetch(scores_user, redirect_uri)
 
-	if user.pulling_scores:
+	if user_id != logged_in_user.id:
+		min_visibility = 2
+		if logged_in_user.django_user.is_staff:
+			min_visibility = 1
+		if scores_user.visibility.id < min_visibility:
+			return redirect('forbidden')
+
+	if scores_user.pulling_scores:
 		while True:
 			time.sleep(1)
-			user = get_user(request)
-			if not user.pulling_scores:
+			scores_user = User.objects.get(id=user_id)
+			if not scores_user.pulling_scores:
 				break
 
 	#### POST-CREATION EMAIL REGISTRATION ####
@@ -783,28 +813,28 @@ def scores(request):
 	#### DB SCORE RETRIEVAL ####
 
 	current_scores = {}
-	score_db_query = UserScore.objects.filter(user=user, current=True)
+	score_db_query = UserScore.objects.filter(user=scores_user, current=True)
 	if (len(score_db_query) == 0):
-		perform_fetch(user, redirect_uri)
-		score_db_query = UserScore.objects.filter(user=user, current=True)
+		perform_fetch(scores_user, redirect_uri)
+		score_db_query = UserScore.objects.filter(user=scores_user, current=True)
 	for score in score_db_query:
 		current_scores[score.chart_id] = score
 
 	#### TARGET QUALITY COMPUTATION ####
 
 	target_quality = None
-	if user.goal_chart:
-		goal_score = sorted([0, user.goal_score, 1000000])[1]
+	if scores_user.goal_chart:
+		goal_score = sorted([0, scores_user.goal_score, 1000000])[1]
 		normalized = -math.log2(1000000 - goal_score) if goal_score < 999999 else -2.323
 		target_quality = interp(
 			normalized,
-			json.loads(user.goal_chart.normscore_breakpoints),
-			json.loads(user.goal_chart.quality_breakpoints),
+			json.loads(scores_user.goal_chart.normscore_breakpoints),
+			json.loads(scores_user.goal_chart.quality_breakpoints),
 		)
 
 	#### PER-USER CHART DATA RETRIEVAL ####
 
-	aux = {entry.chart_id: entry for entry in UserChartAux.objects.filter(user_id=user.id)}
+	aux = {entry.chart_id: entry for entry in UserChartAux.objects.filter(user_id=scores_user.id)}
 
 	#### UNLOCKS AND REGIONLOCK PROCESSING ####
 
@@ -827,7 +857,7 @@ def scores(request):
 	]
 
 	all_cabinets = Cabinet.objects.all()
-	[white_cab] = [c for c in all_cabinets if (not c.gold and c.region_id == user.region_id)]
+	[white_cab] = [c for c in all_cabinets if (not c.gold and c.region_id == scores_user.region_id)]
 	[gold_cab] = [c for c in all_cabinets if c.gold]
 	cabinets = [white_cab, gold_cab]
 	cab_versions = set(c.version_id for c in cabinets)
@@ -843,9 +873,9 @@ def scores(request):
 		chart_unlocks[version_id][chart_unlock.chart_id].append(chart_unlock)
 
 	# set of task ids this user has completed
-	user_unlocks = set(u.task_id for u in UserUnlock.objects.filter(user=user))
+	user_unlocks = set(u.task_id for u in UserUnlock.objects.filter(user=scores_user))
 
-	for u in UserProgressiveUnlock.objects.filter(user=user).select_related("task__event"):
+	for u in UserProgressiveUnlock.objects.filter(user=scores_user).select_related("task__event"):
 		# this is `set` update, not queryset.update -- just a local variable.
 		user_unlocks.update(v.id for v in UnlockTask.objects.filter(event=u.task.event, ordering__lte=u.task.ordering))
 	
@@ -962,12 +992,12 @@ def scores(request):
 		entry['rank'] = i + 1
 
 	life4_reqs = {
-		'trials': {'best': user.best_trial, 'second': user.second_best_trial},
-		'calories': user.best_calorie_burn,
-		'consecutives': {2: user.best_two_consecutive, 3: user.best_three_consecutive},
+		'trials': {'best': scores_user.best_trial, 'second': scores_user.second_best_trial},
+		'calories': scores_user.best_calorie_burn,
+		'consecutives': {2: scores_user.best_two_consecutive, 3: scores_user.best_three_consecutive},
 	}
 
-	requirement_targets = user_targets(user, white_cab.version_id)
+	requirement_targets = user_targets(scores_user, white_cab.version_id)
 
 	return render(request, 'scorebrowser/scores.html', {
 		'scores': json.dumps(scores_data),
@@ -975,9 +1005,10 @@ def scores(request):
 		'versions': version_names,
 		'white_version': white_cab.version_id,
 		'all_charts': json.dumps(all_charts),
-		'romanized_titles': user.romanized_titles,
+		'romanized_titles': logged_in_user.romanized_titles,
 		'life4_reqs': json.dumps(life4_reqs),
 		'requirement_targets': json.dumps(requirement_targets),
-		'selected_rank': user.selected_rank,
-		'selected_flare': user.selected_flare,
+		'selected_rank': scores_user.selected_rank,
+		'selected_flare': scores_user.selected_flare,
+		'same_user': logged_in_user.id == user_id,
 	})

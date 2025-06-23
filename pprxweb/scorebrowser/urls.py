@@ -20,10 +20,13 @@ urlpatterns = [
 	path('fetch_scores', views.fetch_scores, name='fetch_scores'),
 
 	# main pages
-	path('scores', views.scores, name='scores'),
+	path('forbidden', views.forbidden, name='forbidden'),
+	path('scores/<user_id>', views.scores, name='scores'),
+	path('scores', views.my_scores, name='scores'),
 	path('unlocks', views.unlocks, name='unlocks'),
 
 	# ajax db requests
+	path('set_profile_visibility', views.set_profile_visibility, name='set_profile_visibility'),
 	path('set_region', views.set_region, name='set_region'),
 	path('set_romanized_titles', views.set_romanized_titles, name='set_romanized_titles'),
 	path('update_unlock', views.update_unlock, name='update_unlock'),
