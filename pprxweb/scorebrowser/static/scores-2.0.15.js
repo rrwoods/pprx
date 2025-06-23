@@ -291,7 +291,7 @@ $(document).ready(function () {
 		clearTypeIcons[2] = ' ❗'
 	}
 
-	reqsPromise = fetch("/static/rank-requirements-1.2.26.json")
+	reqsPromise = fetch("/static/rank-requirements-2.0.15.json")
 		.then(x => x.json())
 		.then(json => rankRequirements = json[whiteVersion])
 
