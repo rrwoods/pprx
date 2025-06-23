@@ -1011,4 +1011,5 @@ def scores(request, user_id):
 		'selected_rank': scores_user.selected_rank,
 		'selected_flare': scores_user.selected_flare,
 		'same_user': logged_in_user.id == user_id,
+		'username': scores_user.django_user.username,
 	})

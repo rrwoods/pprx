@@ -78,6 +78,18 @@ details .details {
 
 
 /*** scores table ***/
+
+.not-you {
+	border: 2px solid black;
+	text-align: center;
+	padding: 2em;
+}
+
+.username {
+	font-weight: bold;
+	color: navy;
+}
+
 /* table-level */
 
 .scores-table {
