@@ -15,7 +15,7 @@
 	{% csrf_token %}
 
 	{% if not same_user %}
-		<p class="not-you">You are viewing the data for <span class="username">{{ username }}.</span>
+		<p class="not-you">You are viewing the data for <span class="username">{{ username }}</span>.</p>
 	{% endif %}
 	
 	<p>Charts with a <span class="extra-exclusive">pink background</span> are only available on Extra Stage on your selected cabinet.</p>
