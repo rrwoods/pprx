@@ -715,6 +715,7 @@ def perform_fetch(user, redirect_uri):
 			if key not in all_charts:
 				if song_id not in all_song_ids:
 					Song.objects.create(id=song_id, version_id=20, title=title, sort_key=sort_key(title))
+					all_song_ids.append(song_id)
 
 				# IMPORTANT!! updatecharts assumes that for hidden charts, rating = 0 -- update it if this changes!
 				chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
