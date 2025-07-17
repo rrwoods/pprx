@@ -96,19 +96,30 @@ def login_user(request):
 		'/scorebrowser/scores',
 	]
 	if request.method == 'POST':
+		print("login_user: getting filled authn form")
 		form = AuthenticationForm(request, data=request.POST)
+		print("login_user: checking form")
 		if form.is_valid():
+			print("login_user: form is valid, getting django user")
 			django_user = form.get_user()
+			print("login_user: got django user {}, logging in".format(django_user.username))
 			login(request, django_user)
 
+			print("login_user: logged in, getting PPR X user")
 			users = User.objects.filter(django_user=django_user)
+			print("login_user: got PPR X user, determining redirect")
 			next_url = request.POST.get('next')
+			print("login_user: attempting redirect to {}".format(next_url))
 			if next_url not in allowed_next:
+				print("login_user: that redirect isn't allowed; going to landing instead")
 				next_url = 'landing'
+			print("login_user: performing redirect")
 			return redirect(next_url) if users else redirect('link_sanbai')
 	else:
+		print("login_user: getting empty authn form")
 		form = AuthenticationForm(request)
 
+	print("login_user: presenting login.html")
 	return render(request, 'scorebrowser/login.html', {'form': form})
 
 @login_required(login_url='login')
@@ -164,6 +175,8 @@ def finish_link(request):
 
 	hook_response = register_webhook(user)
 	if hook_response.status_code != 200:
+		print("Webhook registration error {}".format(hook_response.status_code))
+		print(hook_response.text)
 		return HttpResponse("Got {} from 3icecream webhook registration; can't proceed.  3icecream error follows.<hr />{}".format(hook_response.status_code, hook_response.text))
 	user.webhooked = True
 	user.save()
@@ -171,7 +184,14 @@ def finish_link(request):
 	return render(request, 'scorebrowser/loggedin.html')
 
 def register_webhook(user):
-	return requests.post('https://3icecream.com/oauth/add_webhook_relationship', data={
+	webhook_url = 'https://3icecream.com/oauth/add_webhook_relationship'
+	print("Making webhook request to {}".format(webhook_url))
+	print("client_id: [redacted]")
+	print("client_secret: [redacted]")
+	print("webhook_id: {}".format(settings.WEBHOOK_ID))
+	print("access_token: {}".format(user.access_token))
+
+	return requests.post(webhook_url, data={
 		'client_id': settings.CLIENT_ID,
 		'client_secret': settings.CLIENT_SECRET,
 		'webhook_id': settings.WEBHOOK_ID,
