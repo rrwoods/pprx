@@ -116,6 +116,7 @@ def link_sanbai(request):
 	return render(request, 'scorebrowser/link_sanbai.html', {'client_id': settings.CLIENT_ID})
 
 def refresh_user(user, redirect_uri):
+	print("refresh_user: enter")
 	refresh_response = requests.post('https://3icecream.com/oauth/token', data={
 		'client_id': settings.CLIENT_ID,
 		'client_secret': settings.CLIENT_SECRET,
@@ -123,10 +124,18 @@ def refresh_user(user, redirect_uri):
 		'refresh_token': user.refresh_token,
 		'redirect_uri': redirect_uri,
 	})
-	response_json = refresh_response.json()
-	user.access_token = response_json['access_token']
-	user.refresh_token = response_json['refresh_token']
-	user.save()
+	print("refresh_user: got token response from 3icecream")
+	try:
+		response_json = refresh_response.json()
+		user.access_token = response_json['access_token']
+		user.refresh_token = response_json['refresh_token']
+		user.save()
+	except:
+		print("refresh_user: unexpected token response:")
+		print(refresh_response.text)
+		return False
+	print("refresh_user: exit")
+	return True
 
 def finish_link(request):
 	if 'code' not in request.GET:
@@ -264,7 +273,7 @@ def set_profile_visibility(request):
 	selected_visibility_id = int(request.POST['visibility'])
 	user.visibility_id = selected_visibility_id
 	user.save()
-	return HttpResponse("Updated visibility.")
+	return HttpResponse(ProfileVisibility.objects.get(id=selected_visibility_id).description)
 
 def set_region(request):
 	if request.method != 'POST':
@@ -642,7 +651,16 @@ def perform_fetch(user, redirect_uri):
 	print("perform_fetch: enter")
 	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	if scores_response.status_code == 400:
-		refresh_user(user, redirect_uri)
+		print("perform_fetch: first get_scores failed. response:")
+		print(scores_response.text)
+		print("----------")
+		print("perform_fetch: refreshing user and trying again")
+		if not refresh_user(user, redirect_uri):
+			print("perform_fetch: couldn't refresh; forcing re-auth - user must load scores page to re-link sanbai")
+			user.webhooked = False
+			user.save()
+			return HttpResponse('Need to re-link 3icecream!  Click "Browse Scores" above to do so.')
+
 		scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
 	print("perform_fetch: got scores response")
 
@@ -781,7 +799,8 @@ def scores(request, user_id):
 	if not scores_user.webhooked:
 		hook_response = register_webhook(scores_user)
 		if hook_response.status_code != 200:
-			refresh_user(scores_user, redirect_uri)
+			if not refresh_user(scores_user, redirect_uri):
+				return redirect('link_sanbai')
 			hook_response = register_webhook(scores_user)
 			if hook_response.status_code != 200:
 				return redirect('link_sanbai')
@@ -1010,6 +1029,8 @@ def scores(request, user_id):
 		'requirement_targets': json.dumps(requirement_targets),
 		'selected_rank': scores_user.selected_rank,
 		'selected_flare': scores_user.selected_flare,
+		'selected_visibility_id': logged_in_user.visibility_id,
+		'visibilities': ProfileVisibility.objects.all().order_by('id'),
 		'same_user': logged_in_user.id == user_id,
 		'username': scores_user.django_user.username,
 	})
