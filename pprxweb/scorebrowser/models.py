@@ -90,6 +90,7 @@ def default_region():
 class ProfileVisibility(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.TextField()
+    description = models.TextField(default="")
 
 
 # the player_id field here is a 3icecream player ID -- it is *not* a reference to a Player model object.
