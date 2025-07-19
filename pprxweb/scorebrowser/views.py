@@ -171,15 +171,17 @@ def finish_link(request):
 	response_json = auth_response.json()
 	user.access_token = response_json['access_token']
 	user.refresh_token = response_json['refresh_token']
+	user.reauth = False
 	user.save()
 
-	hook_response = register_webhook(user)
-	if hook_response.status_code != 200:
-		print("Webhook registration error {}".format(hook_response.status_code))
-		print(hook_response.text)
-		return HttpResponse("Got {} from 3icecream webhook registration; can't proceed.  3icecream error follows.<hr />{}".format(hook_response.status_code, hook_response.text))
-	user.webhooked = True
-	user.save()
+	if not user.webhooked:
+		hook_response = register_webhook(user)
+		if hook_response.status_code != 200:
+			print("Webhook registration error {}".format(hook_response.status_code))
+			print(hook_response.text)
+			return HttpResponse("Got {} from 3icecream webhook registration; can't proceed.  3icecream error follows.<hr />{}".format(hook_response.status_code, hook_response.text))
+		user.webhooked = True
+		user.save()
 
 	return render(request, 'scorebrowser/loggedin.html')
 
@@ -282,6 +284,8 @@ def get_user(request):
 		return None
 	users = User.objects.filter(django_user=request.user)
 	if not users:
+		return None
+	if users[0].reauth:
 		return None
 	return users[0]
 
@@ -677,7 +681,7 @@ def perform_fetch(user, redirect_uri):
 		print("perform_fetch: refreshing user and trying again")
 		if not refresh_user(user, redirect_uri):
 			print("perform_fetch: couldn't refresh; forcing re-auth - user must load scores page to re-link sanbai")
-			user.webhooked = False
+			user.reauth = True
 			user.save()
 			return HttpResponse('Need to re-link 3icecream!  Click "Browse Scores" above to do so.')
 
@@ -800,6 +804,8 @@ def check_locks(song_id, song_locks, cabinet):
 @login_required(login_url='login')
 def my_scores(request):
 	user = get_user(request)
+	if not user:
+		return redirect('link_sanbai')
 	return redirect('scores/{}'.format(user.id))
 
 

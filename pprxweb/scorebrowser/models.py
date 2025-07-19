@@ -104,6 +104,7 @@ class User(models.Model):
     access_token = models.TextField(null=True)
     refresh_token = models.TextField(null=True)
     webhooked = models.BooleanField(default=False)
+    reauth = models.BooleanField(default=False)
     pulling_scores = models.BooleanField(default=False)
 
     region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)
