@@ -68,6 +68,8 @@ class Player(models.Model):
 
 
 class Score(models.Model):
+    # represents a scraped public score -- NOT a PPR X user's score.
+    # for PPR X users' scores, see UserScore.
     id = models.AutoField(primary_key=True)
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
