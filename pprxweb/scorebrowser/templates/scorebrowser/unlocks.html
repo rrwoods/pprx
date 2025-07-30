@@ -29,13 +29,12 @@
 
 	<p>
 		<form method="POST">
-			Select your profile visibility:
+			Choose who can see your profile and scores:
 			<select name="visibility" hx-post="{% url 'set_profile_visibility' %}" hx-trigger="change" hx-target="#saved-pref">
 				{% for visibility in visibilities %}
 					<option {% if visibility.id == selectedVisibilityId %}selected{% endif %} value="{{ visibility.id }}">{{visibility.name}}</option>
 				{% endfor %}
 			</select>
-			(Admin = LIFE4 admins can view your profile to help verify rankups)
 			{% csrf_token %}
 		</form>
 	</p>

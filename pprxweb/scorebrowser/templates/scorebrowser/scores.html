@@ -8,7 +8,7 @@
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.7"></script>
-	<script src="{% static 'scores-2.0.15.js' %}"></script>
+	<script src="{% static 'scores-2.0.16.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -17,6 +17,18 @@
 
 	{% if not same_user %}
 		<p class="not-you">You are viewing the data for <span class="username">{{ username }}</span>.</p>
+	{% endif %}
+
+	{% if ask_for_vis %}
+		<dialog open class="one-time-dialog">
+			<p>Choose who can see your profile and scores:</p>
+			{% for visibility in visibilities %}
+				<p><button class="vis-button" data-vis={{ visibility.id }}>{{ visibility.name }}</button> ({{ visibility.description|safe }})</p>
+			{% endfor %}
+			<p>
+				To use your PPR X data for a rank-up submission, set your visibility to LIFE4 Staff or Public, then copy the URL of this page, and paste it as your rank-up proof on the <a href="https://life4ddr.com/submissions/">submission form</a>.
+			</p>
+		</dialog>
 	{% endif %}
 	
 	<p>Charts with a <span class="extra-exclusive">pink background</span> are only available on Extra Stage on your selected cabinet.</p>
@@ -240,6 +252,27 @@
 	<p id="goals-summary"></p>
 
 	{% if same_user %}
+	<h1>Profile Visibility</h1>
+		<form method="POST">
+			<p>Choose who can see your profile and scores:</p>
+			<select name="visibility" hx-post="{% url 'set_profile_visibility' %}" hx-trigger="change" hx-target="#visibility-desc">
+				{% for visibility in visibilities %}
+					<option {% if visibility.id == selected_visibility_id %}selected{% endif %} value="{{ visibility.id }}">{{visibility.name}}</option>
+				{% endfor %}
+			</select>
+			{% csrf_token %}
+			{% for visibility in visibilities %}
+				{% if visibility.id == selected_visibility_id %}
+					<span id="visibility-desc"> {{ visibility.description|safe }}</span>
+				{% endif %}
+			{% endfor %}
+		</form>
+		<p>
+			To use your PPR X data for a rank-up submission, set your visibility to LIFE4 Staff or Public, then copy the URL of this page, and paste it as your rank-up proof on the <a href="https://life4ddr.com/submissions/">submission form</a>.
+		</p>
+	{% endif %}
+
+	{% if same_user %}
 		<h1>Flare Skill Summary</h1>
 		<details>
 			<summary><span id="total-flare-points"></span> pts: <span id="flare-rank"></span></summary>
@@ -260,25 +293,6 @@
 	{% endif %}
 
 	<h1>LIFE4 Rank Evaluation</h1>
-	{% if same_user %}
-		<p>
-			<form method="POST">
-				Profile visibility:
-				<select name="visibility" hx-post="{% url 'set_profile_visibility' %}" hx-trigger="change" hx-target="#visibility-desc">
-					{% for visibility in visibilities %}
-						<option {% if visibility.id == selected_visibility_id %}selected{% endif %} value="{{ visibility.id }}">{{visibility.name}}</option>
-					{% endfor %}
-				</select>
-				{% csrf_token %}
-			</form>
-			{% for visibility in visibilities %}
-				{% if visibility.id == selected_visibility_id %}
-					<span id="visibility-desc">{{ visibility.description|safe }}</span>
-				{% endif %}
-			{% endfor %}
-			{% csrf_token %}
-		</p>
-	{% endif %}
 	<p><details>
 		<summary>Level averages:</summary>
 		<div class="details"><table class="summary-table">

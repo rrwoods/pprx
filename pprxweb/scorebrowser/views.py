@@ -296,6 +296,7 @@ def set_profile_visibility(request):
 	user = get_user(request)
 	selected_visibility_id = int(request.POST['visibility'])
 	user.visibility_id = selected_visibility_id
+	user.vis_asked = True
 	user.save()
 	return HttpResponse(ProfileVisibility.objects.get(id=selected_visibility_id).description)
 
@@ -1044,7 +1045,7 @@ def scores(request, user_id):
 	}
 
 	requirement_targets = user_targets(scores_user, white_cab.version_id)
-
+	same_user = (logged_in_user.id == user_id)
 	return render(request, 'scorebrowser/scores.html', {
 		'scores': json.dumps(scores_data),
 		'cabinets': cab_names,
@@ -1058,6 +1059,7 @@ def scores(request, user_id):
 		'selected_flare': scores_user.selected_flare,
 		'selected_visibility_id': logged_in_user.visibility_id,
 		'visibilities': ProfileVisibility.objects.all().order_by('id'),
-		'same_user': logged_in_user.id == user_id,
+		'ask_for_vis': (same_user and not logged_in_user.vis_asked),
+		'same_user': same_user,
 		'username': scores_user.django_user.username,
 	})

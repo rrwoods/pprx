@@ -281,6 +281,20 @@ function getCookie(name) {
 $(document).ready(function () {
 	const loadTimestamp = Math.floor(Date.now()/1000)
 
+	$("button.vis-button").click(function() {
+		visibilityId = $(this).data('vis')
+		$.ajax({
+			url: '/scorebrowser/set_profile_visibility',
+			type: 'POST',
+			data: new URLSearchParams([
+				['visibility', visibilityId],
+				['csrfmiddlewaretoken', csrfToken],
+			]).toString()
+		}).done(function(data) {
+			$("dialog.one-time-dialog").removeAttr("open")
+		})
+	})
+
 	allowAjax = ($("#allow-ajax").data('x') === "True")
 
 	whiteVersion = $('#white-version').data('json')

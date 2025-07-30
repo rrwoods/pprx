@@ -101,6 +101,7 @@ class User(models.Model):
     id = models.AutoField(primary_key=True)
     django_user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True, default=None)
     visibility = models.ForeignKey(ProfileVisibility, on_delete=models.SET_DEFAULT, default=0)
+    vis_asked = models.BooleanField(default=False)
 
     player_id = models.TextField()
     access_token = models.TextField(null=True)

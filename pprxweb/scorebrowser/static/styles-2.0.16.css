@@ -90,6 +90,10 @@ details .details {
 	color: navy;
 }
 
+.one-time-dialog {
+	background-color: lightblue;
+}
+
 /* table-level */
 
 .scores-table {
