@@ -6,7 +6,7 @@
 
 {% block content %}
 
-{% for name, id in user_ids.items %}
+{% for name in usernames %}
 	<a href="{% url 'scores' %}/{{ user_ids|dict_key:name }}">{{ name }}</a><br />
 {% endfor %}
 

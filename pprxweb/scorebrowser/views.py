@@ -822,7 +822,7 @@ def admin(request):
 	visible_users = User.objects.exclude(visibility_id=0)
 	user_ids = {u.django_user.username: u.id for u in visible_users}
 	return render(request, 'scorebrowser/admin.html', {
-		'usernames': sorted(list(user_ids.keys())),
+		'usernames': sorted(list(user_ids.keys()), key=lambda x: x.lower()),
 		'user_ids': user_ids,
 	})
 
