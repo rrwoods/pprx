@@ -811,7 +811,20 @@ def my_scores(request):
 
 
 def forbidden(request):
-	return HttpResponse("That user's selected profile visibility does not allow you to view their scores page.")
+	return HttpResponse("You don't have permission to view this page.")
+
+
+def admin(request):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	visible_users = User.objects.exclude(visibility_id=0)
+	user_ids = {u.django_user.username: u.id for u in visible_users}
+	return render(request, 'scorebrowser/admin.html', {
+		'usernames': sorted(list(user_ids.keys())),
+		'user_ids': user_ids,
+	})
 
 
 @login_required(login_url='login')

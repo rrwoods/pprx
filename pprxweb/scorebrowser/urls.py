@@ -21,6 +21,7 @@ urlpatterns = [
 
 	# main pages
 	path('forbidden', views.forbidden, name='forbidden'),
+	path('admin', views.admin, name='admin'),
 	path('scores/<user_id>', views.scores, name='scores'),
 	path('scores', views.my_scores, name='scores'),
 	path('unlocks', views.unlocks, name='unlocks'),

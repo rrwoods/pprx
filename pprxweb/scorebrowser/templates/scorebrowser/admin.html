@@ -1,0 +1,13 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+{% load pprxtras %}
+
+{% block title %}PPR X Admin portal{% endblock %}
+
+{% block content %}
+
+{% for name, id in user_ids.items %}
+	<a href="{% url 'scores' %}/{{ user_ids|dict_key:name }}">{{ name }}</a><br />
+{% endfor %}
+
+{% endblock %}
