@@ -16,7 +16,7 @@ class Command(BaseCommand):
 		# TODO : this suffix is variable length now; find some method of doing this that parses the .js more properly
 		# or, at the very least, look for the index of "[" for the beginning and ";const EVENT_EXCLUSIONS=[" for the end
 		prefix = b'var ALL_SONG_DATA='
-		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210,220,230,240,260,270,290];const SONG_DATA_LAST_UPDATED_unixms=1739807281599;'
+		suffix = b';const EVENT_EXCLUSIONS=[30,40,50,60,70,80,90,110,120,130,140,150,170,180,200,210,220,230,240,260,270,290,300];const SONG_DATA_LAST_UPDATED_unixms=1754722897432;'
 
 		challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
