@@ -20,7 +20,7 @@ class Command(BaseCommand):
 
 		challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 		for fetched_song in json.loads(response.content[len(prefix):-len(suffix)]):
-			title=fetched_song['song_name'].replace("&amp;", "&")
+			title = fetched_song['song_name'].replace("&amp;", "&")
 			song = Song.objects.filter(id=fetched_song['song_id']).first()
 			if song is None:
 				song = Song(id=fetched_song['song_id'], version_id=fetched_song['version_num'], title=title)
@@ -34,6 +34,9 @@ class Command(BaseCommand):
 			if song.version_id != fetched_song['version_num']:
 				song.version_id = fetched_song['version_num']
 				print("Song {} moved to {}".format(song.title, song.version.name))
+			if song.title != title:
+				print("Song title {} corrected to {}".format(song.title, title))
+				song.title = title
 
 			for sanbai_k, db_k in [('alternate_name', 'alternate_title'), ('romanized_name', 'romanized_title'), ('searchable_name', 'searchable_title')]:
 				v = fetched_song.get(sanbai_k, '')
