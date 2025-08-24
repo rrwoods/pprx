@@ -707,6 +707,7 @@ def perform_fetch(user, redirect_uri):
 			if (difficulty > 4):
 				continue
 
+			rating = score['rating']
 			song_id = score['song_id']
 			title = score['song_name']
 			timestamp = score['time_played'] or score['time_uploaded']
@@ -722,8 +723,7 @@ def perform_fetch(user, redirect_uri):
 					Song.objects.create(id=song_id, version_id=20, title=title, sort_key=sort_key(title))
 					all_song_ids.append(song_id)
 
-				# IMPORTANT!! updatecharts assumes that for hidden charts, rating = 0 -- update it if this changes!
-				chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=0, hidden=True)
+				chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=rating, hidden=True)
 				all_charts[key] = chart
 		print("perform_fetch: built scores dict")
 
@@ -945,10 +945,9 @@ def scores(request, user_id):
 
 	# {song_id: [ratings]}
 	all_charts = {}
+	any_hidden = False
 
-	chart_query = Chart.objects  \
-		.select_related("song", "song__version", "difficulty")  \
-		.filter(hidden=False)
+	chart_query = Chart.objects.all().select_related("song", "song__version", "difficulty")
 
 	for chart in chart_query:
 		entry = {}
@@ -959,6 +958,12 @@ def scores(request, user_id):
 			amethyst_required = False
 			entry["0"] = UNAVAILABLE
 			entry["1"] = UNAVAILABLE
+		elif chart.hidden:
+			any_hidden = True
+			default_chart = False
+			amethyst_required = False
+			entry["0"] = VISIBLE
+			entry["1"] = VISIBLE
 		else:
 			for i, cabinet in enumerate(cabinets):
 				cab_vis_id = str(i)
@@ -1043,6 +1048,7 @@ def scores(request, user_id):
 		entry['bookmarked'] = aux[chart.id].bookmark if chart.id in aux else False
 		entry['default_chart'] = default_chart
 		entry['amethyst_required'] = amethyst_required
+		entry['hidden'] = chart.hidden
 		entry['removed'] = chart.song.removed
 		entry['tracked'] = chart.tracked
 		scores_data.append(entry)
@@ -1073,6 +1079,7 @@ def scores(request, user_id):
 		'selected_visibility_id': logged_in_user.visibility_id,
 		'visibilities': ProfileVisibility.objects.all().order_by('id'),
 		'ask_for_vis': (same_user and not logged_in_user.vis_asked),
+		'any_hidden': any_hidden,
 		'same_user': same_user,
 		'username': scores_user.django_user.username,
 	})

@@ -131,6 +131,11 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 	color: white !important;
 }
 
+.very-new, .very-new a {
+	background-color: darkgray !important;
+	color: lightgray !important;
+}
+
 .removed-song, .removed-song a {
 	background-color: red !important;
 	color: white !important;

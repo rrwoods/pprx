@@ -159,6 +159,11 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
+	const hidden_chart = data[30] === "true"
+	if (hidden_chart && !currentFilters["show-new"]) {
+		return false
+	}
+
 	var version = parseInt(data[4])
 	if ((version < currentFilters["version-min"]) || (version > currentFilters["version-max"])) {
 		return false
@@ -628,8 +633,15 @@ $(document).ready(function () {
 			{ data: 'removed', visible: false },
 			// 29:
 			{ data: 'tracked', visible: false },
+			// 30:
+			{ data: 'hidden', visible: false },
 		],
 		createdRow: function(row, data, index) {
+			if (data['hidden']) {
+				$(row).addClass('very-new')
+				return
+			}
+			
 			visibility = parseInt(data[currentFilters["cabinet-select"]])
 			if (visibility === 1) {
 				$(row).addClass('extra-exclusive')
