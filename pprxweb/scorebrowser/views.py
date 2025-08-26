@@ -251,15 +251,22 @@ def reset_password(request):
 def finish_reset(request, uidb64, token):
 	try:
 		uid = force_str(urlsafe_base64_decode(uidb64))
+		print("finish_reset: uid {}".format(uid))
 		django_user = DjangoUser.objects.get(pk=uid)
+		print("finish_reset: username {}".format(django_user.username))
 
 		if ACCOUNT_ACTIVATION_TOKEN_GENERATOR.check_token(django_user, token):
+			print("finish_reset: token valid")
 			if request.method == 'POST':
+				print("finish_reset: POST")
 				form = SetPasswordForm(django_user, request.POST)
 				if form.is_valid():
+					print("finish_reset: form valid")
 					form.save()
+					print("finish_reset: saved")
 					return redirect('login')
 
+			print("finish_reset: GET (or invalid POST)")
 			form = SetPasswordForm(django_user)
 			return render(request, 'scorebrowser/set_password.html', {'form': form})
 		else:
