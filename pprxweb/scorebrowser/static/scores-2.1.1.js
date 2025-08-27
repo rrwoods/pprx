@@ -141,8 +141,16 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		return false
 	}
 
-	if (parseInt(data[11]) < minTimestamp) {
-		return false
+	if (minTimestamp != 0) {
+		if (currentFilters["older-newer"] == 1) {
+			if (parseInt(data[11]) < minTimestamp) {
+				return false
+			}
+		} else {
+			if (parseInt(data[11]) > minTimestamp) {
+				return false
+			}
+		}
 	}
 
 	visibility = parseInt(data[currentFilters["cabinet-select"]])

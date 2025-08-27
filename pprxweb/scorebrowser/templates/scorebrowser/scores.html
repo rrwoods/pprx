@@ -8,7 +8,7 @@
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.7"></script>
-	<script src="{% static 'scores-2.1.0.js' %}"></script>
+	<script src="{% static 'scores-2.1.1.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -194,7 +194,12 @@
 	</p>
 
 	<p>
-		Scores from last
+		Scores 
+		<select autocomplete="off" id="older-newer" class="filter" data-default=1>
+			<option selected value=1>from</option>
+			<option value=2>not from</option>
+		</select>
+		last
 		<input autocomplete="off" type="number" pattern="\d*" id="time-range" class="filter" size="5" data-default="NaN">
 		<select autocomplete="off" id="time-type" class="filter" data-default=3600>
 			<option selected value=3600>hours</option>

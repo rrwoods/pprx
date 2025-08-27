@@ -955,6 +955,7 @@ def scores(request, user_id):
 	any_hidden = False
 
 	chart_query = Chart.objects.all().select_related("song", "song__version", "difficulty")
+	same_user = (logged_in_user.id == user_id)
 
 	for chart in chart_query:
 		entry = {}
@@ -1033,6 +1034,12 @@ def scores(request, user_id):
 		if (target_quality is not None) and (chart.quality_breakpoints):
 			goal = compute_goal(target_quality, chart)
 
+		notes = ''
+		bookmarked = False
+		if same_user and (chart.id in aux):
+			notes = aux[chart.id].notes
+			bookmarked = aux[chart.id].bookmark
+
 		entry['game_version'] = { 'id': chart.song.version_id, 'name': chart.song.version.name }
 		entry['song_id'] = chart.song_id
 		entry['song_name'] = { 'title': chart.song.title, 'sort_key': chart.song.sort_key }
@@ -1051,8 +1058,8 @@ def scores(request, user_id):
 		entry['chart_id'] = chart.id
 		entry['distance'] = (goal - score) if goal else 0
 		entry['timestamp'] = timestamp
-		entry['notes'] = aux[chart.id].notes if chart.id in aux else ''
-		entry['bookmarked'] = aux[chart.id].bookmark if chart.id in aux else False
+		entry['notes'] = notes
+		entry['bookmarked'] = bookmarked
 		entry['default_chart'] = default_chart
 		entry['amethyst_required'] = amethyst_required
 		entry['hidden'] = chart.hidden
@@ -1071,7 +1078,6 @@ def scores(request, user_id):
 	}
 
 	requirement_targets = user_targets(scores_user, white_cab.version_id)
-	same_user = (logged_in_user.id == user_id)
 	return render(request, 'scorebrowser/scores.html', {
 		'scores': json.dumps(scores_data),
 		'cabinets': cab_names,
