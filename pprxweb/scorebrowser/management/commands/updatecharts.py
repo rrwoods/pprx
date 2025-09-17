@@ -67,14 +67,17 @@ class Command(BaseCommand):
 					print("Creating {}chart {} -- {} -- {}".format(("" if tracked else "untracked "), song.title, difficulty, rating))
 					chart = Chart(song_id=song.id, difficulty_id=difficulty, rating=rating, tracked=tracked)
 					chart.save()
-				elif chart.rating != rating:
-					print("Updating chart rating {} -- {} from {} to {}".format(song.title, difficulty, chart.rating, rating))
+				else:
 					if chart.hidden:
 						new_chart = True
-					chart.rating = rating
-					chart.tracked = tracked   # a 13->14 or 14->13 rerate might require this!
-					chart.hidden = False
-					chart.save()
+						chart.hidden = False
+						chart.tracked = tracked
+						chart.save()
+					if chart.rating != rating:
+						print("Updating chart rating {} -- {} from {} to {}".format(song.title, difficulty, chart.rating, rating))
+						chart.rating = rating
+						chart.tracked = tracked   # a 13->14 or 14->13 rerate might require this!
+						chart.save()
 
 				if new_chart and song.version_id <= 18:
 					ChartUnlock.objects.create(task=challenge_task, chart=chart)
