@@ -166,6 +166,9 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if ((visibility === 2) && !currentFilters["show-locked"]) {
 		return false
 	}
+	if ((visibility === 1) && !currentFilters["show-extra-exclusive"]) {
+		return false
+	}
 
 	const hidden_chart = data[30] === "true"
 	if (hidden_chart && !currentFilters["show-new"]) {
