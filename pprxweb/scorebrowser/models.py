@@ -195,7 +195,7 @@ class UnlockEvent(models.Model):
     name = models.TextField()
     progressive = models.BooleanField(default=False)
     ordering = models.IntegerField()
-    amethyst_required = models.BooleanField(default=True)
+    amethyst_required = models.BooleanField(default=False)
 
 
 class UnlockTask(models.Model):
