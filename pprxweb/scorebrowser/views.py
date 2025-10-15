@@ -735,7 +735,9 @@ def perform_fetch(user, redirect_uri):
 		print("perform_fetch: built scores dict")
 
 		current_scores = {}
-		for score in UserScore.objects.filter(user=user, current=True):
+		for score in UserScore.objects            \
+				.filter(user=user, current=True)  \
+				.only('score', 'clear_type', 'flare_gauge'):
 			current_scores[score.chart_id] = score
 		print("perform_fetch: got current scores")
 
