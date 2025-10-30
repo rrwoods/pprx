@@ -70,6 +70,8 @@ threadpoolctl==3.5.0
     # via scikit-learn
 typing-extensions==4.4.0
     # via -r requirements.in
+tzdata==2025.2
+    # via django
 urllib3==2.5.0
     # via
     #   -r requirements.in
