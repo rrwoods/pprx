@@ -16,13 +16,13 @@ contourpy==1.3.0
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-django==4.2.25
+django==4.2.26
     # via -r requirements.in
 django-environ==0.9.0
     # via -r requirements.in
 fonttools==4.54.0
     # via matplotlib
-idna==2.10
+idna==3.7
     # via requests
 joblib==1.4.2
     # via scikit-learn
@@ -70,8 +70,6 @@ threadpoolctl==3.5.0
     # via scikit-learn
 typing-extensions==4.4.0
     # via -r requirements.in
-tzdata==2025.2
-    # via django
 urllib3==2.5.0
     # via
     #   -r requirements.in
