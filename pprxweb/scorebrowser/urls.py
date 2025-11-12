@@ -45,5 +45,7 @@ urlpatterns = [
 	path('target_requirement', views.target_requirement, name='target_requirement'),
 	path('untarget_requirement', views.untarget_requirement, name='untarget_requirement'),
 
+	# welcome pages
 	path('hello', views.hello, name='hello'),
+	path('howto', views.howto, name='howto'),
 ]

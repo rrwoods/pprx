@@ -29,6 +29,9 @@ import traceback
 def hello(request):
 	return render(request, 'scorebrowser/hello.html')
 
+def howto(request):
+	return render(request, 'scorebrowser/howto.html')
+
 def register(request):
 	if request.user.is_authenticated:
 		return redirect('/')

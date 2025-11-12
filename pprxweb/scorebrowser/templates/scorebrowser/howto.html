@@ -1,0 +1,17 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+
+{% block content %}
+	<p>Welcome to PPR X, where you can guide your DDR improvement journey with <a href="https://life4ddr.com">LIFE4</a> requirements tracking, and data-informed improvement targets.</p>
+
+	<p>To use PPR X you'll need an existing account with <a href="https://3icecream.com">3icecream</a>, connected to a Konami ID.  Once you've got that, <a href="{% url 'register' %}">register</a> for a PPR X account.  Confirm your email to activate your account.  After logging in, you'll be asked to link your 3icecream account, which allows PPR X to fetch your scores from there.  Then, you'll be able to see your scores on PPR X.</p>
+
+	<p>This site provides two main features:
+		<ol>
+			<li>It checks your progress against each rank requirement of each LIFE4 rank.  It provides you a clean way to see when you have achieved what you need for each rank, and lets you easily pick out which charts to try to improve to meet those requirements.</li>
+			<li>It assigns most scores (including all expert and most challenge charts) a "quality" rating, normalized to the chart's difficulty (its "spice" rating), providing you with information about your strong and weak charts.</li>
+		</ol>
+	</p>
+
+	<p>If you have any questions, head on over to the <a href="https://discord.com/invite/sTYjWNn">LIFE4 Discord server</a> and speak up in #pprx-help!</p>
+{% endblock %}
