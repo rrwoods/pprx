@@ -174,10 +174,16 @@ table#scores.dataTable tbody tr:hover > .sorting_1 {
 span.met, button.met, .met .req-description, #flare-summary .met {
 	color: seagreen;
 	font-style: italic;
+	text-wrap: nowrap;
 }
 
 span.unmet, button.unmet, .unmet .req-description, #flare-summary .unmet {
 	font-weight: bold;
+	text-wrap: nowrap;
+}
+
+.togo {
+	text-wrap: nowrap;
 }
 
 
@@ -249,3 +255,8 @@ table.requirements td {
 	width: 50em;
 }
 
+
+.filter-link {
+	text-decoration: underline;
+	cursor: pointer;
+}

@@ -1070,6 +1070,7 @@ def scores(request, user_id):
 		entry['hidden'] = chart.hidden
 		entry['removed'] = chart.song.removed
 		entry['tracked'] = chart.tracked
+		entry['active_requirement'] = False  # i hate doing this but i don't see another way to get datatables.js to actually let me set this column.
 		scores_data.append(entry)
 
 	scores_data.sort(key=lambda x: x['quality'] or 0, reverse=True)
