@@ -345,7 +345,7 @@ $(document).ready(function () {
 		clearTypeIcons[2] = ' ❗'
 	}
 
-	reqsPromise = fetch("/static/ranks-2.2.0.json").then(x => x.json())
+	reqsPromise = fetch("/static/ranks-2.2.2.json").then(x => x.json())
 
 	csrfToken = getCookie('csrftoken')
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
@@ -1322,18 +1322,20 @@ $(document).ready(function () {
 							if (goal.clear_type) {
 								realClearType = clearTypes[clearTypeNumbers[goal.clear_type]]
 							} else if ((goal.song_count !== 1) || !goal.score) {
-								realClearType = "Clear"
+								realClearType = 'Clear'
 							}
 							if (goal.score === 999910) {
-								realClearType = "SDP"
+								realClearType = 'SDP'
 							}
 							if (realClearType) {
 								var scoreText = ''
-								var goalLink = $("<span>", {class: 'filter-link'})
+								var goalLink = $('<span>', {class: 'filter-link'})
 								goalLink.data('goal-id', goalId)
 								goalHtml.push(goalLink)
 								var goalText
-								if (goal.score && (goal.score !== 999910)) {
+								if ((goal.score === 990000) && (realClearType === 'Clear')) {
+									goalText = `AAA ${quantity} ${goal.d}${orHigher}${plural}`
+								} else if (goal.score && (goal.score !== 999910)) {
 									var scoreText = ` over ${scoreK(goal.score)}`
 									goalText = `${realClearType} ${quantity} ${goal.d}${orHigher}${plural}${scoreText}`
 								} else if (goal.average_score) {
@@ -1351,7 +1353,7 @@ $(document).ready(function () {
 								goal.mainText = goalText
 							} else {
 								goal.mainText = `${scoreName(goal.score)} ${quantity} ${goal.d}${orHigher}${plural}`
-								var goalLink = $("<span>", {class: 'filter-link'})
+								var goalLink = $('<span>', {class: 'filter-link'})
 								goalLink.text(goal.mainText)
 								goalLink.data('goal-id', goalId)
 								goalLink.data('include-under', false)
@@ -1361,9 +1363,10 @@ $(document).ready(function () {
 								goalHtml.push(goalLink)
 							}
 							if (goal.exceptions) {
-								var exceptions_plural = goal.exceptions === 1 ? '' : 's'
-								goal.exceptionsText = `${goal.exceptions} exception${exceptions_plural}, cleared and over ${scoreK(goal.exception_score)}`
-								var exceptionsLink = $("<span>", {class: 'filter-link'})
+								var exceptionsPlural = goal.exceptions === 1 ? '' : 's'
+								var scoreText = goal.exception_score ? ` and over ${scoreK(goal.exception_score)}` : ''
+								goal.exceptionsText = `${goal.exceptions} exception${exceptionsPlural}, cleared${scoreText}`
+								var exceptionsLink = $('<span>', {class: 'filter-link'})
 								exceptionsLink.text(goal.exceptionsText)
 								exceptionsLink.data('goal-id', goalId)
 								goalHtml.push(' (')
