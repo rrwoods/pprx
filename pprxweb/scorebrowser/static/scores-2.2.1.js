@@ -58,17 +58,17 @@ const trialClears = [
 ]
 
 const trialNumbers = {
-	"Silver": 1,
-	"Gold": 2,
-	"Platinum": 3,
-	"Diamond": 4,
-	"Cobalt": 5,
-	"Pearl": 6,
-	"Topaz": 7,
-	"Amethyst": 8,
-	"Emerald": 9,
-	"Onyx": 10,
-	"Ruby": 11,
+	"silver": 1,
+	"gold": 2,
+	"platinum": 3,
+	"diamond": 4,
+	"cobalt": 5,
+	"pearl": 6,
+	"topaz": 7,
+	"amethyst": 8,
+	"emerald": 9,
+	"onyx": 10,
+	"ruby": 11,
 }
 
 const mfcPoints = [0,  0.1,  0.25,  0.25,  0.5,  0.5,  0.5,   1,   1,   1,  1.5,   2,   4,   6,   8,  15,  25,  25,  25,  25]
@@ -1260,7 +1260,6 @@ $(document).ready(function () {
 
 		relevantGameVersion = (whiteVersion == MAX_VERSION) ? 'WORLD' : 'A20'
 		sectionNames = ['mandatory_goal_ids', 'substitutions']
-		levelTypes = ['songs', 'set']
 		checkableTypes = ['calories', 'set', 'trial']
 
 		var rankList = ranks.game_versions[relevantGameVersion].rank_requirements
@@ -1286,8 +1285,8 @@ $(document).ready(function () {
 					section = {}
 					sections[sectionName] = section
 					for (goalId of rank[sectionName]) {
-						goal = goalsById[goalId]
-						goalHtml = []
+						let goal = goalsById[goalId]
+						let goalHtml = []
 						switch (goal.t) {
 						case 'calories':
 							goalHtml.push(`Burn ${goal.count} calories in one day`)
@@ -1299,7 +1298,7 @@ $(document).ready(function () {
 							goalHtml.push(`: ${goal.points}`)
 							break
 						case 'set':
-							goalHtml.push(`Clear ${goal.diff_nums.length} ${goal.diff_nums[0]}s in a row`)
+							goalHtml.push(`Clear ${goal.diff_nums.length} ${goal.diff_nums[0]}+s in a row`)
 							break
 						case 'trial':
 							var capitalizedRank = goal.rank[0].toUpperCase() + goal.rank.slice(1)
@@ -1378,12 +1377,63 @@ $(document).ready(function () {
 							break
 						}
 
-						subsectionName = (levelTypes.includes(goal.t)) ? goal.d : goal.t
+						subsectionName = (goal.t === 'songs') ? goal.d : goal.t
 						if (!(subsectionName in section)) {
 							section[subsectionName] = []
 						}
 						subsection = section[subsectionName]
 						newElement = requirementRow(goalHtml, goalId, checkableTypes.includes(goal.t))
+						if (allowAjax) {
+							switch (goal.t) {
+							case 'calories':
+								newElement.find('input').change(function() {
+									var postData = JSON.stringify({passed: this.checked, calories: goal.count})
+									$.ajax({
+										url: '/scorebrowser/set_calories',
+										type: 'POST',
+										headers: {'X-CSRFToken': csrfToken},
+										data: postData,
+										success: function(response) {
+											checkedRequirements.calories = response.calories
+											evaluateRanks()
+										}
+									})
+								})
+								break
+							case 'set':
+								newElement.find('input').change(function() {
+									var postData = JSON.stringify({passed: this.checked, count: goal.diff_nums.length, level: goal.diff_nums[0]})
+									$.ajax({
+										url: '/scorebrowser/set_consecutives',
+										type: 'POST',
+										headers: {'X-CSRFToken': csrfToken},
+										data: postData,
+										success: function(response) {
+											checkedRequirements.consecutives = response
+											evaluateRanks()
+										}
+									})
+								})
+								break
+							case 'trial':
+								newElement.find('input').change(function() {
+									var postData = JSON.stringify({passed: this.checked, count: goal.count, rank: trialNumbers[goal.rank]})
+									$.ajax({
+										url: '/scorebrowser/set_trials',
+										type: 'POST',
+										headers: {'X-CSRFToken': csrfToken},
+										data: postData,
+										success: function(response) {
+											checkedRequirements.trials = response
+											evaluateRanks()
+										}
+									})
+								})
+								break
+							default:
+								break
+							}
+						}
 						goal.elements.push(newElement)
 						subsection.push(newElement)
 					}
