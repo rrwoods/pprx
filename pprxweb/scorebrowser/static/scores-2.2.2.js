@@ -345,7 +345,7 @@ $(document).ready(function () {
 		clearTypeIcons[2] = ' ❗'
 	}
 
-	reqsPromise = fetch("/static/ranks-2.2.2.json").then(x => x.json())
+	reqsPromise = fetch("/static/ranks-2.2.3.json").then(x => x.json())
 
 	csrfToken = getCookie('csrftoken')
 	romanizeTitles = $("#romanize-titles").data("x") === "True"

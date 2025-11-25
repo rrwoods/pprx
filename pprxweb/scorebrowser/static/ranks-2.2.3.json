@@ -7378,6 +7378,15 @@
       "clear_type": "good",
       "exceptions": 10,
       "exception_score": 975000
+    },
+    {
+      "id": 8670,
+      "t": "songs",
+      "d": 16,
+      "song_count": 36,
+      "score": 810000,
+      "exceptions": 6,
+      "exception_score": 760000
     }
   ],
   "game_versions": {
@@ -7969,6 +7978,7 @@
             7590,
             8015,
             8090,
+            8670,
             8579,
             9005,
             9060,
