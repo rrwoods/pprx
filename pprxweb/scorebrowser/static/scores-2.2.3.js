@@ -755,6 +755,26 @@ $(document).ready(function () {
 		setFilters({"version-min": goldEra[0], "version-max": goldEra[1]})
 	})
 
+	$('#all-unlocks').click(function() {
+		setFilters({
+			"show-extra-exclusive": true,
+			"show-removed": true,
+			"show-locked": true,
+			"show-new": true,
+		})
+	})
+
+	$('#default-only').click(function() {
+		setFilters({
+			"show-extra-exclusive": false,
+			"show-removed": false,
+			"show-locked": false,
+			"show-new": false,
+		})
+	})
+
+	
+
 	function targetFlareRankChange(targetPoints) {
 		$("#selected-flare").data("x", targetPoints)
 

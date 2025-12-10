@@ -8,7 +8,7 @@
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.7"></script>
-	<script src="{% static 'scores-2.2.2.js' %}"></script>
+	<script src="{% static 'scores-2.2.3.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -175,6 +175,9 @@
 			Show <span class="very-new tooltip" title="These charts have been automatically added, and their unlock requirements have not been evaluated yet.  They do not count against you for score or combo requirements.">very new</span> charts:
 			<input autocomplete="off" type="checkbox" id="show-new" class="filter" data-default="true">
 		</label>
+
+		<button id="all-unlocks">All</button>
+		<button id="default-only">Default only</button>
 	</p>
 
 	<p>
