@@ -147,7 +147,6 @@ var allCharts = null
 var selectedRank = null
 var requirementTargets = null
 var averages = []
-var clears = []
 var scoresByLevel = []
 var maPointsEarned = 0
 var checkedRequirements = null
@@ -1077,31 +1076,6 @@ $(document).ready(function () {
 		rowData.clear_type = checked ? 2 : 1
 		row.invalidate()
 
-		var level = rowData.difficulty.rating
-		if (checked) {
-			clears[level][2].total++
-			for (var l = 1; l <= level; l++) {
-				clears[l][2].totalIncludingHigher++
-			}
-			if (rowData.default_chart) {
-				clears[level][2].distanceToLamp--
-			}
-			if (rowData.amethyst_required) {
-				clears[level][2].distanceToAmethystLamp--
-			}
-		} else {
-			clears[level][2].total--
-			for (var l = 1; l <= level; l++) {
-				clears[l][2].totalIncludingHigher--
-			}
-			if (rowData.default_chart) {
-				clears[level][2].distanceToLamp++
-			}
-			if (rowData.amethyst_required) {
-				clears[level][2].distanceToAmethystLamp++
-			}
-		}
-
 		$.ajax({
 			type: "POST",
 			url: "/scorebrowser/set_chart_life4",
@@ -1493,13 +1467,11 @@ $(document).ready(function () {
 		//     })
 		// })
 
-		function showAverages(rank) {
-			// segment = rank.amethyst ? 'amethyst' : 'default'
-			// countSegment = rank.amethyst ? 'amethystCount' : 'defaultCount'
-			// for (let level = 14; level < 19; level++) {
-			// 	$(`#average-${level}`).text(Math.floor(averages[level][segment]).toLocaleString())
-			// 	$(`#raise-${level}`).text(`+${(scoresByLevel[level][countSegment] * 10).toLocaleString()}`)
-			// }
+		function showAverages() {
+			for (let level = 14; level <= 18; level++) {
+				$(`#average-${level}`).text(Math.floor(averages[level].average).toLocaleString())
+				$(`#raise-${level}`).text(`+${(averages[level].count * 10).toLocaleString()}`)
+			}
 		}
 
 		function selectRank() {
@@ -1509,7 +1481,6 @@ $(document).ready(function () {
 			rank = rankList[rankIndex]
 			selectedRank = rank
 			rank.container.show()
-			showAverages(rank)
 
 			redrawTable() // might change what "required songs" means
 
@@ -1526,10 +1497,18 @@ $(document).ready(function () {
 
 		sdps = new Array(20).fill(0)
 		mfcs = new Array(20).fill(0)
+		for (let level = 14; level <= 18; level++) {
+			scoresByLevel[level] = {default: [], unlocks: []}
+		}
 		scoresTable.rows().every(function(rowIdx, tableLoop, rowLoop) {
 			d = this.data()
 			if (d.game_version.id > whiteVersion) {
 				return
+			}
+
+			if (d.difficulty.rating in scoresByLevel) {
+				segment = d.default_chart ? 'default' : 'unlocks'
+				scoresByLevel[d.difficulty.rating][segment].push(d.score)
 			}
 
 			realClearType = d.clear_type
@@ -1578,6 +1557,24 @@ $(document).ready(function () {
 				sdps[d.difficulty.rating] += 1
 			}
 		})
+
+		for (let level = 14; level <= 18; level++) {
+			scoresByLevel[level].unlocks.sort((a, b) => (a - b))
+			var total = scoresByLevel[level].default.reduce((acc, cur) => acc + cur)
+			var count = scoresByLevel[level].default.length
+			var average = total / count
+			for (let i = scoresByLevel[level].unlocks.length - 1; i >= 0; i--) {
+				var score = scoresByLevel[level].unlocks[i]
+				if (score <= average) {
+					break
+				}
+				total += score
+				count++
+				average = total / count
+			}
+			averages[level] = {average, count}
+		}
+
 
 		$("#ma-points-display").text(+(maPointsEarned.toFixed(3)))
 		$("#table-total-points").text(+(maPointsEarned.toFixed(3)))
@@ -1794,6 +1791,6 @@ $(document).ready(function () {
 		}
 
 		evaluateRanks()
-		showAverages(selectedRank)
+		showAverages()
 	})
 })

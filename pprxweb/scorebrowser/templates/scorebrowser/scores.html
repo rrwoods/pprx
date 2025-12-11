@@ -8,7 +8,7 @@
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.7"></script>
-	<script src="{% static 'scores-2.2.3.js' %}"></script>
+	<script src="{% static 'scores-2.2.4.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -312,12 +312,12 @@
 
 	<h1>LIFE4 Rank Evaluation</h1>
 	<p><details>
-		<summary>Level averages: (currently broken, will be back Soon™)</summary>
+		<summary><span class="tooltip" title="Many level average rank requirements allow for exceptions; the numbers in this table assume zero exceptions, but those requirements will use the appropriate number of exceptions.">Level averages</span>:</summary>
 		<div class="details"><table class="summary-table">
 			<tr>
 				<th class="border-right">Level</th>
 				<th class="border-right">Average</th>
-				<th>For +10 avg</th>
+				<th class="tooltip" title="Raising a single song by this amount will raise your average by 10">For +10 avg</th>
 			</tr>
 			<tr>
 				<td class="border-right">14</td>
