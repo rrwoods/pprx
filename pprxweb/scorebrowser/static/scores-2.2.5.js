@@ -1259,6 +1259,7 @@ $(document).ready(function () {
 		var rankList = ranks.game_versions[relevantGameVersion].rank_requirements
 		for (var index in rankList) {
 			var rank = rankList[index]
+			rank.hasExceptions = false
 			rank.option = $('<option>', {
 				value: index,
 				text: prettyName(rank.rank),
@@ -1357,6 +1358,7 @@ $(document).ready(function () {
 								goalHtml.push(goalLink)
 							}
 							if (goal.exceptions) {
+								rank.hasExceptions = true
 								var exceptionsPlural = goal.exceptions === 1 ? '' : 's'
 								var scoreText = goal.exception_score ? ` and over ${scoreK(goal.exception_score)}` : ''
 								goal.exceptionsText = `${goal.exceptions} exception${exceptionsPlural}, cleared${scoreText}`
@@ -1450,7 +1452,7 @@ $(document).ready(function () {
 		const initialSelectedRank = $('#selected-rank').data('x')
 		selectedRank = rankList[initialSelectedRank]
 		$('#rank-select').val(initialSelectedRank)
-		selectedRank.container.show()
+		showRank()
 
 		// $('.requirements').on('click', '.targetable', function() {
 		//     goalId = $(this).data('goal-id')
@@ -1474,14 +1476,22 @@ $(document).ready(function () {
 			}
 		}
 
-		function selectRank() {
+		function showRank() {
 			selectedRank.container.hide()
 
 			rankIndex = $('#rank-select').find(':selected').val()
 			rank = rankList[rankIndex]
 			selectedRank = rank
 			rank.container.show()
+			if (rank.hasExceptions) {
+				$('#explain-shadow').show()
+			} else {
+				$('#explain-shadow').hide()
+			}
+		}
 
+		function selectRank() {
+			showRank()
 			redrawTable() // might change what "required songs" means
 
 			if (allowAjax) {
