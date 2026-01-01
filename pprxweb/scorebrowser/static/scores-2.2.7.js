@@ -162,6 +162,20 @@ function escapeHtml(unsafe) {
 		.replace(/'/g, "&#039;");
 }
 
+// const SHOW = 2  // unneeded since this never filters out a chart
+const ONLY = 1
+const HIDE = 0
+function visibilityFilter(visibilityCondition, filterName) {
+	switch(currentFilters[filterName]) {
+	case HIDE:
+		return !visibilityCondition
+	case ONLY:
+		return visibilityCondition
+	default:
+		return true
+	}
+}
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 	if (userHidChartIds.includes(parseInt(data[17]))) {
 		return false
@@ -179,25 +193,22 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
 		}
 	}
 
-	visibility = parseInt(data[currentFilters["cabinet-select"]])
-	if (visibility === 3) {
-		if (data[28] === "true") {
-			if (!currentFilters["show-removed"]) {
-				return false
-			}
-		} else {
-			return false
-		}
-	}
-	if ((visibility === 2) && !currentFilters["show-locked"]) {
-		return false
-	}
-	if ((visibility === 1) && !currentFilters["show-extra-exclusive"]) {
+	let visibility = parseInt(data[currentFilters["cabinet-select"]])
+
+	if((visibility === 3) && (data[28] !== "true")) {
 		return false
 	}
 
-	const hidden_chart = data[30] === "true"
-	if (hidden_chart && !currentFilters["show-new"]) {
+	if (!visibilityFilter((visibility === 3) && (data[28] === "true"), "show-removed")) {
+		return false
+	}
+	if (!visibilityFilter(visibility === 2, "show-locked")) {
+		return false
+	}
+	if (!visibilityFilter(visibility === 1, "show-extra-exclusive")) {
+		return false
+	}
+	if (!visibilityFilter(data[30] === "true", "show-new")) {
 		return false
 	}
 
@@ -756,19 +767,19 @@ $(document).ready(function () {
 
 	$('#all-unlocks').click(function() {
 		setFilters({
-			"show-extra-exclusive": true,
-			"show-removed": true,
-			"show-locked": true,
-			"show-new": true,
+			"show-extra-exclusive": 2,
+			"show-removed": 2,
+			"show-locked": 2,
+			"show-new": 2,
 		})
 	})
 
 	$('#default-only').click(function() {
 		setFilters({
-			"show-extra-exclusive": false,
-			"show-removed": false,
-			"show-locked": false,
-			"show-new": false,
+			"show-extra-exclusive": 0,
+			"show-removed": 0,
+			"show-locked": 0,
+			"show-new": 0,
 		})
 	})
 

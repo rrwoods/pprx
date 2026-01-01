@@ -8,7 +8,7 @@
 {% block scripts %}
 	<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.7"></script>
-	<script src="{% static 'scores-2.2.5.js' %}"></script>
+	<script src="{% static 'scores-2.2.7.js' %}"></script>
 	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
 {% endblock %}
 
@@ -156,25 +156,29 @@
 	</p>
 
 	<p>
-		<label>
-			Show <span class="extra-exclusive">Extra Stage-only</span> songs:
-			<input autocomplete="off" type="checkbox" id="show-extra-exclusive" class="filter" data-default="true">
-		</label>
+		<select autocomplete="off" id="show-extra-exclusive" class="filter" data-default="2">
+			<option value=0>Hide Extra Stage-only charts</option>
+			<option value=1>Only Extra Stage-only charts</option>
+			<option value=2>Show Extra Stage-only charts</option>
+		</select>
 
-		<label>
-			Show <span class="removed-song">removed</span> songs:
-			<input autocomplete="off" type="checkbox" id="show-removed" class="filter" data-default="true">
-		</label>
+		<select autocomplete="off" id="show-removed" class="filter" data-default="2">
+			<option value=0>Hide removed songs</option>
+			<option value=1>Only removed songs</option>
+			<option value=2>Show removed songs</option>
+		</select>
 
-		<label>
-			Show <span class="locked-chart">locked</span> charts:
-			<input autocomplete="off" type="checkbox" id="show-locked" class="filter" data-default="true">
-		</label>
+		<select autocomplete="off" id="show-locked" class="filter" data-default="2">
+			<option value=0>Hide locked charts</option>
+			<option value=1>Only locked charts</option>
+			<option value=2>Show locked charts</option>
+		</select>
 
-		<label {% if not any_hidden %}hidden{% endif %}>
-			Show <span class="very-new tooltip" title="These charts have been automatically added, and their unlock requirements have not been evaluated yet.  They do not count against you for score or combo requirements.">very new</span> charts:
-			<input autocomplete="off" type="checkbox" id="show-new" class="filter" data-default="true">
-		</label>
+		<select autocomplete="off" id="show-new" class="filter" data-default="2" {% if not any_hidden %}hidden{% endif %}>
+			<option value=0>Hide very new charts</option>
+			<option value=1>Only very new charts</option>
+			<option value=2>Show very new charts</option>
+		</select>
 
 		<button id="all-unlocks">All</button>
 		<button id="default-only">Default only</button>
