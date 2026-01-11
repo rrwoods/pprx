@@ -1,6 +1,7 @@
 cir-model==0.2.0
 django==4.2.26
 django-environ==0.9.0
+gunicorn
 mysqlclient==2.2.4
 numpy==1.26.3
 pytz==2022.7.1
