@@ -92,7 +92,14 @@ WSGI_APPLICATION = 'pprxweb.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if 'RDS_HOSTNAME' in os.environ:
+if 'DATABASE_URL' in env:
+    DATABASES = {'default': env.db_url()}
+    ALLOWED_HOSTS = [
+        'pprx-prod-pe9zb.ondigitalocean.app',
+        'pprx.gg',
+    ]
+    DEBUG = False
+elif 'RDS_HOSTNAME' in os.environ:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -110,26 +117,6 @@ if 'RDS_HOSTNAME' in os.environ:
     ALLOWED_HOSTS = [
         'pprx-dev.us-west-2.elasticbeanstalk.com',
         'pprx-prod.us-west-2.elasticbeanstalk.com',
-        'pprx.gg',
-    ]
-    DEBUG = False
-elif 'DO_DB_NAME' in os.environ:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ['DO_DB_NAME'],
-            'USER': os.environ['DO_DB_USERNAME'],
-            'PASSWORD': os.environ['DO_DB_PASSWORD'],
-            'HOST': os.environ['DO_DB_HOSTNAME'],
-            'PORT': os.environ['DO_DB_PORT'],
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
-                'charset': 'utf8mb4',
-            },
-        }
-    }
-    ALLOWED_HOSTS = [
-        'pprx-prod-pe9zb.ondigitalocean.app',
         'pprx.gg',
     ]
     DEBUG = False
