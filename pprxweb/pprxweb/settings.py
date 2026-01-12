@@ -113,6 +113,26 @@ if 'RDS_HOSTNAME' in os.environ:
         'pprx.gg',
     ]
     DEBUG = False
+elif 'DO_DB_NAME' in os.environ:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ['DO_DB_NAME'],
+            'USER': os.environ['DO_DB_USERNAME'],
+            'PASSWORD': os.environ['DO_DB_PASSWORD'],
+            'HOST': os.environ['DO_DB_HOSTNAME'],
+            'PORT': os.environ['DO_DB_PORT'],
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
+                'charset': 'utf8mb4',
+            },
+        }
+    }
+    ALLOWED_HOSTS = [
+        'pprx-prod-pe9zb.ondigitalocean.app',
+        'pprx.gg',
+    ]
+    DEBUG = False
 else:
     DATABASES = {
         'default': {
