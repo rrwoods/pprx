@@ -58,3 +58,5 @@ urllib3==2.5.0
     # via
     #   -r requirements.in
     #   requests
+whitenoise==6.11.0
+    # via -r requirements.in
