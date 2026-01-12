@@ -93,7 +93,21 @@ WSGI_APPLICATION = 'pprxweb.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 if 'DATABASE_URL' in env:
-    DATABASES = {'default': env.db_url()}
+    dbInfo = env.db_url()
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': dbInfo['NAME'],
+            'USER': dbInfo['USER'],
+            'PASSWORD': dbInfo['PASSWORD'],
+            'HOST': dbInfo['HOST'],
+            'PORT': dbInfo['PORT'],
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
+                'charset': 'utf8mb4',
+            },
+        }
+    }
     ALLOWED_HOSTS = [
         'pprx-prod-pe9zb.ondigitalocean.app',
         'pprx.gg',
