@@ -98,7 +98,7 @@ if 'DATABASE_URL' in env:
         'pprx-prod-pe9zb.ondigitalocean.app',
         'pprx.gg',
     ]
-    DEBUG = False
+    DEBUG = True
 elif 'RDS_HOSTNAME' in os.environ:
     DATABASES = {
         'default': {
