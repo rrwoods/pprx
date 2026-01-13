@@ -114,27 +114,7 @@ if 'DATABASE_URL' in env:
         'pprx.gg',
     ]
     DEBUG = False
-elif 'RDS_HOSTNAME' in os.environ:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ['RDS_DB_NAME'],
-            'USER': os.environ['RDS_USERNAME'],
-            'PASSWORD': os.environ['RDS_PASSWORD'],
-            'HOST': os.environ['RDS_HOSTNAME'],
-            'PORT': os.environ['RDS_PORT'],
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
-                'charset': 'utf8mb4',
-            },
-        }
-    }
-    ALLOWED_HOSTS = [
-        'pprx-dev.us-west-2.elasticbeanstalk.com',
-        'pprx-prod.us-west-2.elasticbeanstalk.com',
-        'pprx.gg',
-    ]
-    DEBUG = False
+    WHITENOISE_USE_FINDERS = True
 else:
     DATABASES = {
         'default': {
@@ -188,7 +168,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
