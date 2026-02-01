@@ -252,7 +252,12 @@ def reset_password(request):
 	print("reset_password: Generating reset form")
 	newResetForm = PasswordResetForm()
 	print("reset_password: Rendering reset template")
-	return render(request, "scorebrowser/reset_password.html", {'form': newResetForm})
+	try:
+		return render(request, "scorebrowser/reset_password.html", {'form': newResetForm})
+	except Exception:
+		print("----------")
+		traceback.print_exc()
+		print("----------")
 
 def finish_reset(request, uidb64, token):
 	try:
