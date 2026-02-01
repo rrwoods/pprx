@@ -249,7 +249,10 @@ def reset_password(request):
 				if email.send():
 					return render(request, 'scorebrowser/check_your_email.html', {'message_type': 'a password reset link'})
 
-	return render(request, "scorebrowser/reset_password.html", {'form': PasswordResetForm()})
+	print("reset_password: Generating reset form")
+	newResetForm = PasswordResetForm()
+	print("reset_password: Rendering reset template")
+	return render(request, "scorebrowser/reset_password.html", {'form': newResetForm})
 
 def finish_reset(request, uidb64, token):
 	try:
