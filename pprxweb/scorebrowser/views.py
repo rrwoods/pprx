@@ -21,6 +21,7 @@ from .models import *
 from .tokens import ACCOUNT_ACTIVATION_TOKEN_GENERATOR
 import json
 import math
+import re
 import requests
 import time
 import traceback
@@ -98,6 +99,9 @@ def login_user(request):
 		'/scorebrowser/unlocks',
 		'/scorebrowser/scores',
 	]
+	allowed_next_patterns = [
+		'/scorebrowser/scores/\\d+',
+	]
 	if request.method == 'POST':
 		print("login_user: getting filled authn form")
 		form = AuthenticationForm(request, data=request.POST)
@@ -113,7 +117,7 @@ def login_user(request):
 			print("login_user: got PPR X user, determining redirect")
 			next_url = request.POST.get('next')
 			print("login_user: attempting redirect to {}".format(next_url))
-			if next_url not in allowed_next:
+			if (not next_url) or ((next_url not in allowed_next) and (not any(re.match(re.compile(p), next_url) for p in allowed_next_patterns))):
 				print("login_user: that redirect isn't allowed; going to landing instead")
 				next_url = 'landing'
 			print("login_user: performing redirect")
