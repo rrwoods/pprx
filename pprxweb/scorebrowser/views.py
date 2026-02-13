@@ -7,7 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
-from django.db.models.functions import Lower
+from django.db.models.functions import Lower, Now
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -689,9 +689,11 @@ def fetch_scores(request):
 	user = User.objects.get(player_id=player_id)
 	print("Webhook: Got user, username = {}".format(user.django_user.username))
 
-	if (datetime.now() - user.last_fetch).total_seconds() < 600:
+	if user.last_fetch and ((datetime.now() - user.last_fetch).total_seconds() < 600):
 		print("Webhook: Bailing on fetch due to webhook spam for this user.")
 		return HttpResponse("Bailing on fetch due to webhook spam.")
+	user.last_fetch = Now()
+	user.save()
 	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
 
 # This is for players for whom the webhook wasn't called for some reason
