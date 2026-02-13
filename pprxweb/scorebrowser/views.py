@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from datetime import datetime
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -12,6 +11,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt
@@ -689,10 +689,10 @@ def fetch_scores(request):
 	user = User.objects.get(player_id=player_id)
 	print("Webhook: Got user, username = {}".format(user.django_user.username))
 
-	if user.last_fetch and ((datetime.now() - user.last_fetch).total_seconds() < 600):
+	if user.last_fetch and ((timezone.now() - user.last_fetch).total_seconds() < 600):
 		print("Webhook: Bailing on fetch due to webhook spam for this user.")
 		return HttpResponse("Bailing on fetch due to webhook spam.")
-	user.last_fetch = datetime.now()
+	user.last_fetch = timezone.now()
 	user.save()
 	print("Webhook: Set last fetch time to now")
 	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
