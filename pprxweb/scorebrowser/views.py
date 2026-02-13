@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from datetime import datetime
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -686,7 +687,11 @@ def fetch_scores(request):
 			break
 	print("Webhook: Got player_id = {}".format(player_id))
 	user = User.objects.get(player_id=player_id)
-	print("Webhook: Got user")
+	print("Webhook: Got user, username = {}".format(user.django_user.username))
+
+	if (datetime.now() - user.last_fetch).total_seconds() < 600:
+		print("Webhook: Bailing on fetch due to webhook spam for this user.")
+		return HttpResponse("Bailing on fetch due to webhook spam.")
 	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
 
 # This is for players for whom the webhook wasn't called for some reason

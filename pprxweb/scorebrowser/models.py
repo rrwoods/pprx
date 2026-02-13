@@ -109,6 +109,7 @@ class User(models.Model):
     webhooked = models.BooleanField(default=False)
     reauth = models.BooleanField(default=False)
     pulling_scores = models.BooleanField(default=False)
+    last_fetch = models.DateTimeField(null=True)
 
     region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)
     goal_score = models.IntegerField(default=0)
