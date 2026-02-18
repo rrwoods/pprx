@@ -1035,7 +1035,7 @@ def add_extra_savior(request, group_id):
 			selectedCharts[chart.song.title][chart.difficulty.id] = chart
 
 		ordering = 0
-		for title, charts in sorted(selectedCharts, key=lambda item: item[0].lower()):
+		for title, charts in sorted(selectedCharts.items(), key=lambda item: item[0].lower()):
 			for chart in charts:
 				if chart is None:
 					continue
