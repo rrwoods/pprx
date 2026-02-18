@@ -1089,10 +1089,12 @@ def add_event(request, group_id):
 		return redirect('forbidden')
 
 	if request.method == 'POST':
+		progressive = 'progressive' in request.POST
 		UnlockEvent.objects.create(
 			version_id=20,
 			group_id=group_id,
 			name=request.POST['name'].strip(),
+			progressive=progressive,
 			ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
 		)
 		return redirect('manage_unlocks')

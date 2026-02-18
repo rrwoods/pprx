@@ -11,6 +11,9 @@
 			<b>Name:</b>
 			<input type="text" name="name" placeholder="event name" required>
 		</p>
+		<p>
+			<label>Progressive: <input type="checkbox" name="progressive"></label>
+		</p>
 		{% csrf_token %}
 	</form>
 {% endblock %}
