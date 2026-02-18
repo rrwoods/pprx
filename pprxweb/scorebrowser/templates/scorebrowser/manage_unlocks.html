@@ -1,0 +1,24 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+{% load pprxtras %}
+
+{% block title %}PPR X Unlocks management{% endblock %}
+
+{% block scripts %}
+	<script src="{% static 'manage-unlocks-2.2.8.js' %}"></script>
+{% endblock %}
+
+
+{% block content %}
+	<p>
+		Current list of songs with at least one 'very new' chart:<br>
+		<li> {% for song in hiddenSongs %}
+			<ul>{{ song.title }}</ul>
+		{% endfor %}</li>
+	</p>	
+
+	<p><a href="{% url 'default_charts' %}">Mark some charts as default</a></p>
+
+	<div style="display: none" id="unlock-data" data-json="{{ unlockData }}"></div>
+	<table id="unlocks-table"></table>
+{% endblock %}

@@ -19,9 +19,19 @@ urlpatterns = [
 	path('force_fetch', views.force_fetch, name='force_fetch'),
 	path('fetch_scores', views.fetch_scores, name='fetch_scores'),
 
-	# main pages
+	# admin-related pages
 	path('forbidden', views.forbidden, name='forbidden'),
 	path('admin', views.admin, name='admin'),
+	path('manage_unlocks', views.manage_unlocks, name='manage_unlocks'),
+	path('delete_task/<task_id>', views.delete_task, name='delete_task'),
+	path('add_gp_pack/<event_id>', views.add_gp_pack, name='add_gp_pack'),
+	path('add_extra_savior/<group_id>', views.add_extra_savior, name='add_extra_savior'),
+	path('add_galaxy_brave/<group_id>', views.add_galaxy_brave, name='add_galaxy_brave'),
+	path('add_event/<group_id>', views.add_event, name='add_event'),
+	path('add_task/<event_id>', views.add_task, name='add_task'),
+	path('default_charts', views.default_charts, name='default_charts'),
+
+	# main pages
 	path('scores/<user_id>', views.scores, name='scores'),
 	path('scores', views.my_scores, name='scores'),
 	path('unlocks', views.unlocks, name='unlocks'),

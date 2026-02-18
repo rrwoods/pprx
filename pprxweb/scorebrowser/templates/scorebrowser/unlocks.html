@@ -77,10 +77,10 @@
 			<details>
 				<summary><h2>{{ version }}</h2></summary>
 				<div class="details">
-					{% with events|dict_key:version_id as event_group %}
+					{% with events|index:version_id as event_group %}
 						{% for group_id, grouped_events in event_group.items %}
 							<details>
-								<summary><h3>{{ groups|dict_key:group_id }}</h3></summary>
+								<summary><h3>{{ groups|index:group_id }}</h3></summary>
 								<div class="details">
 									{% for event in grouped_events %}
 										{% if event.progressive %}
@@ -95,7 +95,7 @@
 														hx-target="#saved-pref"
 													>
 														<option value="-1">None</option>
-														{% for task in tasks|dict_key:event.id %}
+														{% for task in tasks|index:event.id %}
 															<option
 																value="{{ task.id }}"
 																{% if task.id in userUnlocks %}selected{% endif %}
@@ -115,7 +115,7 @@
 												<button class="none-button" data-event="{{ event.id }}">None</button>
 											</h4>
 											<div data-event="{{ event.id }}">
-												{% for task in tasks|dict_key:event.id %}
+												{% for task in tasks|index:event.id %}
 													<form method="POST" class="inline-form">
 														<input
 															type="checkbox"

@@ -1,0 +1,23 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+{% load pprxtras %}
+
+{% block title %}Add unlock{% endblock %}
+
+{% block content %}
+	<form method="POST">
+		<p>
+			<b>Song:</b>
+			<select name="song" required>
+				{% for song in songs %}
+					<option value="{{ song.id }}">{{ song.title }}</option>
+				{% endfor %}
+			</select>
+		</p>
+		<p>
+			<b>GALAXY BRAVE:</b>
+			<input type="text" name="name" placeholder="WEATHER" required>
+		</p>
+		{% csrf_token %}
+	</form>
+{% endblock %}

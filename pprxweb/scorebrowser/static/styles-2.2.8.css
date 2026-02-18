@@ -77,6 +77,42 @@ details .details {
 
 
 
+/*** admin unlock management ***/
+
+table#unlocks-table td {
+	vertical-align: center;
+	border: 1px solid black;
+}
+
+.add-task {
+	text-align: center;
+}
+
+table#add-task td {
+	padding: 3px 7px;
+}
+
+table#add-task td:has(:checked) {
+	background-color: lightblue;
+}
+
+table#add-task tr:has(:checked) td.song-title {
+	background-color: lightblue;
+}
+
+.add-task-name {
+	visibility: hidden;
+}
+
+form:has(:checked) .add-task-name {
+	visibility: visible !important;
+}
+
+form:has(:placeholder-shown) .submit-instructions {
+	visibility: hidden;
+}
+
+
 /*** scores table ***/
 
 .not-you {

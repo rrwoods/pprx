@@ -6,8 +6,12 @@
 
 {% block content %}
 
+<h1>Admin tools</h1>
+<a href="{% url 'manage_unlocks' %}">Unlocks management</a><br />
+
+<h1>Admin-visible users</h1>
 {% for name in usernames %}
-	<a href="{% url 'scores' %}/{{ user_ids|dict_key:name }}">{{ name }}</a><br />
+	<a href="{% url 'scores' %}/{{ user_ids|index:name }}">{{ name }}</a><br />
 {% endfor %}
 
 {% endblock %}

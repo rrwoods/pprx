@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
+from django.db.models import Max
 from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -26,6 +27,10 @@ import re
 import requests
 import time
 import traceback
+
+
+
+DIFFICULTY_NAMES = ['Beginner', 'Basic', 'Difficult', 'Expert', 'Challenge']
 
 
 def hello(request):
@@ -857,6 +862,275 @@ def admin(request):
 		'usernames': sorted(list(user_ids.keys()), key=lambda x: x.lower()),
 		'user_ids': user_ids,
 	})
+
+def manage_unlocks(request):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	groups = UnlockGroup.objects.all()
+	goldenLeague = {
+		'group': groups.get(name="Golden League"),
+		'newEvents': [],
+		'newTasks': [],
+		'deleteTasks': False,
+	}
+	grandPrix = {
+		'group': groups.get(name="Grand Prix advance play"),
+		'newEvents': [],
+		'newTasks': [{'text': 'add GP pack', 'endpoint': 'add_gp_pack'}],
+		'deleteTasks': True,
+	}
+	extraSavior = {
+		'group': groups.get(name="Extra Savior"),
+		'newEvents': [{'text': 'add Extra Savior folder', 'endpoint': 'add_extra_savior'}],
+		'newTasks': [],
+		'deleteTasks': False,
+	}
+	timeLimited = {
+		'group': groups.get(name="Time-limited events"),
+		'newEvents': [
+			{'text': 'add event', 'endpoint': 'add_event'},
+			{'text': 'add GALAXY BRAVE', 'endpoint': 'add_galaxy_brave'},
+		],
+		'newTasks': [{'text': 'add task', 'endpoint': 'add_task'}],
+		'deleteTasks': False,
+	}
+
+	events = UnlockEvent.objects.filter(version_id=20)
+	chartUnlocks = ChartUnlock.objects.all().select_related(
+		'chart__song',
+		'chart__difficulty',
+	)
+
+	unlockData = []
+	for group in [goldenLeague, grandPrix, extraSavior, timeLimited]:
+		groupData = {
+			'newEvents': group['newEvents'],
+			'newTasks': group['newTasks'],
+			'deleteTasks': group['deleteTasks'],
+			'id': group['group'].id,
+			'name': group['group'].name,
+			'events': [],
+		}
+		for event in events.filter(group=group['group']).order_by('ordering'):
+			eventData = {
+				'id': event.id,
+				'name': event.name,
+				'tasks': [],
+			}
+			for task in UnlockTask.objects.filter(event=event).order_by('ordering'):
+				taskData = {
+					'id': task.id,
+					'name': task.name,
+				}
+				if group['deleteTasks']:
+					taskSongs = {}
+					for chartUnlock in chartUnlocks.filter(task=task):
+						if chartUnlock.chart.song.title not in taskSongs:
+							taskSongs[chartUnlock.chart.song.title] = []
+						taskSongs[chartUnlock.chart.song.title].append(chartUnlock.chart.difficulty.id)
+					taskSongData = ''
+					for (title, difficulties) in sorted(taskSongs.items()):
+						if len(difficulties) == 1:
+							taskSongData += (title + ' ({})\n'.format(DIFFICULTY_NAMES[difficulties[0]]))
+						else:
+							taskSongData += (title + '\n')
+					taskData['songs'] = taskSongData
+				eventData['tasks'].append(taskData)
+			groupData['events'].append(eventData)
+		unlockData.append(groupData)
+	
+	return render(request, 'scorebrowser/manage_unlocks.html', {
+		'unlockData': json.dumps(unlockData),
+		'hiddenSongs': get_hidden_songs(),
+	})
+
+
+def get_hidden_songs():
+	hiddenCharts = Chart.objects.filter(hidden=True).select_related('song')
+	hiddenSongs = set(chart.song for chart in hiddenCharts)
+	return sorted(list(hiddenSongs), key=lambda song: song.title.lower())
+
+
+def delete_task(request, task_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	UnlockTask.objects.get(id=task_id).delete()
+	return redirect('manage_unlocks')
+
+
+def unlock_chart_collection(request, pageTitle, namePlaceholder):
+	# {title: [bool for each difficulty]}
+	hiddenCharts = {}
+	for chart in Chart.objects.filter(hidden=True).select_related('song'):
+		if chart.song.title not in hiddenCharts:
+			hiddenCharts[chart.song.title] = [False, False, False, False, False, chart.song.title]
+		hiddenCharts[chart.song.title][chart.difficulty_id] = chart.id
+
+	return render(request, 'scorebrowser/unlock_chart_collection.html', {
+		'pageTitle': pageTitle,
+		'namePlaceholder': namePlaceholder,
+		'eligibleCharts': [v for k, v in sorted(hiddenCharts.items(), key=lambda item: item[0].lower())]
+	})
+
+
+def create_task(request, event_id):
+	task = UnlockTask.objects.create(
+		event_id=event_id,
+		name=request.POST['name'].strip(),
+		ordering=UnlockTask.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
+	)
+	for key in request.POST:
+		if not key.isdigit():
+			continue
+		# no need to check the value;
+		# in html forms, the key for a checkbox is absent if it's unchecked.
+		
+		chart = Chart.objects.get(id=int(key))
+		chart.hidden = False
+		chart.save()
+		ChartUnlock.objects.create(task=task, chart=chart)
+	return redirect('manage_unlocks')
+
+
+def add_gp_pack(request, event_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	if request.method == 'POST':
+		return create_task(request, event_id)
+
+	return unlock_chart_collection(request, 'New GP pack', 'music pack vol.69')
+
+
+def add_extra_savior(request, group_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	if request.method == 'POST':
+		event = UnlockEvent.objects.create(
+			version_id=20,
+			group_id=group_id,
+			name=request.POST['name'].strip(),
+			ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
+		)
+		
+		allCharts = Chart.objects.all().select_related('song', 'difficulty')
+		selectedCharts = {}
+		for key in request.POST:
+			if not key.isdigit():
+				continue
+
+			chart = allCharts.get(id=int(key))
+			chart.hidden = False
+			chart.save()
+
+			if chart.song.title not in selectedCharts:
+				selectedCharts[chart.song.title] = [None, None, None, None, None]
+			selectedCharts[chart.song.title][chart.difficulty.id] = chart
+
+		ordering = 0
+		for title, charts in sorted(selectedCharts, key=lambda item: item[0].lower()):
+			for chart in charts:
+				if chart is None:
+					continue
+				task = UnlockTask.objects.create(
+					event=event,
+					name='{} ({} {})'.format(title, chart.difficulty.name, chart.rating),
+					ordering = ordering
+				)
+				ordering += 10
+
+				ChartUnlock.objects.create(task=task, chart=chart, extra=True)
+
+		return redirect('manage_unlocks')
+
+
+	return unlock_chart_collection(request, 'New Extra Savior folder', 'folder name')
+
+
+def add_galaxy_brave(request, group_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	if request.method == 'POST':
+		event = UnlockEvent.objects.create(
+			version_id=20,
+			group_id=group_id,
+			name='GALAXY BRAVE: {}'.format(request.POST['name'].upper().strip()),
+			progressive=True,
+			ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
+		)
+		ordering = 0
+		for chart in Chart.objects.filter(song_id=request.POST['song']).select_related('difficulty').order_by('difficulty_id'):
+			task = UnlockTask.objects.create(
+				event=event,
+				name='{} ({})'.format(chart.song.title, chart.difficulty.name),
+				ordering=ordering,
+			)
+			ordering += 10
+			ChartUnlock.objects.create(task=task, chart=chart)
+			chart.hidden = False
+			chart.save()
+		return redirect('manage_unlocks')
+
+	return render(request, 'scorebrowser/add_galaxy_brave.html', {'songs': get_hidden_songs()})
+
+
+def add_event(request, group_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	if request.method == 'POST':
+		UnlockEvent.objects.create(
+			version_id=20,
+			group_id=group_id,
+			name=request.POST['name'].strip(),
+			ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
+		)
+		return redirect('manage_unlocks')
+
+	return render(request, 'scorebrowser/add_event.html')
+
+
+def add_task(request, event_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	if request.method == 'POST':
+		return create_task(request, event_id)
+
+	event = UnlockEvent.objects.get(id=event_id)
+	return unlock_chart_collection(request, 'New {} task'.format(event.name), 'task name')
+
+
+def default_charts(request):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	if request.method == 'POST':
+		allCharts = Chart.objects.all().select_related('song', 'difficulty')
+		selectedCharts = {}
+		for key in request.POST:
+			if not key.isdigit():
+				continue
+
+			chart = allCharts.get(id=int(key))
+			chart.hidden = False
+			chart.save()
+
+		return redirect('manage_unlocks')
+
+	return unlock_chart_collection(request, 'Mark default charts', 'type anything to confirm and hit enter')
 
 
 @login_required(login_url='login')

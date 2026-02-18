@@ -1,0 +1,16 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+{% load pprxtras %}
+
+{% block title %}Add unlock{% endblock %}
+
+{% block content %}
+	<form method="POST">
+		<h1>New time-limited event</h1>
+		<p>
+			<b>Name:</b>
+			<input type="text" name="name" placeholder="event name" required>
+		</p>
+		{% csrf_token %}
+	</form>
+{% endblock %}

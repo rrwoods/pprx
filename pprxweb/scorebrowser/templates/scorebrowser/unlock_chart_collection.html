@@ -1,0 +1,31 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+{% load pprxtras %}
+
+{% block title %}Add unlock{% endblock %}
+
+{% block content %}
+	<h1>{{ pageTitle }}</h1>
+	<form method="POST">
+		<b>Check all applicable charts</b>
+		<table id="add-task">
+		{% for song in eligibleCharts %}
+			<tr>
+				{% for i in 5|times %}
+					<td> {% if song|index:i %}
+						<label><input type="checkbox" name="{{ song|index:i }}"> {{ i|difficulty }}</label>
+					{% endif %} </td>
+				{% endfor %}
+				<td class="song-title">{{ song.5 }}</td>
+			</tr>
+		{% endfor %}
+		</table>
+		
+		<p class="add-task-name">
+			<input type="text" name="name" placeholder="{{ namePlaceholder }}" size=76 required>
+		</p>
+
+		<p class="submit-instructions">Press enter to save.</p>
+		{% csrf_token %}
+	</form>
+{% endblock %}
