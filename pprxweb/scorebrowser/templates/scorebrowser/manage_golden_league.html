@@ -5,6 +5,9 @@
 {% block title %}Add unlock{% endblock %}
 
 {% block content %}
+	<p>
+		<a href="{% url 'manage_unlocks' %}">Back to unlocks management</a>
+	</p>
 	<table id="unlocks-table">
 		{% for entry in leagueData %}
 		<tr>
