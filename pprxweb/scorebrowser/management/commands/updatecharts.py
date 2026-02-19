@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from scorebrowser.misc import sort_key
 from scorebrowser.models import *
 import json
@@ -61,23 +62,18 @@ class Command(BaseCommand):
 					tracked = False
 
 				chart = Chart.objects.filter(song__id=song.id).filter(difficulty__id=difficulty).first()
-				new_chart = False
 				if chart is None:
-					new_chart = True
 					print("Creating {}chart {} -- {} -- {}".format(("" if tracked else "untracked "), song.title, difficulty, rating))
-					chart = Chart(song_id=song.id, difficulty_id=difficulty, rating=rating, tracked=tracked)
-					chart.save()
+					with transaction.atomic():
+						chart = Chart.objects.create(song_id=song.id, difficulty_id=difficulty, rating=rating, tracked=tracked, hidden=True)
+						if chart.song.version_id <= 18:
+							ChartUnlock.objects.create(task=challenge_task, chart=chart)
 				else:
-					if chart.hidden:
-						new_chart = True
-						chart.hidden = False
-						chart.tracked = tracked
-						chart.save()
 					if chart.rating != rating:
 						print("Updating chart rating {} -- {} from {} to {}".format(song.title, difficulty, chart.rating, rating))
 						chart.rating = rating
 						chart.tracked = tracked   # a 13->14 or 14->13 rerate might require this!
 						chart.save()
-
-				if new_chart and song.version_id <= 18:
-					ChartUnlock.objects.create(task=challenge_task, chart=chart)
+					elif chart.hidden:
+						chart.tracked = tracked
+						chart.save()

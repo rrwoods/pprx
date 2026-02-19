@@ -738,11 +738,12 @@ def perform_fetch(user, redirect_uri):
 		all_song_ids = [song.id for song in Song.objects.all()]
 		print("perform_fetch: got song ids")
 		scores_lookup = {}
+
 		for score in scores_response.json():
 			difficulty = score['difficulty']
 			if (difficulty > 4):
 				continue
-
+			challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 			rating = score['rating']
 			song_id = score['song_id']
 			title = score['song_name']
@@ -759,8 +760,12 @@ def perform_fetch(user, redirect_uri):
 					Song.objects.create(id=song_id, version_id=20, title=title, sort_key=sort_key(title))
 					all_song_ids.append(song_id)
 
-				chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=rating, hidden=True)
-				all_charts[key] = chart
+				with transaction.atomic():
+					chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=rating, hidden=True)
+					if chart.song.version_id <= 18:
+						ChartUnlock.objects.create(task=challenge_task, chart=chart)
+					all_charts[key] = chart
+
 		print("perform_fetch: built scores dict")
 
 		current_scores = {}
