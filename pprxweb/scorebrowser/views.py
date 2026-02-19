@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
+from django.db import transaction
 from django.db.models import Max
 from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
@@ -872,7 +873,7 @@ def manage_unlocks(request):
 	goldenLeague = {
 		'group': groups.get(name="Golden League"),
 		'newEvents': [],
-		'newTasks': [],
+		'newTasks': [{'text': 'Manage Golden League', 'endpoint': 'manage_golden_league'}],
 		'deleteTasks': False,
 	}
 	grandPrix = {
@@ -953,6 +954,64 @@ def get_hidden_songs():
 	return sorted(list(hiddenSongs), key=lambda song: song.title.lower())
 
 
+def manage_golden_league(request, event_id):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	assembledTasks = []
+	previousTask = None
+	for task in UnlockTask.objects.filter(event_id=event_id).order_by('ordering'):
+		songs = {}  # {title: [unlock ids]}
+		for unlock in ChartUnlock.objects.filter(task=task):
+			if unlock.chart.song.title not in songs:
+				songs[unlock.chart.song.title] = []
+			songs[unlock.chart.song.title].append(unlock.id)
+		assembledTasks.append({'task': task, 'previousTask': previousTask, 'songs': songs})
+		previousTask = task
+
+	return render(request, 'scorebrowser/manage_golden_league.html', {
+		'leagueData': assembledTasks,
+		'hiddenSongs': get_hidden_songs(),
+		'newSongTaskId': previousTask.id,
+	})
+
+
+def move_golden_league_song(request):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	eventId = None
+	with transaction.atomic():
+		for unlockId in request.POST.getlist('unlockId'):
+			unlock = ChartUnlock.objects.get(id=int(unlockId))
+			if eventId is None:
+				eventId = unlock.task.event.id
+			if 'newTaskId' in request.POST:
+				unlock.task_id = int(request.POST['newTaskId'])
+				unlock.save()
+			else:
+				unlock.delete()
+
+	return redirect('manage_golden_league/{}'.format(eventId))
+
+
+def new_golden_league_song(request):
+	user = get_user(request)
+	if not user.django_user.is_staff:
+		return redirect('forbidden')
+
+	with transaction.atomic():
+		task = UnlockTask.objects.get(id=int(request.POST['taskId']))
+		for chart in Chart.objects.filter(song_id=request.POST['song']):
+			chart.hidden = False
+			chart.save()
+			ChartUnlock.objects.create(task_id=task.id, chart=chart)
+
+	return redirect('manage_golden_league/{}'.format(task.event.id))
+
+
 def delete_task(request, task_id):
 	user = get_user(request)
 	if not user.django_user.is_staff:
@@ -978,21 +1037,22 @@ def unlock_chart_collection(request, pageTitle, namePlaceholder):
 
 
 def create_task(request, event_id):
-	task = UnlockTask.objects.create(
-		event_id=event_id,
-		name=request.POST['name'].strip(),
-		ordering=UnlockTask.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
-	)
-	for key in request.POST:
-		if not key.isdigit():
-			continue
-		# no need to check the value;
-		# in html forms, the key for a checkbox is absent if it's unchecked.
-		
-		chart = Chart.objects.get(id=int(key))
-		chart.hidden = False
-		chart.save()
-		ChartUnlock.objects.create(task=task, chart=chart)
+	with transaction.atomic():
+		task = UnlockTask.objects.create(
+			event_id=event_id,
+			name=request.POST['name'].strip(),
+			ordering=UnlockTask.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
+		)
+		for key in request.POST:
+			if not key.isdigit():
+				continue
+			# no need to check the value;
+			# in html forms, the key for a checkbox is absent if it's unchecked.
+			
+			chart = Chart.objects.get(id=int(key))
+			chart.hidden = False
+			chart.save()
+			ChartUnlock.objects.create(task=task, chart=chart)
 	return redirect('manage_unlocks')
 
 
@@ -1013,40 +1073,41 @@ def add_extra_savior(request, group_id):
 		return redirect('forbidden')
 
 	if request.method == 'POST':
-		event = UnlockEvent.objects.create(
-			version_id=20,
-			group_id=group_id,
-			name=request.POST['name'].strip(),
-			ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
-		)
-		
-		allCharts = Chart.objects.all().select_related('song', 'difficulty')
-		selectedCharts = {}
-		for key in request.POST:
-			if not key.isdigit():
-				continue
-
-			chart = allCharts.get(id=int(key))
-			chart.hidden = False
-			chart.save()
-
-			if chart.song.title not in selectedCharts:
-				selectedCharts[chart.song.title] = [None, None, None, None, None]
-			selectedCharts[chart.song.title][chart.difficulty.id] = chart
-
-		ordering = 0
-		for title, charts in sorted(selectedCharts.items(), key=lambda item: item[0].lower()):
-			for chart in charts:
-				if chart is None:
+		with transaction.atomic():
+			event = UnlockEvent.objects.create(
+				version_id=20,
+				group_id=group_id,
+				name=request.POST['name'].strip(),
+				ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
+			)
+			
+			allCharts = Chart.objects.all().select_related('song', 'difficulty')
+			selectedCharts = {}
+			for key in request.POST:
+				if not key.isdigit():
 					continue
-				task = UnlockTask.objects.create(
-					event=event,
-					name='{} ({} {})'.format(title, chart.difficulty.name, chart.rating),
-					ordering = ordering
-				)
-				ordering += 10
 
-				ChartUnlock.objects.create(task=task, chart=chart, extra=True)
+				chart = allCharts.get(id=int(key))
+				chart.hidden = False
+				chart.save()
+
+				if chart.song.title not in selectedCharts:
+					selectedCharts[chart.song.title] = [None, None, None, None, None]
+				selectedCharts[chart.song.title][chart.difficulty.id] = chart
+
+			ordering = 0
+			for title, charts in sorted(selectedCharts.items(), key=lambda item: item[0].lower()):
+				for chart in charts:
+					if chart is None:
+						continue
+					task = UnlockTask.objects.create(
+						event=event,
+						name='{} ({} {})'.format(title, chart.difficulty.name, chart.rating),
+						ordering = ordering
+					)
+					ordering += 10
+
+					ChartUnlock.objects.create(task=task, chart=chart, extra=True)
 
 		return redirect('manage_unlocks')
 
@@ -1060,24 +1121,25 @@ def add_galaxy_brave(request, group_id):
 		return redirect('forbidden')
 
 	if request.method == 'POST':
-		event = UnlockEvent.objects.create(
-			version_id=20,
-			group_id=group_id,
-			name='GALAXY BRAVE: {}'.format(request.POST['name'].upper().strip()),
-			progressive=True,
-			ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
-		)
-		ordering = 0
-		for chart in Chart.objects.filter(song_id=request.POST['song']).select_related('difficulty').order_by('difficulty_id'):
-			task = UnlockTask.objects.create(
-				event=event,
-				name='{} ({})'.format(chart.song.title, chart.difficulty.name),
-				ordering=ordering,
+		with transaction.atomic():
+			event = UnlockEvent.objects.create(
+				version_id=20,
+				group_id=group_id,
+				name='GALAXY BRAVE: {}'.format(request.POST['name'].upper().strip()),
+				progressive=True,
+				ordering=UnlockEvent.objects.aggregate(Max('ordering'))['ordering__max'] + 10,
 			)
-			ordering += 10
-			ChartUnlock.objects.create(task=task, chart=chart)
-			chart.hidden = False
-			chart.save()
+			ordering = 0
+			for chart in Chart.objects.filter(song_id=request.POST['song']).select_related('difficulty').order_by('difficulty_id'):
+				task = UnlockTask.objects.create(
+					event=event,
+					name='{} ({})'.format(chart.song.title, chart.difficulty.name),
+					ordering=ordering,
+				)
+				ordering += 10
+				ChartUnlock.objects.create(task=task, chart=chart)
+				chart.hidden = False
+				chart.save()
 		return redirect('manage_unlocks')
 
 	return render(request, 'scorebrowser/add_galaxy_brave.html', {'songs': get_hidden_songs()})

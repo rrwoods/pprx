@@ -1,0 +1,46 @@
+{% extends "scorebrowser/base.html" %}
+{% load static %}
+{% load pprxtras %}
+
+{% block title %}Add unlock{% endblock %}
+
+{% block content %}
+	<table id="unlocks-table">
+		{% for entry in leagueData %}
+		<tr>
+			<td>{{ entry.task.name }}</td>
+			<td>
+				{% for title, unlockIds in entry.songs.items %}
+					<form method="POST" action="{% url 'move_golden_league_song' %}">
+						{{ title }}
+						{% for id in unlockIds %}
+							<input type="hidden" name="unlockId" value="{{ id }}">
+						{% endfor %}
+						{% if entry.previousTask %}
+							<input type="submit" value="Relegate to {{ entry.previousTask.name }}">
+							<input type="hidden" name="newTaskId" value="{{ entry.previousTask.id }}">
+						{% else %}
+							<input type="submit" value="Unlock">
+						{% endif %}
+						<br>
+						{% csrf_token %}
+					</form>
+				{% endfor %}
+			</td>
+		</tr>
+		{% endfor %}
+	</table>
+
+	{% if hiddenSongs %}
+		<p><form method="POST" action="{% url 'new_golden_league_song' %}">
+			<select name="song">
+				{% for song in hiddenSongs %}
+					<option value="{{ song.id }}">{{ song.title }}</option>
+				{% endfor %}
+			</select>
+			<input type="hidden" name="taskId" value="{{ newSongTaskId }}">
+			<input type="submit" value="New Golden League song">
+			{% csrf_token %}
+		</form></p>
+	{% endif %}
+{% endblock %}

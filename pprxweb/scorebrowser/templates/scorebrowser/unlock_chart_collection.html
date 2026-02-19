@@ -11,12 +11,12 @@
 		<table id="add-task">
 		{% for song in eligibleCharts %}
 			<tr>
+				<td class="song-title">{{ song.5 }}</td>
 				{% for i in 5|times %}
 					<td> {% if song|index:i %}
 						<label><input type="checkbox" name="{{ song|index:i }}"> {{ i|difficulty }}</label>
 					{% endif %} </td>
 				{% endfor %}
-				<td class="song-title">{{ song.5 }}</td>
 			</tr>
 		{% endfor %}
 		</table>
