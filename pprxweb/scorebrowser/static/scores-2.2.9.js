@@ -1698,7 +1698,7 @@ $(document).ready(function () {
 						var attained = (goal.count === 1) ? checkedRequirements.trials.best : checkedRequirements.trials.second
 						goal.distance = (attained >= trialNumbers[goal.rank]) ? 0 : 1
 					} else if (goal.t === 'ma_points') {
-						goal.distance = goal.points - maPointsEarned
+						goal.distance = goal.points - (maPointsEarned + 0.00001)
 					}
 				}
 
@@ -1726,7 +1726,8 @@ $(document).ready(function () {
 
 					togo.append(' (need ')
 					if (goal.distance > 0) {
-						let moreText = `${goal.distance.toLocaleString()} more`
+						// handle weirdness resulting from adding 0.0001 to MA points when calculating distance
+						let moreText = `${+(goal.distance.toFixed(3))} more`
 						let moreLink = $("<span>", {class: 'filter-link'})
 						moreLink.text(moreText)
 						moreLink.data('goal-id', goal.id)
