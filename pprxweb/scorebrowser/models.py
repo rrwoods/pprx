@@ -41,7 +41,7 @@ class Chart(models.Model):
     low_conf = models.BooleanField(default=False)
     normscore_breakpoints = models.TextField(default="")
     quality_breakpoints = models.TextField(default="")
-    tracked = models.BooleanField(default=True)
+    tracked = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
 
     class Meta:
