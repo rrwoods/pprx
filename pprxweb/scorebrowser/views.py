@@ -732,6 +732,7 @@ def perform_fetch(user, redirect_uri):
 	user.save()
 	print("perform_fetch: pulling_scores set - username = {}".format(user.django_user.username))
 
+	challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 	try:
 		all_charts = {(chart.song_id, chart.difficulty_id): chart for chart in Chart.objects.all()}
 		print("perform_fetch: got chart ids")
@@ -743,7 +744,6 @@ def perform_fetch(user, redirect_uri):
 			difficulty = score['difficulty']
 			if (difficulty > 4):
 				continue
-			challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
 			rating = score['rating']
 			song_id = score['song_id']
 			title = score['song_name']
@@ -771,7 +771,7 @@ def perform_fetch(user, redirect_uri):
 		current_scores = {}
 		for score in UserScore.objects            \
 				.filter(user=user, current=True)  \
-				.only('score', 'clear_type', 'flare_gauge'):
+				.only('chart_id', 'score', 'clear_type', 'flare_gauge'):
 			current_scores[score.chart_id] = score
 		print("perform_fetch: got current scores")
 
@@ -817,12 +817,13 @@ def perform_fetch(user, redirect_uri):
 				new_scores.append(new_entry)
 		print("perform_fetch: built score updates")
 
-		UserScore.objects.bulk_update(formerly_current_scores, ['current'])
-		print("perform_fetch: cleared current on outdated scores")
-		UserScore.objects.bulk_create(new_scores)
-		print("perform_fetch: created new scores")
-		UserScore.objects.bulk_update(new_flares, ['flare_gauge'])
-		print("perform_fetch: set flare gauges of old scores")
+		with transaction.atomic():
+			UserScore.objects.bulk_update(formerly_current_scores, ['current'])
+			print("perform_fetch: cleared current on outdated scores")
+			UserScore.objects.bulk_create(new_scores)
+			print("perform_fetch: created new scores")
+			UserScore.objects.bulk_update(new_flares, ['flare_gauge'])
+			print("perform_fetch: set flare gauges of old scores")
 		return HttpResponse("Pulled new scores")
 
 	except Exception:
