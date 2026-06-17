@@ -22,14 +22,17 @@ class Command(BaseCommand):
 					if ogScore:
 						ogScore = ogScore[0]
 						if ogScore.timestamp > dupScore.timestamp:
-							dupScore.current = False
+							print(f'Duplicate current score found, un-duping {dupScore.id}')
+							dupScore.current = None
 							dupScore.user_id = ogScore.user_id
 							dupScore.save()
 						else:
-							ogScore.current = False
+							print(f'Duplicate current score found, un-duping {ogScore.id}')
+							ogScore.current = None
 							dupScore.user_id = ogScore.user_id
 							dupScore.save()
 				else:
+					print(f'Score {dupScore.id} has no conflict')
 					dupScore.user_id = ogScore.user_id
 					dupScore.save()
 
