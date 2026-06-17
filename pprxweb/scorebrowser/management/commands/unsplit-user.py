@@ -3,13 +3,8 @@ from scorebrowser.models import *
 
 
 class Command(BaseCommand):
-	def add_arguments(self, parser):
-		parser.add_argument('username', type=str)
-
 	def handle(self, *args, **options):
-		username = options['username']
-		print("Username:", username)
-		users = User.objects.filter(django_user__username=username)
+		users = User.objects.filter(django_user__username="Temp-")
 		if len(users) != 2:
 			print(f'found {len(users)} users, aborting.')
 			return
