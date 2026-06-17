@@ -10,8 +10,8 @@ class Command(BaseCommand):
 		username = options['username']
 		print("Username:", username)
 		users = User.objects.filter(django_user__username=username)
-		if len(users) <= 2:
-			print(f'Only found {len(users)} users, aborting.')
+		if len(users) != 2:
+			print(f'found {len(users)} users, aborting.')
 			return
 
 		ogUserId = min(u.id for u in users)
@@ -37,6 +37,12 @@ class Command(BaseCommand):
 				else:
 					dupScore.user_id = ogScore.user_id
 					dupScore.save()
+
+			ogUser.player_id = dupUser.player_id
+			ogUser.access_token = dupUser.access_token
+			ogUser.refresh_token = dupUser.refresh_token
+			ogUser.save()
+
 			dupUser.django_user_id = None
 			dupUser.save()
 			print(f"Stranded user object {dupUser.id}")
