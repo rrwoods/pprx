@@ -8,8 +8,10 @@ class Command(BaseCommand):
 
 	def handle(self, *args, **options):
 		username = options['username']
+		print("Username:", username)
 		users = User.objects.filter(django_user__username=username)
 		if len(users) <= 2:
+			print(f'Only found {len(users)} users, aborting.')
 			return
 
 		ogUserId = min(u.id for u in users)
