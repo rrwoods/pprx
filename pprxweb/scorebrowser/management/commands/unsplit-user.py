@@ -16,19 +16,21 @@ class Command(BaseCommand):
 		ogCurrentScores = list(UserScore.objects.filter(user_id=ogUserId, current=True))
 		for dupUser in dupUsers:
 			dupScores = UserScore.objects.filter(user=dupUser)
+			scoresToMove = []
 			for dupScore in dupScores:
 				if dupScore.current:
 					ogScore = [score for score in ogCurrentScores if score.chart_id == dupScore.chart_id]
 					if ogScore:
 						ogScore = ogScore[0]
 						if ogScore.timestamp > dupScore.timestamp:
-							print(f'Duplicate current score found, un-duping {dupScore.id}')
+							print(f'Duplicate current score found, un-duping dupe {dupScore.id}')
 							dupScore.current = None
 							dupScore.user_id = ogScore.user_id
 							dupScore.save()
 						else:
-							print(f'Duplicate current score found, un-duping {ogScore.id}')
+							print(f'Duplicate current score found, un-duping og {ogScore.id}')
 							ogScore.current = None
+							ogScore.save()
 							dupScore.user_id = ogScore.user_id
 							dupScore.save()
 				else:
