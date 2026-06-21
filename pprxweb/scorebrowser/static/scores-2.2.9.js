@@ -589,7 +589,7 @@ $(document).ready(function () {
 					if (targetGauge < 0) {
 						targetGauge = 0
 					}
-					targetPoints = Math.floor(baseFlarePoints[data.rating] * (1 + (0.06 * targetGauge)))
+					targetPoints = Math.floor(baseFlarePoints[data.rating] * (1 + (0.0601 * targetGauge)))
 					let exceeding = Math.max(eraTarget - 1, row.flare_points)
 					let increase = targetPoints - exceeding
 					if (type === "display") {
@@ -850,7 +850,7 @@ $(document).ready(function () {
 			let points = 0
 			let data = this.data()
 			if (data.flare_gauge !== null) {
-				points = Math.floor(baseFlarePoints[data.rating] * (1 + (0.06 * data.flare_gauge)))
+				points = Math.floor(baseFlarePoints[data.rating] * (1 + (0.0601 * data.flare_gauge)))
 			}
 			data.flare_points = points
 
