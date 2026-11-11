@@ -40,6 +40,22 @@ _Avoid_: Skill, Points, Rating
 The raw game score achieved on a chart (0 to 1,000,000).
 _Avoid_: Result, Points
 
+**Current Score**:
+The one score per User per chart that represents their standing on that chart. Earlier scores it superseded are retained as history.
+_Avoid_: Latest score, Active score
+
+**Fetch**:
+Retrieving a User's score data from 3icecream.
+_Avoid_: Pull, Download
+
+**Ingest**:
+Recording fetched score data in PPR X, superseding Current Scores that the fetched data improves upon.
+_Avoid_: Import, Save
+
+**Synchronization**:
+A Fetch followed by an Ingest for a single User.
+_Avoid_: Pull, Refresh, Update
+
 **Normalized Score**:
 A logarithmic transformation of a score based on distance from a perfect score: -log2(1,000,000 - score).
 _Avoid_: Adjusted score

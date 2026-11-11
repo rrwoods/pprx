@@ -60,7 +60,7 @@ flowchart TD
     subgraph PPRX["PPR X Platform"]
         ingest_spice["Offline Regression Pipeline\n(comparecharts / computespice)"]
         spice_db[("Spice Benchmarks\n& Breakpoints")]
-        user_sync["Score Ingestion Service\n(perform_fetch)"]
+        user_sync["Synchronization\n(Fetch + Ingest)"]
         user_db[("Private User Scores\n& Progression State")]
         ui["Scores & Goals UI\n(DataTables / Goal Checkers)"]
     end

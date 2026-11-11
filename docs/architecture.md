@@ -33,16 +33,24 @@
   3. Automatically computes sort keys via `sort_key()` in `pprxweb/scorebrowser/misc.py` mapping Japanese hiragana/katakana and Latin characters into in-game sorting sequence.
   4. Associates uncompleted Challenge charts with the `New Challenge charts (A3+)` unlock task.
 
-### B. Score Ingestion & Synchronization
-- **Entry point**: Webhook handler `fetch_scores` (`pprxweb/scorebrowser/views.py`) or user manual `force_fetch`.
-- **Flow**:
-  1. Triggered by 3icecream on-update webhook containing `player_id`. Rate-limited to at most one fetch per user every 10 minutes (600s).
-  2. Core fetch execution runs inside `perform_fetch()` in `pprxweb/scorebrowser/views.py`.
-  3. Requests scores from `https://3icecream.com/dev/api/v1/get_scores` using stored OAuth `access_token`. On 400 responses, automatically refreshes token via OAuth refresh flow.
-  4. Flags `user.pulling_scores = True` during ingestion.
-  5. Computes normalized score: \(- \log_2(1,000,000 - \text{score})\) (or \(-2.323\) for 1,000,000 MFCs).
-  6. Computes score Quality via `numpy.interp` against chart breakpoints (`normscore_breakpoints` and `quality_breakpoints`).
+### B. Synchronization (Fetch + Ingest)
+> Slated for consolidation behind a single Synchronization module by [#59](https://github.com/rrwoods/pprx/issues/59) (concurrency guard: [ADR-0004](adr/0004-timestamp-claim-for-synchronization-concurrency.md)). Rewrite this section when that lands.
+
+- **Entry points** (all call `perform_fetch()` in `pprxweb/scorebrowser/views.py`, synchronously in the request thread):
+  - Webhook handler `fetch_scores`, triggered by 3icecream's on-update webhook with `player_id`. Rate-limited to one Synchronization per user per 10 minutes (600s); the other entry points ignore this limit.
+  - Manual `force_fetch` view.
+  - `scores` view: after first-time webhook registration, and whenever the User has zero Current Scores.
+  - CLI `python manage.py fetch <username>` (imports `perform_fetch` from `views.py`).
+- **Fetch**:
+  1. Requests scores from `https://3icecream.com/dev/api/v1/get_scores` using stored OAuth `access_token`. On 400 responses, refreshes the token via `refresh_user()` and retries once; on refresh failure sets `user.reauth = True`.
+- **Ingest**:
+  2. Sets `user.pulling_scores = True` (only *after* the Fetch succeeds) and clears it in a `finally`.
+  3. Discovers unknown charts: creates missing `Song` rows (`version_id=20`) and hidden `Chart` rows, linking pre-A3 Challenge charts to the `New Challenge charts (A3+)` unlock task. Doubles charts (`difficulty > 4`) are skipped.
+  4. Computes normalized score: \(- \log_2(1,000,000 - \text{score})\) (or \(-2.323\) for 1,000,000 MFCs).
+  5. Computes score Quality via `numpy.interp` against chart breakpoints (`normscore_breakpoints` and `quality_breakpoints`); failed scores (lamp 0) get no Quality.
+  6. A fetched record supersedes the Current Score when its score is higher, its lamp is better, or its flare gauge differs (`!=`, so a missing upstream flare wipes a stored gauge).
   7. Atomic DB transaction: Marks superseded scores as `current = None` and inserts new scores as `current = True` via bulk operations (see [ADR-0002](adr/0002-nullable-boolean-for-current-scores.md)).
+- **Failure mode**: Any exception during Ingest is printed and swallowed, and `perform_fetch` returns `None`, so the `fetch_scores` and `force_fetch` views respond with a Django 500.
 
 ### C. Statistical Difficulty Calibration (Spice & Quality)
 Offline batch processing pipeline executed out-of-band:
@@ -87,7 +95,10 @@ Offline batch processing pipeline executed out-of-band:
           if not scores_user.pulling_scores:
               break
   ```
-- **Hazard**: When a user loads `/scores` while a fetch is running, the WSGI request thread enters a synchronous sleep loop, holding the worker connection open and risking gateway timeouts under load.
+- **Hazard**: When a user loads `/scores` while a Synchronization is running, the WSGI request thread enters a synchronous sleep loop, holding the worker connection open and risking gateway timeouts under load.
+- **Hazard (unbounded)**: If a worker is killed mid-Ingest (e.g. gateway or worker timeout), the `finally` that clears `pulling_scores` never runs; the flag stays `True` and every subsequent `/scores` load for that User loops forever.
+- **Hazard (not a lock)**: `pulling_scores` is a read-then-write flag set only after the Fetch, so concurrent Synchronizations (e.g. webhook + `force_fetch`) can both proceed; the second typically fails on ADR-0002's unique constraint.
+- **Resolution**: Tracked by [#59](https://github.com/rrwoods/pprx/issues/59) (timestamp claim per [ADR-0004](adr/0004-timestamp-claim-for-synchronization-concurrency.md); `/scores` renders stored scores with an in-progress banner). Delete this landmine when it lands.
 
 ### 3. Strict List Unpacking on Cabinet Configuration
 - **Location**: `pprxweb/scorebrowser/views.py` (`scores` view)
@@ -105,3 +116,8 @@ Offline batch processing pipeline executed out-of-band:
 ### 5. In-Memory Primitive Pointer Emulation
 - **Location**: `pprxweb/scorebrowser/management/commands/isotonicspice.py`
 - **Hazard**: Uses single-element mutable lists `[quality]` inside assumption dictionaries as primitive pointers to allow mutable reference passing across regression steps.
+
+### 6. Migration Chain Cannot Be Replayed on an Empty Database
+- **Location**: `pprxweb/scorebrowser/migrations/` (first failure: `0017_event_data.py`)
+- **Hazard**: Data migrations look up `Chart` rows by song title, but Songs and Charts are populated out-of-band by `updatecharts` (from 3icecream's `songdata.js`), not by migrations. On a fresh database the lookups return `None` and `0017` fails with `NOT NULL constraint failed: scorebrowser_chartunlock.chart_id`. Production only works because its database was built up gradually, with `updatecharts` run between migrations. Consequences: no fresh environment can be built from migrations alone, and `manage.py test` cannot build a test database.
+- **Resolution**: Tracked by [#64](https://github.com/rrwoods/pprx/issues/64) (safe, self-contained test database).
