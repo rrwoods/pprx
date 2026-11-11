@@ -22,6 +22,7 @@ Visit **[pprx.gg](https://pprx.gg/)** to get started!
 
 ## Documentation
 
+- **[VISION.md](VISION.md)**: Project vision, dual North Stars, scoring difficulty philosophy, and explicit anti-goals.
 - **[GLOSSARY.md](GLOSSARY.md)**: Canonical domain language and definitions (Player vs. User, Rating vs. Spice vs. Quality, Cabinets, and Unlocks).
 - **[Architecture & Pipeline Guide](docs/architecture.md)**: Technical guide detailing data ingestion, the statistical calibration pipeline, operational landmines, and deployment topology.
 - **[Architecture Decision Records](docs/adr/)**: Record of key design choices and architectural trade-offs.

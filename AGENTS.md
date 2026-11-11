@@ -8,6 +8,10 @@ GitHub issues (via `gh` CLI). See `docs/agents/issue-tracker.md`.
 
 Five canonical triage roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
+### Product Vision
+
+For the long-term destination, core architectural invariants, and non-goals, see `VISION.md`. Consult before proposing high-level specs or major architectural direction.
+
 ### Domain docs
 
 Single-context layout (`GLOSSARY.md` + `docs/adr/`). See `docs/agents/domain.md`.

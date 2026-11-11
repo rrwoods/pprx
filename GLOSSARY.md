@@ -13,15 +13,23 @@ A person with an account on PPR X who connects their 3icecream profile to track 
 _Avoid_: Player, Profile
 
 **Rating**:
-The official integer difficulty (1–20) assigned to a chart by Konami.
+The official integer passing difficulty (1–20) assigned to a chart by Konami.
 _Avoid_: Difficulty, Level, Foot
 
 **Rerate**:
 A temporary manual difficulty rating assigned to a chart pending automated data.
 _Avoid_: Custom rating
 
+**Scoring Difficulty**:
+The relative difficulty of achieving high score benchmarks on a chart.
+_Avoid_: Clear difficulty, Survival difficulty
+
+**Passing Difficulty**:
+The relative difficulty of surviving or clearing a chart without failing.
+_Avoid_: Clear difficulty, Survival difficulty
+
 **Spice**:
-A continuous rating representing the relative difficulty of a chart, derived from pairwise player score comparisons and anchored to MAX 300 Expert = 10.0.
+A continuous rating representing the relative scoring difficulty of a chart, derived from pairwise player score comparisons and anchored to MAX 300 Expert = 10.0.
 _Avoid_: Tier, Decimal difficulty, Scale
 
 **Quality**:
@@ -39,6 +47,10 @@ _Avoid_: Adjusted score
 **Cabinet**:
 A physical arcade machine specification (White, Gold, Gold only) that determines chart availability.
 _Avoid_: Machine, Version
+
+**Can't-Hurt-Can-Help**:
+A LIFE4 evaluation rule where scores on unlockable or culled historical charts can satisfy quantity-based progression requirements, but are never required for comprehensive criteria.
+_Avoid_: Grandfathered, Optional chart
 
 **Region**:
 A geographical territory (e.g. North America, Japan, Europe) with specific song licensing and availability rules.
