@@ -21,6 +21,14 @@ Single-context layout (`GLOSSARY.md` + `docs/adr/`). See `docs/agents/domain.md`
 - `docs/architecture.md`: Transitional scaffold for cross-cutting pipelines and operational landmines.
   - **Pruning gate**: Whenever refactoring or adding tests to areas documented here, check if the complexity has been pushed behind clean seams or codified into tests. If so, propose deleting this document.
 
+## Python environment
+
+Run all Python through the `pprx` virtualenv's interpreter, `~\Envs\pprx\Scripts\python.exe` (macOS/Linux: `~/.virtualenvs/pprx/bin/python`). Django and everything in `pprxweb/requirements.txt` live there, and it runs inside the sandbox:
+- `~\Envs\pprx\Scripts\python.exe pprxweb\manage.py check`
+- `~\Envs\pprx\Scripts\python.exe -m pip list`
+
+Bare `python` is the system interpreter, which has no Django. Humans enter the env with `workon pprx`, but that is a `cmd` batch file whose activation stays inside its own child process, so it never reaches an agent's shell. If the interpreter path is missing, ask the user where their `pprx` env lives (setup steps: `README.md` → Local Setup).
+
 ## Workflow and git conventions
 
 ### Git conventions

@@ -33,10 +33,13 @@ Visit **[pprx.gg](https://pprx.gg/)** to get started!
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.12 (matches `pprxweb/.python-version`; `requirements.txt` is compiled against 3.12)
 - Git
+- virtualenvwrapper ([virtualenvwrapper-win](https://pypi.org/project/virtualenvwrapper-win/) on Windows)
 
 ### Local Setup
+
+The project's virtualenv is named `pprx` and is managed by virtualenvwrapper, so `workon pprx` activates it from any directory. Agents rely on this name and location (see [AGENTS.md](AGENTS.md)).
 
 1. **Clone the repository**:
    ```bash
@@ -44,28 +47,42 @@ Visit **[pprx.gg](https://pprx.gg/)** to get started!
    cd pprx/pprxweb
    ```
 
-2. **Create and activate a virtual environment**:
+2. **Install virtualenvwrapper**:
+   - **Windows**:
+     ```bat
+     py -3.12 -m pip install virtualenvwrapper-win
+     ```
+     This puts `mkvirtualenv`, `workon`, and friends on your `PATH` as batch files. Environments live in `%USERPROFILE%\Envs`.
+   - **macOS/Linux**: Install `virtualenvwrapper` and add its shell hook to your shell startup file per the [official install guide](https://virtualenvwrapper.readthedocs.io/en/latest/install.html). Environments live in `~/.virtualenvs` by default.
+
+3. **Create the `pprx` environment** (it is activated automatically once it's created):
    ```bash
-   python -m venv venv
-   # On Windows:
-   .\venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
+   # Windows
+   mkvirtualenv -p 3.12 pprx
+   # macOS/Linux
+   mkvirtualenv -p python3.12 pprx
    ```
 
-3. **Install dependencies**:
+4. **Install dependencies** (from `pprxweb/`, with `pprx` active):
    ```bash
    pip install -r requirements.txt
    ```
+   On macOS/Linux, `mysqlclient` builds from source and needs `pkg-config` plus the MySQL/MariaDB client headers first; see the [mysqlclient install notes](https://github.com/PyMySQL/mysqlclient#install).
 
-4. **Configure environment variables**:
+5. **Activate the environment in later sessions**:
+   - **Windows Command Prompt / macOS / Linux**: `workon pprx`
+   - **Windows PowerShell**: `& ~\Envs\pprx\Scripts\Activate.ps1`. virtualenvwrapper-win's `workon` is a `cmd` batch file, so running it from PowerShell activates only a throwaway child process.
+
+   To confirm, run `python -m django --version`. It should print `4.2.x`.
+
+6. **Configure environment variables**:
    Copy the example environment file:
    ```bash
    cp .env.example .env
    ```
    Edit `.env` to configure your `DJANGO_SECRET_KEY` and optional 3icecream / email credentials. (When running locally, SQLite at `pprx.db` is used automatically if `DATABASE_URL` is omitted).
 
-5. **Run the local development server**:
+7. **Run the local development server** (from `pprxweb/`, with `pprx` active):
    ```bash
    python manage.py runserver
    ```
