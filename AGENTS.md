@@ -12,6 +12,11 @@ Five canonical triage roles (`needs-triage`, `needs-info`, `ready-for-agent`, `r
 
 Single-context layout (`GLOSSARY.md` + `docs/adr/`). See `docs/agents/domain.md`.
 
+### Architecture docs
+
+- `docs/architecture.md`: Transitional scaffold for cross-cutting pipelines and operational landmines.
+  - **Pruning gate**: Whenever refactoring or adding tests to areas documented here, check if the complexity has been pushed behind clean seams or codified into tests. If so, propose deleting this document.
+
 ## Workflow and git conventions
 
 ### Git conventions

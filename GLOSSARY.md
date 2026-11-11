@@ -1,0 +1,49 @@
+# PPR X
+
+A performance rating, continuous difficulty calibration, and progression tracking system for Dance Dance Revolution (DDR) players.
+
+## Language
+
+**Player**:
+A public DDR arcade profile whose scores are used as anonymous data points for difficulty calibration.
+_Avoid_: User, Account
+
+**User**:
+A person with an account on PPR X who connects their 3icecream profile to track scores, goals, and unlocks.
+_Avoid_: Player, Profile
+
+**Rating**:
+The official integer difficulty (1–20) assigned to a chart by Konami.
+_Avoid_: Difficulty, Level, Foot
+
+**Rerate**:
+A temporary manual difficulty rating assigned to a chart pending automated data.
+_Avoid_: Custom rating
+
+**Spice**:
+A continuous rating representing the relative difficulty of a chart, derived from pairwise player score comparisons and anchored to MAX 300 Expert = 10.0.
+_Avoid_: Tier, Decimal difficulty, Scale
+
+**Quality**:
+A measure of how impressive a specific score is relative to a chart's difficulty benchmarks.
+_Avoid_: Skill, Points, Rating
+
+**Score**:
+The raw game score achieved on a chart (0 to 1,000,000).
+_Avoid_: Result, Points
+
+**Normalized Score**:
+A logarithmic transformation of a score based on distance from a perfect score: -log2(1,000,000 - score).
+_Avoid_: Adjusted score
+
+**Cabinet**:
+A physical arcade machine specification (White, Gold, Gold only) that determines chart availability.
+_Avoid_: Machine, Version
+
+**Region**:
+A geographical territory (e.g. North America, Japan, Europe) with specific song licensing and availability rules.
+_Avoid_: Country, Server
+
+**Unlock**:
+An in-game event or task required to play a chart (e.g. Golden League, Extra Savior, Galaxy Brave).
+_Avoid_: Progression, Achievement
