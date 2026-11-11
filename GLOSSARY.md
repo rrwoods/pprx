@@ -14,7 +14,11 @@ _Avoid_: Player, Profile
 
 **Rating**:
 The official integer passing difficulty (1–20) assigned to a chart by Konami.
-_Avoid_: Difficulty, Level, Foot
+_Avoid_: Difficulty (that's the slot, e.g. Expert), Level, Foot
+
+**Difficulty**:
+The slot a chart occupies within its song: Beginner, Basic, Difficult, Expert or Challenge. "What difficulty is that chart?" is answered "Expert", never "14".
+_Avoid_: Rating, Level, Slot
 
 **Rerate**:
 A temporary manual difficulty rating assigned to a chart pending automated data.
@@ -73,5 +77,17 @@ A geographical territory (e.g. North America, Japan, Europe) with specific song 
 _Avoid_: Country, Server
 
 **Unlock**:
-An in-game event or task required to play a chart (e.g. Golden League, Extra Savior, Galaxy Brave).
+An in-game event or task, defined by Konami, that has to be completed before certain charts can be played (e.g. Golden League, Extra Savior, Galaxy Brave). Unlocks are part of the Catalog: PPR X mirrors them so Users can track their progress. It never unlocks anything itself.
 _Avoid_: Progression, Achievement
+
+**Content**:
+The songs and stepcharts themselves, which exist only in the arcade game. PPR X never holds Content.
+_Avoid_: Catalog
+
+**Catalog**:
+PPR X's index of DDR's Content: its songs, charts and Unlocks, along with what PPR X knows about them (Ratings, versions, availability by Cabinet and Region).
+_Avoid_: Content, Song list
+
+**Base Data**:
+The fixed framework the Catalog and Users are described against: game versions, Difficulties, Regions, Cabinets, and PPR X's profile visibility options. It rarely changes (Konami's parts change at most once per game version), unlike the Catalog, which changes with every Konami release.
+_Avoid_: Reference data, Seed data, Lookup data, Base functional data
