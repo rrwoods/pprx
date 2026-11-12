@@ -1,0 +1,283 @@
+[
+{
+  "model": "scorebrowser.difficulty",
+  "pk": 0,
+  "fields": {
+    "name": "Beginner"
+  }
+},
+{
+  "model": "scorebrowser.difficulty",
+  "pk": 1,
+  "fields": {
+    "name": "Basic"
+  }
+},
+{
+  "model": "scorebrowser.difficulty",
+  "pk": 2,
+  "fields": {
+    "name": "Difficult"
+  }
+},
+{
+  "model": "scorebrowser.difficulty",
+  "pk": 3,
+  "fields": {
+    "name": "Expert"
+  }
+},
+{
+  "model": "scorebrowser.difficulty",
+  "pk": 4,
+  "fields": {
+    "name": "Challenge"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 1,
+  "fields": {
+    "name": "1st"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 2,
+  "fields": {
+    "name": "2nd"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 3,
+  "fields": {
+    "name": "3rd"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 4,
+  "fields": {
+    "name": "4th"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 5,
+  "fields": {
+    "name": "5th"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 6,
+  "fields": {
+    "name": "MAX"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 7,
+  "fields": {
+    "name": "MAX2"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 8,
+  "fields": {
+    "name": "Extreme"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 9,
+  "fields": {
+    "name": "SuperNOVA"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 10,
+  "fields": {
+    "name": "SuperNOVA2"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 11,
+  "fields": {
+    "name": "X"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 12,
+  "fields": {
+    "name": "X2"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 13,
+  "fields": {
+    "name": "X3 vs 2nd"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 14,
+  "fields": {
+    "name": "2013"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 15,
+  "fields": {
+    "name": "2014"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 16,
+  "fields": {
+    "name": "A"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 17,
+  "fields": {
+    "name": "A20"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 18,
+  "fields": {
+    "name": "A20 PLUS"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 19,
+  "fields": {
+    "name": "A3"
+  }
+},
+{
+  "model": "scorebrowser.version",
+  "pk": 20,
+  "fields": {
+    "name": "WORLD"
+  }
+},
+{
+  "model": "scorebrowser.region",
+  "pk": 1,
+  "fields": {
+    "name": "North America (Dave & Buster's)",
+    "user_default": false
+  }
+},
+{
+  "model": "scorebrowser.region",
+  "pk": 2,
+  "fields": {
+    "name": "North America (Round 1), and Hawaii",
+    "user_default": true
+  }
+},
+{
+  "model": "scorebrowser.region",
+  "pk": 3,
+  "fields": {
+    "name": "Japan",
+    "user_default": false
+  }
+},
+{
+  "model": "scorebrowser.cabinet",
+  "pk": 1,
+  "fields": {
+    "version": 18,
+    "region": 1,
+    "model": 1,
+    "name": "White A20PLUS (North America)",
+    "gold": false
+  }
+},
+{
+  "model": "scorebrowser.cabinet",
+  "pk": 2,
+  "fields": {
+    "version": 20,
+    "region": 2,
+    "model": 1,
+    "name": "White A3 (Hawaii)",
+    "gold": false
+  }
+},
+{
+  "model": "scorebrowser.cabinet",
+  "pk": 3,
+  "fields": {
+    "version": 20,
+    "region": 3,
+    "model": 1,
+    "name": "White A3 (Japan)",
+    "gold": false
+  }
+},
+{
+  "model": "scorebrowser.cabinet",
+  "pk": 4,
+  "fields": {
+    "version": 20,
+    "region": 3,
+    "model": 2,
+    "name": "Gold",
+    "gold": true
+  }
+},
+{
+  "model": "scorebrowser.cabinetmodel",
+  "pk": 1,
+  "fields": {
+    "name": "white"
+  }
+},
+{
+  "model": "scorebrowser.cabinetmodel",
+  "pk": 2,
+  "fields": {
+    "name": "gold"
+  }
+},
+{
+  "model": "scorebrowser.profilevisibility",
+  "pk": 0,
+  "fields": {
+    "name": "Private",
+    "description": "Other users cannot see your profile or data."
+  }
+},
+{
+  "model": "scorebrowser.profilevisibility",
+  "pk": 1,
+  "fields": {
+    "name": "LIFE4 Staff",
+    "description": "Other regular users cannot see your profile or data, but you can share the link directly as rank-up proof."
+  }
+},
+{
+  "model": "scorebrowser.profilevisibility",
+  "pk": 2,
+  "fields": {
+    "name": "Public",
+    "description": "Anyone can see your data."
+  }
+}
+]
