@@ -29,17 +29,10 @@ IMPLICATIONS = {int(k): v for k, v in load_file('implications.json').items()}
 IMPLICATIONS_A20PLUS = {int(k): v for k, v in load_file('implications-a20plus.json').items()}
 
 
-env = environ.Env()
-environ.Env.read_env()
-SECRET_KEY = env("DJANGO_SECRET_KEY")
-CLIENT_ID = env("CLIENT_ID")
-CLIENT_SECRET = env("CLIENT_SECRET")
 WEBHOOK_ID = '720h3j70zntvm8kq17wqlmw29v6kymf6'
 
 EMAIL_BACKEMD = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = env("GOOGLE_USERNAME")
-EMAIL_HOST_PASSWORD = env("GOOGLE_APP_PASSWORD")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
@@ -90,58 +83,82 @@ TEMPLATES = [
 WSGI_APPLICATION = 'pprxweb.wsgi.application'
 
 
-# Database
+# Secrets and database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if 'DATABASE_URL' in env:
-    dbInfo = env.db_url()
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': dbInfo['NAME'],
-            'USER': dbInfo['USER'],
-            'PASSWORD': dbInfo['PASSWORD'],
-            'HOST': dbInfo['HOST'],
-            'PORT': dbInfo['PORT'],
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
-                'charset': 'utf8mb4',
-            },
-        }
-    }
-    ALLOWED_HOSTS = [
-        'pprx-prod-pe9zb.ondigitalocean.app',
-        'pprx.gg',
-    ]
-    DEBUG = False
-    WHITENOISE_USE_FINDERS = True
-else:
+if 'test' in sys.argv:
+    SECRET_KEY = 'test-secret-key'
+    CLIENT_ID = 'test-client-id'
+    CLIENT_SECRET = 'test-client-secret'
+    EMAIL_HOST_USER = 'test-google-username'
+    EMAIL_HOST_PASSWORD = 'test-google-app-password'
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'pprx.db',
+            'NAME': ':memory:',
         }
     }
     ALLOWED_HOSTS = ['localhost']
-    # DEBUG = False
     DEBUG = True
+    MIGRATION_MODULES = {'scorebrowser': None}
+else:
+    env = environ.Env()
+    environ.Env.read_env()
+    SECRET_KEY = env("DJANGO_SECRET_KEY")
+    CLIENT_ID = env("CLIENT_ID")
+    CLIENT_SECRET = env("CLIENT_SECRET")
+    EMAIL_HOST_USER = env("GOOGLE_USERNAME")
+    EMAIL_HOST_PASSWORD = env("GOOGLE_APP_PASSWORD")
 
-    if 'runserver' in sys.argv:
-        LOGGING = {
-            'version': 1,
-            'handlers': {
-                'console': {
-                    'level': 'DEBUG',
-                    'class': 'logging.StreamHandler',
+    if 'DATABASE_URL' in env:
+        dbInfo = env.db_url()
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': dbInfo['NAME'],
+                'USER': dbInfo['USER'],
+                'PASSWORD': dbInfo['PASSWORD'],
+                'HOST': dbInfo['HOST'],
+                'PORT': dbInfo['PORT'],
+                'OPTIONS': {
+                    'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
+                    'charset': 'utf8mb4',
                 },
-            },
-            'loggers': {
-                'django.db.backends': {
-                    'level': 'DEBUG',
-                    'handlers': ['console']
-                }
             }
         }
+        ALLOWED_HOSTS = [
+            'pprx-prod-pe9zb.ondigitalocean.app',
+            'pprx.gg',
+        ]
+        DEBUG = False
+        WHITENOISE_USE_FINDERS = True
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'pprx.db',
+            }
+        }
+        ALLOWED_HOSTS = ['localhost']
+        # DEBUG = False
+        DEBUG = True
+
+        if 'runserver' in sys.argv:
+            LOGGING = {
+                'version': 1,
+                'handlers': {
+                    'console': {
+                        'level': 'DEBUG',
+                        'class': 'logging.StreamHandler',
+                    },
+                },
+                'loggers': {
+                    'django.db.backends': {
+                        'level': 'DEBUG',
+                        'handlers': ['console']
+                    }
+                }
+            }
 
 
 # Password validation
