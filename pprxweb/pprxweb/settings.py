@@ -101,6 +101,7 @@ if 'test' in sys.argv:
     ALLOWED_HOSTS = ['localhost']
     DEBUG = True
     MIGRATION_MODULES = {'scorebrowser': None}
+    TEST_RUNNER = 'scorebrowser.tests.runner.PPRXTestRunner'
 else:
     env = environ.Env()
     environ.Env.read_env()
