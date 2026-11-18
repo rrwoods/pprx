@@ -17,6 +17,7 @@ from scorebrowser.models import (
     UserUnlock,
     Version,
 )
+from .fakes import FakeScoreSource
 
 
 def create_song(id=None, version=None, title=None, **kwargs):
