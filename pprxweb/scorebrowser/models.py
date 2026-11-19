@@ -108,7 +108,7 @@ class User(models.Model):
     refresh_token = models.TextField(null=True)
     webhooked = models.BooleanField(default=False)
     reauth = models.BooleanField(default=False)
-    pulling_scores = models.BooleanField(default=False)
+    synchronization_started_at = models.DateTimeField(null=True)
     last_fetch = models.DateTimeField(null=True)
 
     region = models.ForeignKey(Region, on_delete=models.PROTECT, default=default_region)

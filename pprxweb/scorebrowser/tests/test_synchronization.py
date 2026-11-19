@@ -1,5 +1,7 @@
+from datetime import timedelta
 import json
 import math
+from django.utils import timezone
 from scorebrowser.misc import sort_key
 from scorebrowser.models import Chart, ChartUnlock, Difficulty, Song, UnlockTask, User, UserScore, Version
 from scorebrowser.synchronization import (
@@ -8,6 +10,7 @@ from scorebrowser.synchronization import (
     UpstreamError,
     UpstreamScore,
     UpstreamScoreSource,
+    is_synchronization_in_progress,
     synchronize,
 )
 from scorebrowser.tests import PPRXTestCase
@@ -599,6 +602,151 @@ class SynchronizationTests(PPRXTestCase):
         self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
         chart = Chart.objects.get(song=song, difficulty_id=4)
         self.assertFalse(ChartUnlock.objects.filter(chart=chart).exists())
+
+    def test_is_synchronization_in_progress_reflects_claim_freshness(self):
+        idle_user = create_user(synchronization_started_at=None)
+        fresh_user = create_user(synchronization_started_at=timezone.now() - timedelta(minutes=5))
+        stale_user = create_user(synchronization_started_at=timezone.now() - timedelta(minutes=10, seconds=1))
+
+        self.assertFalse(is_synchronization_in_progress(idle_user))
+        self.assertTrue(is_synchronization_in_progress(fresh_user))
+        self.assertFalse(is_synchronization_in_progress(stale_user))
+
+    def test_synchronize_acquires_claim_before_fetch_and_rejects_concurrent_run(self):
+        user = create_user()
+        inner_fake = FakeScoreSource(scores=[])
+        observations = {}
+
+        def check_during_fetch(fetching_user):
+            db_user = User.objects.get(id=fetching_user.id)
+            observations['started_at'] = db_user.synchronization_started_at
+            observations['in_progress'] = is_synchronization_in_progress(db_user)
+            observations['concurrent_result'] = synchronize(db_user, inner_fake)
+
+        outer_fake = FakeScoreSource(scores=[], on_fetch=check_during_fetch)
+
+        result = synchronize(user, outer_fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
+        self.assertIsNotNone(observations['started_at'])
+        self.assertTrue(observations['in_progress'])
+        self.assertEqual(observations['concurrent_result'].outcome, SynchronizationOutcome.ALREADY_RUNNING)
+        self.assertEqual(inner_fake.calls, 0)
+
+    def test_synchronize_rejects_preexisting_fresh_claim_without_calling_source(self):
+        started_at = timezone.now() - timedelta(minutes=5)
+        user = create_user(synchronization_started_at=started_at)
+        fake = FakeScoreSource(scores=[])
+
+        result = synchronize(user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.ALREADY_RUNNING)
+        self.assertEqual(fake.calls, 0)
+        user.refresh_from_db()
+        self.assertEqual(user.synchronization_started_at, started_at)
+
+    def test_synchronize_releases_claim_after_success(self):
+        user = create_user()
+        fake = FakeScoreSource(scores=[])
+
+        result = synchronize(user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
+        self.assertFalse(is_synchronization_in_progress(user))
+        user.refresh_from_db()
+        self.assertIsNone(user.synchronization_started_at)
+
+    def test_synchronize_releases_claim_after_reauth_required(self):
+        user = create_user()
+        fake = FakeScoreSource(reauth_required=True)
+
+        result = synchronize(user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.REAUTH_REQUIRED)
+        user.refresh_from_db()
+        self.assertIsNone(user.synchronization_started_at)
+
+    def test_synchronize_releases_claim_after_upstream_error(self):
+        user = create_user()
+        fake = FakeScoreSource(upstream_error=(503, "Service Unavailable"))
+
+        result = synchronize(user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.UPSTREAM_ERROR)
+        user.refresh_from_db()
+        self.assertIsNone(user.synchronization_started_at)
+
+    def test_synchronize_releases_claim_when_exception_propagates(self):
+        user = create_user()
+
+        def fail_unexpectedly(_fetching_user):
+            raise RuntimeError("boom")
+
+        fake = FakeScoreSource(on_fetch=fail_unexpectedly)
+
+        with self.assertRaises(RuntimeError):
+            synchronize(user, fake)
+
+        self.assertFalse(is_synchronization_in_progress(user))
+        user.refresh_from_db()
+        self.assertIsNone(user.synchronization_started_at)
+
+    def test_synchronize_reclaims_stale_claim_older_than_10_minutes(self):
+        stale_started_at = timezone.now() - timedelta(minutes=10, seconds=1)
+        user = create_user(synchronization_started_at=stale_started_at)
+        song = create_song(id="song_stale")
+        create_chart(song=song, difficulty=Difficulty.objects.get(id=3), rating=12)
+        observations = {}
+
+        def observe_claim(fetching_user):
+            db_user = User.objects.get(id=fetching_user.id)
+            observations['during_started_at'] = db_user.synchronization_started_at
+            observations['during_in_progress'] = is_synchronization_in_progress(db_user)
+
+        upstream = UpstreamScore(
+            song_id=song.id,
+            difficulty=3,
+            rating=12,
+            song_title=song.title,
+            score=940000,
+            lamp=3,
+            timestamp=1700000300,
+        )
+        fake = FakeScoreSource(scores=[upstream], on_fetch=observe_claim)
+
+        self.assertFalse(is_synchronization_in_progress(user))
+        result = synchronize(user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
+        self.assertEqual(result.new_scores, 1)
+        self.assertGreater(observations['during_started_at'], stale_started_at)
+        self.assertTrue(observations['during_in_progress'])
+        user.refresh_from_db()
+        self.assertIsNone(user.synchronization_started_at)
+
+    def test_synchronize_does_not_release_newer_claim_after_takeover(self):
+        user = create_user()
+        newer_claim = timezone.now() + timedelta(minutes=11)
+
+        def simulate_takeover(fetching_user):
+            User.objects.filter(id=fetching_user.id).update(synchronization_started_at=newer_claim)
+
+        fake = FakeScoreSource(scores=[], on_fetch=simulate_takeover)
+
+        result = synchronize(user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
+        user.refresh_from_db()
+        self.assertEqual(user.synchronization_started_at, newer_claim)
+
+    def test_fresh_claim_on_one_user_does_not_block_other_user(self):
+        create_user(synchronization_started_at=timezone.now() - timedelta(minutes=2))
+        other_user = create_user()
+        fake = FakeScoreSource(scores=[])
+
+        result = synchronize(other_user, fake)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
 
 
 
