@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from enum import Enum
 import json
 import math
@@ -6,6 +7,8 @@ from typing import Optional, Protocol
 import numpy as np
 
 from django.db import transaction
+from django.db.models import Q
+from django.utils import timezone
 
 from .misc import sort_key
 from .models import (
@@ -103,10 +106,45 @@ def _build_user_score(user: User, chart: Chart, score: int, lamp: int, flare: Op
     )
 
 
+CLAIM_TIMEOUT = timedelta(minutes=10)
+
+
+def is_synchronization_in_progress(user: User) -> bool:
+    """Return True if the User holds a fresh (< 10 minutes) synchronization claim."""
+    if user.synchronization_started_at is None:
+        return False
+    return user.synchronization_started_at > timezone.now() - CLAIM_TIMEOUT
+
+
 def synchronize(user: User, source: Optional[UpstreamScoreSource] = None) -> SynchronizationResult:
     if source is None:
         raise NotImplementedError("Production 3icecream adapter is implemented in #75")
 
+    now = timezone.now()
+    cutoff = now - CLAIM_TIMEOUT
+    claimed = User.objects.filter(
+        Q(id=user.id),
+        Q(synchronization_started_at__isnull=True) | Q(synchronization_started_at__lte=cutoff),
+    ).update(synchronization_started_at=now)
+    if not claimed:
+        print(f"Synchronization already running for user {user.id}")
+        return SynchronizationResult(outcome=SynchronizationOutcome.ALREADY_RUNNING)
+
+    print(f"Synchronization claim acquired for user {user.id}")
+    user.synchronization_started_at = now
+
+    try:
+        return _synchronize_with_claim(user, source)
+    finally:
+        User.objects.filter(
+            id=user.id,
+            synchronization_started_at=now,
+        ).update(synchronization_started_at=None)
+        if user.synchronization_started_at == now:
+            user.synchronization_started_at = None
+
+
+def _synchronize_with_claim(user: User, source: UpstreamScoreSource) -> SynchronizationResult:
     try:
         upstream_scores = source.fetch_scores(user)
     except ReauthRequired:
