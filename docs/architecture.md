@@ -41,23 +41,20 @@
   4. Associates uncompleted Challenge charts with the `New Challenge charts (A3+)` unlock task.
 
 ### B. Synchronization (Fetch + Ingest)
-> Slated for consolidation behind a single Synchronization module by [#59](https://github.com/rrwoods/pprx/issues/59) (concurrency guard: [ADR-0004](adr/0004-timestamp-claim-for-synchronization-concurrency.md)). Rewrite this section when that lands.
+Encapsulated in `pprxweb/scorebrowser/synchronization.py` behind `synchronize(user, source=None) -> SynchronizationResult` (with `is_synchronization_in_progress(user)` for status checks and `refresh_user(user)` shared with webhook registration in `views.py`):
 
-- **Entry points** (all call `perform_fetch()` in `pprxweb/scorebrowser/views.py`, synchronously in the request thread):
-  - Webhook handler `fetch_scores`, triggered by 3icecream's on-update webhook with `player_id`. Rate-limited to one Synchronization per user per 10 minutes (600s); the other entry points ignore this limit.
-  - Manual `force_fetch` view.
-  - `scores` view: after first-time webhook registration, and whenever the User has zero Current Scores.
-  - CLI `python manage.py fetch <username>` (imports `perform_fetch` from `views.py`).
-- **Fetch**:
-  1. Requests scores from `https://3icecream.com/dev/api/v1/get_scores` using stored OAuth `access_token`. On 400 responses, refreshes the token via `refresh_user()` and retries once; on refresh failure sets `user.reauth = True`.
+- **Callers** (all run synchronously in the request/command thread):
+  - Webhook handler `synchronization_webhook` (`pprxweb/scorebrowser/views.py`, URL path/name `fetch_scores`), triggered by 3icecream's on-update webhook with `player_id`. Rate-limited via `user.last_fetch` to one Synchronization per User per 10 minutes (600s) and maps `SynchronizationResult.outcome` to an HTTP response.
+  - Manual `force_synchronization` view (`pprxweb/scorebrowser/views.py`, URL path/name `force_fetch`), not rate-limited; maps `SynchronizationResult.outcome` to an HTTP response.
+  - `scores` view (`pprxweb/scorebrowser/views.py`): triggers `synchronize` after first-time webhook registration or when the User has zero Current Scores. When `is_synchronization_in_progress(scores_user)` is true, renders stored scores immediately with the `#synchronization-in-progress` banner.
+  - CLI `python manage.py synchronize <username>` (`pprxweb/scorebrowser/management/commands/synchronize.py`), which prints `SynchronizationResult.outcome`.
+- **Concurrency claim ([ADR-0004](adr/0004-timestamp-claim-for-synchronization-concurrency.md))**:
+  1. Before the Fetch, `synchronize` acquires a conditional `UPDATE` claim on `User.synchronization_started_at` (succeeding only when null or older than `CLAIM_TIMEOUT` = 10 minutes). Failing to claim returns `ALREADY_RUNNING`; stale claims count as abandoned/idle.
+  2. The claim is released in a `finally` block so expected outcomes and unexpected exceptions both clear it; unexpected exceptions propagate rather than being swallowed.
+- **`UpstreamScoreSource` seam & Fetch**:
+  3. Talks to upstream through the `UpstreamScoreSource` protocol (`fetch_scores(user) -> list[UpstreamScore]`). Production uses `SanbaiScoreSource` (3icecream's `/dev/api/v1/get_scores`, refreshing once on HTTP 400 and retrying once, raising `ReauthRequired` on refresh failure or `UpstreamError` on non-200 responses); tests inject an in-memory fake.
 - **Ingest**:
-  2. Sets `user.pulling_scores = True` (only *after* the Fetch succeeds) and clears it in a `finally`.
-  3. Discovers unknown charts: creates missing `Song` rows (`version_id=20`) and hidden `Chart` rows, linking pre-A3 Challenge charts to the `New Challenge charts (A3+)` unlock task. Doubles charts (`difficulty > 4`) are skipped.
-  4. Computes normalized score: \(- \log_2(1,000,000 - \text{score})\) (or \(-2.323\) for 1,000,000 MFCs).
-  5. Computes score Quality via `numpy.interp` against chart breakpoints (`normscore_breakpoints` and `quality_breakpoints`); failed scores (lamp 0) get no Quality.
-  6. A fetched record supersedes the Current Score when its score is higher, its lamp is better, or its flare gauge differs (`!=`, so a missing upstream flare wipes a stored gauge).
-  7. Atomic DB transaction: Marks superseded scores as `current = None` and inserts new scores as `current = True` via bulk operations (see [ADR-0002](adr/0002-nullable-boolean-for-current-scores.md)).
-- **Failure mode**: Any exception during Ingest is printed and swallowed, and `perform_fetch` returns `None`, so the `fetch_scores` and `force_fetch` views respond with a Django 500.
+  4. Skips doubles charts, discovers unknown songs/charts (linking pre-A3 Challenge charts to `New Challenge charts (A3+)`), merges `score`, `clear_type`, and `flare_gauge` monotonically (never downgrading stored values), computes normalized score and Quality (for cleared scores with breakpoints), and atomically writes superseded (`current = None`) and new (`current = True`) `UserScore` rows ([ADR-0002](adr/0002-nullable-boolean-for-current-scores.md)).
 
 ### C. Statistical Difficulty Calibration (Spice & Quality)
 Offline batch processing pipeline executed out-of-band:
@@ -91,23 +88,7 @@ Offline batch processing pipeline executed out-of-band:
   ```
 - **Hazard**: If 3icecream updates the exclusion array or changes the timestamp length, JSON decoding crashes or slices corrupted data.
 
-### 2. Request Thread Sleep Loop on Background Score Pull
-- **Location**: `pprxweb/scorebrowser/views.py` (`scores` view)
-- **Code**:
-  ```python
-  if scores_user.pulling_scores:
-      while True:
-          time.sleep(1)
-          scores_user = User.objects.get(id=user_id)
-          if not scores_user.pulling_scores:
-              break
-  ```
-- **Hazard**: When a user loads `/scores` while a Synchronization is running, the WSGI request thread enters a synchronous sleep loop, holding the worker connection open and risking gateway timeouts under load.
-- **Hazard (unbounded)**: If a worker is killed mid-Ingest (e.g. gateway or worker timeout), the `finally` that clears `pulling_scores` never runs; the flag stays `True` and every subsequent `/scores` load for that User loops forever.
-- **Hazard (not a lock)**: `pulling_scores` is a read-then-write flag set only after the Fetch, so concurrent Synchronizations (e.g. webhook + `force_fetch`) can both proceed; the second typically fails on ADR-0002's unique constraint.
-- **Resolution**: Tracked by [#59](https://github.com/rrwoods/pprx/issues/59) (timestamp claim per [ADR-0004](adr/0004-timestamp-claim-for-synchronization-concurrency.md); `/scores` renders stored scores with an in-progress banner). Delete this landmine when it lands.
-
-### 3. Strict List Unpacking on Cabinet Configuration
+### 2. Strict List Unpacking on Cabinet Configuration
 - **Location**: `pprxweb/scorebrowser/views.py` (`scores` view)
 - **Code**:
   ```python
@@ -116,15 +97,15 @@ Offline batch processing pipeline executed out-of-band:
   ```
 - **Hazard**: Raises `ValueError: not enough values to unpack` (or `too many values to unpack`) if the `Cabinet` table ever lacks an exact match for the user's region or contains multiple active gold/white cabinets.
 
-### 4. Duplicate User Splitting
+### 3. Duplicate User Splitting
 - **Location**: `pprxweb/scorebrowser/management/commands/unsplit-user.py`
 - **Hazard**: Re-authenticating with 3icecream or OAuth linking edge-cases can spawn orphaned or duplicate `User` rows sharing scores, requiring manual un-splitting migrations.
 
-### 5. In-Memory Primitive Pointer Emulation
+### 4. In-Memory Primitive Pointer Emulation
 - **Location**: `pprxweb/scorebrowser/management/commands/isotonicspice.py`
 - **Hazard**: Uses single-element mutable lists `[quality]` inside assumption dictionaries as primitive pointers to allow mutable reference passing across regression steps.
 
-### 6. Migration Chain Cannot Be Replayed on an Empty Database
+### 5. Migration Chain Cannot Be Replayed on an Empty Database
 - **Location**: `pprxweb/scorebrowser/migrations/` (first failure: `0017_event_data.py`)
 - **Hazard**: Data migrations look up `Chart` rows by song title, but Songs and Charts are populated out-of-band by `updatecharts` (from 3icecream's `songdata.js`), not by migrations. On a fresh database the lookups return `None` and `0017` fails with `NOT NULL constraint failed: scorebrowser_chartunlock.chart_id`. Production only works because its database was built up gradually, with `updatecharts` run between migrations. Consequences: no fresh environment can be built from migrations alone, and `manage.py test` cannot build a test database.
 - **Second blocker**: `0034` imports today's `scorebrowser.models.default_region`, which queries `Region.user_default`, a column added in `0078`. Replay fails there even without any Catalog data.
