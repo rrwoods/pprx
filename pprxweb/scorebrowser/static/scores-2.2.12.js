@@ -71,8 +71,9 @@ const trialNumbers = {
 	"ruby": 11,
 }
 
-const mfcPoints = [0,  0.1,  0.25,  0.25,  0.5,  0.5,  0.5,   1,   1,   1,   1,   2,   4,   6,   8,  15,  25,  25,  25,  25]
-const sdpPoints = [0, 0.01, 0.025, 0.025, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.2, 0.4, 0.6, 0.8, 1.5, 2.5, 2.5, 2.5, 2.5]
+//                       1,     2,     3,    4,    5,    6,    7,    8,    9,  10,   11,  12,  13,  14,  15,  16,  17,  18,  19
+const mfcPoints = [0,  0.1,   0.1,   0.1,  0.2,  0.2,  0.4,  0.4,  0.8,  0.8,   1,  1.5,   3,   5,   8,  12,  20,  30,  50, 100]
+const sdpPoints = [0, 0.01, 0.001, 0.001, 0.02, 0.02, 0.04, 0.04, 0.08, 0.08, 0.1, 0.15, 0.3, 0.5, 0.8, 1.2,   2,   3,   5,  10]
 
 var romanizeTitles = false
 
@@ -355,7 +356,7 @@ $(document).ready(function () {
 		clearTypeIcons[2] = ' ❗'
 	}
 
-	reqsPromise = fetch("/static/ranks-2.2.11.json").then(x => x.json())
+	reqsPromise = fetch("/static/ranks-2.2.12.json").then(x => x.json())
 
 	csrfToken = getCookie('csrftoken')
 	romanizeTitles = $("#romanize-titles").data("x") === "True"
