@@ -142,6 +142,7 @@ def link_sanbai(request):
 
 def refresh_user(user, redirect_uri):
 	print("refresh_user: enter")
+	redirect_uri = settings.SANBAI_OAUTH_REDIRECT_URI or redirect_uri
 	refresh_response = requests.post('https://3icecream.com/oauth/token', data={
 		'client_id': settings.CLIENT_ID,
 		'client_secret': settings.CLIENT_SECRET,
@@ -188,7 +189,7 @@ def finish_link(request):
 	user.reauth = False
 	user.save()
 
-	if not user.webhooked:
+	if settings.WEBHOOK_ID and not user.webhooked:
 		hook_response = register_webhook(user)
 		if hook_response.status_code != 200:
 			print("Webhook registration error {}".format(hook_response.status_code))
@@ -1213,7 +1214,7 @@ def scores(request, user_id):
 	logged_in_user = get_user(request)
 	if not logged_in_user:
 		return redirect('link_sanbai')
-	if not scores_user.webhooked:
+	if settings.WEBHOOK_ID and not scores_user.webhooked:
 		hook_response = register_webhook(scores_user)
 		if hook_response.status_code != 200:
 			if not refresh_user(scores_user, redirect_uri):
@@ -1250,7 +1251,7 @@ def scores(request, user_id):
 
 	current_scores = {}
 	score_db_query = UserScore.objects.filter(user=scores_user, current=True)
-	if (len(score_db_query) == 0):
+	if len(score_db_query) == 0 and scores_user.access_token:
 		perform_fetch(scores_user, redirect_uri)
 		score_db_query = UserScore.objects.filter(user=scores_user, current=True)
 	for score in score_db_query:

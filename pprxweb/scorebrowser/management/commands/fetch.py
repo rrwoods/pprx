@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from scorebrowser.models import *
 from scorebrowser.views import perform_fetch
@@ -12,4 +13,5 @@ class Command(BaseCommand):
 		print("Fetching scores for username {}".format(username))
 
 		user = User.objects.get(django_user__username=username)
-		perform_fetch(user, 'https://pprx.gg/scorebrowser/scores')
+		redirect_uri = settings.SANBAI_OAUTH_REDIRECT_URI or 'https://pprx.gg/scorebrowser/scores'
+		perform_fetch(user, redirect_uri)

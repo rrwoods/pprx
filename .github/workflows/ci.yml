@@ -32,8 +32,7 @@ jobs:
         DJANGO_SECRET_KEY: ci-placeholder
         CLIENT_ID: ci-placeholder
         CLIENT_SECRET: ci-placeholder
-        GOOGLE_USERNAME: ci-placeholder
-        GOOGLE_APP_PASSWORD: ci-placeholder
+        EMAIL_BACKEND: django.core.mail.backends.dummy.EmailBackend
       run: python manage.py makemigrations --check --dry-run
     - name: Run tests
       working-directory: pprxweb
