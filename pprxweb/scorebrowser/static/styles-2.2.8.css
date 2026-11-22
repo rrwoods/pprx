@@ -30,6 +30,15 @@
 	background-color: skyblue;
 }
 
+.staging-banner {
+	margin-bottom: 1em;
+	border-radius: 15px;
+	padding: 15px;
+	background-color: #c8e600;
+	color: #111;
+	border: 2px solid #6b8e00;
+}
+
 .user-message {
 	margin-bottom: 1em;
 	border-radius: 15px;

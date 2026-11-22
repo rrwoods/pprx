@@ -11,10 +11,12 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+import hashlib
 import json
 import environ
 import os
 import sys
+import tempfile
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,9 +31,22 @@ IMPLICATIONS = {int(k): v for k, v in load_file('implications.json').items()}
 IMPLICATIONS_A20PLUS = {int(k): v for k, v in load_file('implications-a20plus.json').items()}
 
 
-WEBHOOK_ID = '720h3j70zntvm8kq17wqlmw29v6kymf6'
+DEFAULT_WEBHOOK_ID = '720h3j70zntvm8kq17wqlmw29v6kymf6'
+DEFAULT_EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+DEFAULT_PROD_HOSTS = [
+    'pprx-prod-pe9zb.ondigitalocean.app',
+    'pprx.gg',
+]
+DEFAULT_PROD_CSRF_ORIGINS = [
+    'https://pprx-prod-pe9zb.ondigitalocean.app',
+    'https://pprx.gg',
+]
 
-EMAIL_BACKEMD = 'django.core.mail.backends.smtp.EmailBackend'
+WEBHOOK_ID = DEFAULT_WEBHOOK_ID
+SANBAI_OAUTH_REDIRECT_URI = None
+IS_STAGING = False
+
+EMAIL_BACKEND = DEFAULT_EMAIL_BACKEND
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
@@ -75,6 +90,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'scorebrowser.context_processors.staging_context',
             ],
         },
     },
@@ -85,6 +101,95 @@ WSGI_APPLICATION = 'pprxweb.wsgi.application'
 
 # Secrets and database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+
+def _write_db_ca_cert(ca_cert):
+    """Persist a PEM CA certificate to a deterministic temp file for mysqlclient."""
+    normalized = ca_cert.replace('\\n', '\n')
+    digest = hashlib.sha256(normalized.encode('utf-8')).hexdigest()[:12]
+    cert_path = Path(tempfile.gettempdir()) / f'pprx_db_ca_{digest}.pem'
+    if not cert_path.exists() or cert_path.read_text(encoding='utf-8') != normalized:
+        cert_path.write_text(normalized, encoding='utf-8')
+    return str(cert_path)
+
+
+def load_runtime_settings(env, *, is_runserver=False):
+    """Resolve non-test runtime settings from an environ.Env instance."""
+    email_backend = env('EMAIL_BACKEND', default=DEFAULT_EMAIL_BACKEND)
+    if email_backend == DEFAULT_EMAIL_BACKEND:
+        email_host_user = env('GOOGLE_USERNAME')
+        email_host_password = env('GOOGLE_APP_PASSWORD')
+    else:
+        email_host_user = env('GOOGLE_USERNAME', default='')
+        email_host_password = env('GOOGLE_APP_PASSWORD', default='')
+
+    runtime = {
+        'SECRET_KEY': env('DJANGO_SECRET_KEY'),
+        'CLIENT_ID': env('CLIENT_ID'),
+        'CLIENT_SECRET': env('CLIENT_SECRET'),
+        'EMAIL_BACKEND': email_backend,
+        'EMAIL_HOST_USER': email_host_user,
+        'EMAIL_HOST_PASSWORD': email_host_password,
+        'WEBHOOK_ID': env('WEBHOOK_ID', default=DEFAULT_WEBHOOK_ID),
+        'SANBAI_OAUTH_REDIRECT_URI': env('SANBAI_OAUTH_REDIRECT_URI', default=None) or None,
+        'IS_STAGING': env.bool('IS_STAGING', default=False),
+    }
+
+    if 'DATABASE_URL' in env:
+        db_info = env.db_url()
+        options = {
+            'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
+            'charset': 'utf8mb4',
+        }
+        db_ca_cert = env('DB_CA_CERT', default='')
+        if db_ca_cert.strip():
+            options['ssl'] = {'ca': _write_db_ca_cert(db_ca_cert)}
+
+        runtime['DATABASES'] = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': db_info['NAME'],
+                'USER': db_info['USER'],
+                'PASSWORD': db_info['PASSWORD'],
+                'HOST': db_info['HOST'],
+                'PORT': db_info['PORT'],
+                'OPTIONS': options,
+            }
+        }
+        runtime['ALLOWED_HOSTS'] = env.list('ALLOWED_HOSTS', default=list(DEFAULT_PROD_HOSTS))
+        runtime['CSRF_TRUSTED_ORIGINS'] = env.list('CSRF_TRUSTED_ORIGINS', default=list(DEFAULT_PROD_CSRF_ORIGINS))
+        runtime['SECURE_PROXY_SSL_HEADER'] = ('HTTP_X_FORWARDED_PROTO', 'https')
+        runtime['DEBUG'] = env.bool('DEBUG', default=False)
+        runtime['WHITENOISE_USE_FINDERS'] = True
+    else:
+        runtime['DATABASES'] = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'pprx.db',
+            }
+        }
+        runtime['ALLOWED_HOSTS'] = ['localhost']
+        # DEBUG = False
+        runtime['DEBUG'] = True
+
+        if is_runserver:
+            runtime['LOGGING'] = {
+                'version': 1,
+                'handlers': {
+                    'console': {
+                        'level': 'DEBUG',
+                        'class': 'logging.StreamHandler',
+                    },
+                },
+                'loggers': {
+                    'django.db.backends': {
+                        'level': 'DEBUG',
+                        'handlers': ['console']
+                    }
+                }
+            }
+
+    return runtime
+
 
 if 'test' in sys.argv:
     SECRET_KEY = 'test-secret-key'
@@ -105,61 +210,7 @@ if 'test' in sys.argv:
 else:
     env = environ.Env()
     environ.Env.read_env()
-    SECRET_KEY = env("DJANGO_SECRET_KEY")
-    CLIENT_ID = env("CLIENT_ID")
-    CLIENT_SECRET = env("CLIENT_SECRET")
-    EMAIL_HOST_USER = env("GOOGLE_USERNAME")
-    EMAIL_HOST_PASSWORD = env("GOOGLE_APP_PASSWORD")
-
-    if 'DATABASE_URL' in env:
-        dbInfo = env.db_url()
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.mysql',
-                'NAME': dbInfo['NAME'],
-                'USER': dbInfo['USER'],
-                'PASSWORD': dbInfo['PASSWORD'],
-                'HOST': dbInfo['HOST'],
-                'PORT': dbInfo['PORT'],
-                'OPTIONS': {
-                    'init_command': "SET sql_mode='STRICT_ALL_TABLES'",
-                    'charset': 'utf8mb4',
-                },
-            }
-        }
-        ALLOWED_HOSTS = [
-            'pprx-prod-pe9zb.ondigitalocean.app',
-            'pprx.gg',
-        ]
-        DEBUG = False
-        WHITENOISE_USE_FINDERS = True
-    else:
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'pprx.db',
-            }
-        }
-        ALLOWED_HOSTS = ['localhost']
-        # DEBUG = False
-        DEBUG = True
-
-        if 'runserver' in sys.argv:
-            LOGGING = {
-                'version': 1,
-                'handlers': {
-                    'console': {
-                        'level': 'DEBUG',
-                        'class': 'logging.StreamHandler',
-                    },
-                },
-                'loggers': {
-                    'django.db.backends': {
-                        'level': 'DEBUG',
-                        'handlers': ['console']
-                    }
-                }
-            }
+    globals().update(load_runtime_settings(env, is_runserver='runserver' in sys.argv))
 
 
 # Password validation
@@ -190,7 +241,11 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if 'test' in sys.argv
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
 

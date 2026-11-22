@@ -19,9 +19,34 @@
 		<link rel="stylesheet" href="{% static 'styles-2.2.8.css' %}">
 	</head>
 	<body>
+		{% if is_staging %}
+		<div class="staging-banner">
+			<strong>STAGING ENVIRONMENT</strong> — Cloned &amp; sanitized database (non-staff emails, passwords, and OAuth tokens scrubbed).
+			<ul>
+				<li>
+					{% if staging_email_is_smtp %}
+						Outbound email: SMTP enabled (<code>{{ EMAIL_BACKEND }}</code>).
+					{% else %}
+						Outbound email disabled / non-SMTP (<code>{{ EMAIL_BACKEND }}</code> — activation and password-reset links go to server logs only).
+					{% endif %}
+				</li>
+				<li>
+					{% if WEBHOOK_ID %}
+						3icecream webhook registration enabled.
+					{% else %}
+						3icecream webhook registration and automatic score-update webhook disabled (<code>WEBHOOK_ID</code> unset).
+					{% endif %}
+				</li>
+				<li>
+					3icecream OAuth: fresh browser linking (<code>link_sanbai</code>) may be rejected if 3icecream requires the production callback domain{% if SANBAI_OAUTH_REDIRECT_URI %}; token refresh uses <code>{{ SANBAI_OAUTH_REDIRECT_URI }}</code>{% endif %}.
+				</li>
+			</ul>
+		</div>
+		{% else %}
 		<div class="update-message">
 			Currently experiencing technical difficulties with the webhook.  After syncing your 3icecream, head to <a href="{% url 'unlocks' %}">preferences</a> and hit the fetch button.
 		</div>
+		{% endif %}
 		<table class="navbar-main"><tr>
 			<td class="navbar-link"><a href="{% url 'unlocks' %}">Unlocks and preferences</a></td>
 			<td class="navbar-link"><a href="{% url 'scores' %}" id="score-browser-link">Browse scores</a></td>
