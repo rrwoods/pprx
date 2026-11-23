@@ -3,5 +3,6 @@
 *.pyc
 *.db
 .env
+.env.staging-clone
 __pycache__/
 vim.exe.stackdump
