@@ -15,8 +15,15 @@
 
 ## 1. System Topology & Infrastructure
 
-- **Production Target**: Deployed on **DigitalOcean App Platform** (`pprx.gg`, internally `pprx-prod-pe9zb.ondigitalocean.app`).
-- **Database**: Managed MySQL in production (`utf8mb4` charset, `STRICT_ALL_TABLES`). Local development targets SQLite at `pprxweb/pprx.db`.
+- **Environments & Branching** (DigitalOcean App Platform, `sfo` / VPC `default-sfo3`, `source_dir: pprxweb`):
+  - **Production (`pprx-prod`)**: Deploys from `prod` (`deploy_on_push: true`), serving `pprx.gg` (`pprx-prod-pe9zb.ondigitalocean.app`), backed by `ebdb` on the `pprx-prod` Managed MySQL `8.0.45` cluster. Promoted from `main` via fast-forward push (`git push origin main:prod`).
+  - **Staging (`pprx-staging`)**: Deploys from `main` (`deploy_on_push: true`), serving `https://pprx-staging-2xs7w.ondigitalocean.app`, backed by `pprx_staging` on the shared `pprx-prod` Managed MySQL cluster (with Trusted Sources enabled and `chart_pairs` cloned schema-only).
+  - **CI**: `.github/workflows/ci.yml` runs on `push` and `pull_request` for `["main", "prod"]`.
+- **Database**: Managed MySQL in production/staging (`utf8mb4` charset, `STRICT_ALL_TABLES`). Local development targets SQLite at `pprxweb/pprx.db`.
+- **Staging Parameterization & Guards** (`pprxweb/pprxweb/settings.py`):
+  - `load_runtime_settings` parameterizes `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `DEBUG`, `EMAIL_BACKEND`, `WEBHOOK_ID`, `SANBAI_OAUTH_REDIRECT_URI`, optional `DB_CA_CERT`, and `IS_STAGING` (with production-compatible defaults), and sets `SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')`.
+  - On staging: `IS_STAGING=True` renders the `STAGING ENVIRONMENT` banner via `scorebrowser.context_processors.staging_context`, `WEBHOOK_ID` is unset (`""`) so `register_webhook()` is skipped, empty-score `Fetch` in `scores` is gated on `scores_user.access_token`, `EMAIL_BACKEND` uses `console.EmailBackend`, and `SANBAI_OAUTH_REDIRECT_URI` preserves token-refresh compatibility.
+- **Operational Runbooks**: See [Staging Operations & DB Refresh Runbook](runbooks/staging-operations.md) for branch promotion, least-privilege MySQL roles (`pprx_dump`, `pprx_staging`), `scripts/clone_prod_to_staging.ps1`, `scripts/sanitize_staging.sql`, and live verification caveats.
 - **Static Assets**: Served via WhiteNoise (`CompressedManifestStaticFilesStorage`).
 - **Legacy Artifacts**: Directories `.ebextensions/`, `.elasticbeanstalk/`, and `.platform/` are historical artifacts from an earlier AWS Elastic Beanstalk deployment and are inactive.
 
