@@ -31,6 +31,11 @@ Bare `python` is the system interpreter, which has no Django. Humans enter the e
 
 ## Workflow and git conventions
 
+### Branching & staging
+
+- **`main` vs `prod`**: `main` auto-deploys to `pprx-staging` (`pprx_staging`); `prod` auto-deploys to `pprx-prod` (`pprx.gg`, `ebdb`). Open PRs against `main`; promotion to `prod` is a manual fast-forward push (`git push origin main:prod`).
+- **Staging operations**: See `docs/runbooks/staging-operations.md` for staging guards and the prod-to-staging DB refresh runbook (`scripts/clone_prod_to_staging.ps1`, `scripts/sanitize_staging.sql`).
+
 ### Git conventions
 
 Prefer linear git history:
