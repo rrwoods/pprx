@@ -1,10 +1,16 @@
 from datetime import timedelta
 import json
 import math
+from unittest.mock import Mock, patch
+from django.conf import settings
+from django.core import mail
+from django.core.management import call_command
 from django.utils import timezone
 from scorebrowser.misc import sort_key
 from scorebrowser.models import Chart, ChartUnlock, Difficulty, Song, UnlockTask, User, UserScore, Version
 from scorebrowser.synchronization import (
+    ReauthRequired,
+    SanbaiScoreSource,
     SynchronizationOutcome,
     SynchronizationResult,
     UpstreamError,
@@ -747,6 +753,246 @@ class SynchronizationTests(PPRXTestCase):
         result = synchronize(other_user, fake)
 
         self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
+
+
+def _mock_response(status_code=200, json_data=None, text=""):
+    response = Mock()
+    response.status_code = status_code
+    response.text = text
+    if json_data is not None:
+        response.json.return_value = json_data
+    else:
+        response.json.side_effect = ValueError("No JSON")
+    return response
+
+
+class SanbaiScoreSourceTests(PPRXTestCase):
+    def test_fetch_scores_success_translates_payload(self):
+        user = create_user(access_token="tok_123", refresh_token="ref_123")
+        payload = [
+            {
+                "song_id": "song_a",
+                "difficulty": 3,
+                "rating": 14,
+                "song_name": "Song A",
+                "score": 985000,
+                "lamp": 4,
+                "flare": 8,
+                "time_played": 1700000100,
+                "time_uploaded": 1700000200,
+            },
+            {
+                "song_id": "song_b",
+                "difficulty": 6,
+                "rating": 15,
+                "song_name": "Song B Doubles",
+                "score": 910000,
+                "lamp": 2,
+                "time_played": 0,
+                "time_uploaded": 1700000300,
+            },
+        ]
+        source = SanbaiScoreSource()
+
+        with patch("scorebrowser.synchronization.requests.post", return_value=_mock_response(200, payload)) as mock_post:
+            scores = source.fetch_scores(user)
+
+        mock_post.assert_called_once_with(
+            "https://3icecream.com/dev/api/v1/get_scores",
+            data={"access_token": "tok_123"},
+        )
+        self.assertEqual(
+            scores,
+            [
+                UpstreamScore(
+                    song_id="song_a",
+                    difficulty=3,
+                    rating=14,
+                    song_title="Song A",
+                    score=985000,
+                    lamp=4,
+                    timestamp=1700000100,
+                    flare_gauge=8,
+                ),
+                UpstreamScore(
+                    song_id="song_b",
+                    difficulty=6,
+                    rating=15,
+                    song_title="Song B Doubles",
+                    score=910000,
+                    lamp=2,
+                    timestamp=1700000300,
+                    flare_gauge=None,
+                ),
+            ],
+        )
+
+    def test_fetch_scores_400_refreshes_tokens_and_retries_once(self):
+        user = create_user(access_token="old_access", refresh_token="old_refresh")
+        payload = [
+            {
+                "song_id": "song_retry",
+                "difficulty": 4,
+                "rating": 17,
+                "song_name": "Retry Song",
+                "score": 995000,
+                "lamp": 5,
+                "flare": 10,
+                "time_played": 1700000500,
+                "time_uploaded": 1700000500,
+            }
+        ]
+        responses = [
+            _mock_response(400, text="expired token"),
+            _mock_response(200, {"access_token": "new_access", "refresh_token": "new_refresh"}),
+            _mock_response(200, payload),
+        ]
+        source = SanbaiScoreSource()
+
+        with patch("scorebrowser.synchronization.requests.post", side_effect=responses) as mock_post:
+            scores = source.fetch_scores(user)
+
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(
+            mock_post.call_args_list[0].args,
+            ("https://3icecream.com/dev/api/v1/get_scores",),
+        )
+        self.assertEqual(
+            mock_post.call_args_list[0].kwargs,
+            {"data": {"access_token": "old_access"}},
+        )
+        self.assertEqual(
+            mock_post.call_args_list[1].args,
+            ("https://3icecream.com/oauth/token",),
+        )
+        self.assertEqual(
+            mock_post.call_args_list[1].kwargs,
+            {
+                "data": {
+                    "client_id": settings.CLIENT_ID,
+                    "client_secret": settings.CLIENT_SECRET,
+                    "grant_type": "refresh_token",
+                    "refresh_token": "old_refresh",
+                    "redirect_uri": settings.SANBAI_OAUTH_REDIRECT_URI,
+                }
+            },
+        )
+        self.assertEqual(
+            mock_post.call_args_list[2].args,
+            ("https://3icecream.com/dev/api/v1/get_scores",),
+        )
+        self.assertEqual(
+            mock_post.call_args_list[2].kwargs,
+            {"data": {"access_token": "new_access"}},
+        )
+
+        user.refresh_from_db()
+        self.assertEqual(user.access_token, "new_access")
+        self.assertEqual(user.refresh_token, "new_refresh")
+        self.assertEqual(len(scores), 1)
+        self.assertEqual(scores[0].song_id, "song_retry")
+
+    def test_fetch_scores_failed_refresh_raises_reauth_required_and_sets_reauth(self):
+        user = create_user(access_token="old_access", refresh_token="bad_refresh", reauth=False)
+        responses = [
+            _mock_response(400, text="expired token"),
+            _mock_response(400, {"error": "invalid_grant"}, text='{"error": "invalid_grant"}'),
+        ]
+        source = SanbaiScoreSource()
+
+        with patch("scorebrowser.synchronization.requests.post", side_effect=responses) as mock_post:
+            with self.assertRaises(ReauthRequired):
+                source.fetch_scores(user)
+
+        self.assertEqual(mock_post.call_count, 2)
+        user.refresh_from_db()
+        self.assertTrue(user.reauth)
+
+    def test_fetch_scores_malformed_refresh_payload_raises_reauth_required(self):
+        user = create_user(access_token="old_access", refresh_token="bad_refresh", reauth=False)
+        responses = [
+            _mock_response(400, text="expired token"),
+            _mock_response(200, {"error": "missing_tokens"}, text='{"error": "missing_tokens"}'),
+        ]
+        source = SanbaiScoreSource()
+
+        with patch("scorebrowser.synchronization.requests.post", side_effect=responses) as mock_post:
+            with self.assertRaises(ReauthRequired):
+                source.fetch_scores(user)
+
+        self.assertEqual(mock_post.call_count, 2)
+        user.refresh_from_db()
+        self.assertTrue(user.reauth)
+
+    def test_fetch_scores_non_200_raises_upstream_error_without_refresh(self):
+        user = create_user(access_token="tok_123", refresh_token="ref_123")
+        source = SanbaiScoreSource()
+
+        with patch(
+            "scorebrowser.synchronization.requests.post",
+            return_value=_mock_response(502, text="Bad Gateway"),
+        ) as mock_post:
+            with self.assertRaises(UpstreamError) as ctx:
+                source.fetch_scores(user)
+
+        self.assertEqual(mock_post.call_count, 1)
+        self.assertEqual(ctx.exception.status, 502)
+        self.assertEqual(ctx.exception.body, "Bad Gateway")
+
+    def test_fetch_scores_400_after_retry_raises_upstream_error_without_second_refresh(self):
+        user = create_user(access_token="old_access", refresh_token="old_refresh")
+        responses = [
+            _mock_response(400, text="expired token"),
+            _mock_response(200, {"access_token": "new_access", "refresh_token": "new_refresh"}),
+            _mock_response(400, text="still bad request"),
+        ]
+        source = SanbaiScoreSource()
+
+        with patch("scorebrowser.synchronization.requests.post", side_effect=responses) as mock_post:
+            with self.assertRaises(UpstreamError) as ctx:
+                source.fetch_scores(user)
+
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(ctx.exception.status, 400)
+        self.assertEqual(ctx.exception.body, "still bad request")
+        user.refresh_from_db()
+        self.assertFalse(user.reauth)
+
+    def test_synchronize_defaults_to_sanbai_score_source(self):
+        user = create_user(access_token="tok_default", refresh_token="ref_default")
+        song = create_song(id="song_default", title="Default Adapter Song")
+        chart = create_chart(song=song, difficulty=Difficulty.objects.get(id=3), rating=12)
+        payload = [
+            {
+                "song_id": song.id,
+                "difficulty": 3,
+                "rating": 12,
+                "song_name": song.title,
+                "score": 960000,
+                "lamp": 3,
+                "flare": 6,
+                "time_played": 1700000600,
+                "time_uploaded": 1700000600,
+            }
+        ]
+
+        with patch("scorebrowser.synchronization.requests.post", return_value=_mock_response(200, payload)):
+            result = synchronize(user)
+
+        self.assertEqual(result.outcome, SynchronizationOutcome.SYNCHRONIZED)
+        self.assertEqual(result.new_scores, 1)
+        stored = UserScore.objects.get(user=user, chart=chart, current=True)
+        self.assertEqual(stored.score, 960000)
+        self.assertEqual(stored.flare_gauge, 6)
+
+
+class MaintainerMailTests(PPRXTestCase):
+    def test_testmail_sends_to_maintainer_email_setting(self):
+        self.assertEqual(settings.MAINTAINER_EMAIL, "rick.r.woods@gmail.com")
+        with self.settings(MAINTAINER_EMAIL="override-maintainer@example.com"):
+            call_command("testmail")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["override-maintainer@example.com"])
 
 
 
