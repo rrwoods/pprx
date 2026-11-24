@@ -15,6 +15,12 @@
 {% block content %}
 	{% csrf_token %}
 
+	{% if synchronization_in_progress %}
+		<div class="update-message" id="synchronization-in-progress">
+			A synchronization is currently in progress. Stored scores are shown below — reload the page shortly to see new scores.
+		</div>
+	{% endif %}
+
 	{% if not same_user %}
 		<p class="not-you">You are viewing the data for <span class="username">{{ username }}</span>.</p>
 	{% endif %}

@@ -16,8 +16,8 @@ urlpatterns = [
 	path('logout', views.logout_user, name='logout'),
 
 	# score fetching
-	path('force_fetch', views.force_fetch, name='force_fetch'),
-	path('fetch_scores', views.fetch_scores, name='fetch_scores'),
+	path('force_fetch', views.force_synchronization, name='force_fetch'),
+	path('fetch_scores', views.synchronization_webhook, name='fetch_scores'),
 
 	# admin-related pages
 	path('forbidden', views.forbidden, name='forbidden'),
