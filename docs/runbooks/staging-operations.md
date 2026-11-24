@@ -33,13 +33,8 @@ Both apps run on DigitalOcean App Platform (`sfo` / VPC `default-sfo3`, `source_
 
 - **Feature PRs target `main`**: Merging a PR to `main` automatically deploys to `pprx-staging`.
 - **CI triggers**: `.github/workflows/ci.yml` runs on both `push` and `pull_request` for `["main", "prod"]`, checking `makemigrations --check --dry-run`, `python manage.py test`, and `python manage.py test` with an unreachable `DATABASE_URL`.
-- **Branch protection**: Both `main` and `prod` use classic branch protection (`enforce_admins: false`, 1 approving review + code owner review, force-pushes and deletions blocked).
-- **Promote `main` to `prod`** (strictly fast-forward after CI passes and changes are verified on `pprx-staging`):
-  ```bash
-  git fetch origin
-  git push origin main:prod
-  ```
-  Verify `pprx-prod` settles **Healthy** on `https://pprx.gg`.
+- **Branch protection**: `main` uses classic branch protection (`enforce_admins: false`, 1 approving review + code owner review). `prod` blocks PR UI merges via `.github/workflows/forbid-prod-ui-merge.yml` (`forbid-ui-merge`) and a `prod` Ruleset whose bypass list grants fast-forward push access to the `Promote to prod` GitHub App.
+- **Promote `main` to `prod`**: Run **Actions → Promote to prod** (`.github/workflows/promote-to-prod.yml`) after `Django CI` passes and changes are verified on `pprx-staging`. See [Promote `main` to `prod` Runbook](promote-to-prod.md) for the full checklist and troubleshooting steps.
 
 ---
 

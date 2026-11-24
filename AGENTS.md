@@ -33,7 +33,7 @@ Bare `python` is the system interpreter, which has no Django. Humans enter the e
 
 ### Branching & staging
 
-- **`main` vs `prod`**: `main` auto-deploys to `pprx-staging` (`pprx_staging`); `prod` auto-deploys to `pprx-prod` (`pprx.gg`, `ebdb`). Open PRs against `main`; promotion to `prod` is a manual fast-forward push (`git push origin main:prod`).
+- **`main` vs `prod`**: `main` auto-deploys to `pprx-staging` (`pprx_staging`); `prod` auto-deploys to `pprx-prod` (`pprx.gg`, `ebdb`). Open PRs against `main`; promotion to `prod` is a fast-forward via **Actions → Promote to prod** (`.github/workflows/promote-to-prod.yml`; UI merges to `prod` are blocked by `.github/workflows/forbid-prod-ui-merge.yml`). See `docs/runbooks/promote-to-prod.md`.
 - **Staging operations**: See `docs/runbooks/staging-operations.md` for staging guards and the prod-to-staging DB refresh runbook (`scripts/clone_prod_to_staging.ps1`, `scripts/sanitize_staging.sql`).
 
 ### Git conventions
