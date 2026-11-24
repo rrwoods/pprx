@@ -19,15 +19,18 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt
 from numpy import interp
 from .forms import SetPasswordForm, UpdateEmailForm, UserRegistrationForm
-from .misc import sort_key
 from .models import *
-from .synchronization import refresh_user
+from .synchronization import (
+	SynchronizationOutcome,
+	is_synchronization_in_progress,
+	refresh_user,
+	synchronize,
+)
 from .tokens import ACCOUNT_ACTIVATION_TOKEN_GENERATOR
 import json
 import math
 import re
 import requests
-import time
 import traceback
 
 
@@ -657,10 +660,26 @@ def user_targets(user, version_id, add = None, remove = None):
 
 	return list(all_targets)
 
+def _synchronization_response(result):
+	if result.outcome == SynchronizationOutcome.SYNCHRONIZED:
+		return HttpResponse("Synchronized scores.")
+	if result.outcome == SynchronizationOutcome.ALREADY_RUNNING:
+		return HttpResponse("Synchronization already in progress.")
+	if result.outcome == SynchronizationOutcome.REAUTH_REQUIRED:
+		return HttpResponse('Need to re-link 3icecream!  Click "Browse Scores" above to do so.')
+	if result.outcome == SynchronizationOutcome.UPSTREAM_ERROR:
+		return HttpResponse(
+			"Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(
+				result.status_code,
+				result.error_body,
+			)
+		)
+	raise ValueError(f"Unexpected synchronization outcome: {result.outcome}")
+
 # This view is called by the 3icecream on-update webhook
 # see https://3icecream.com/dev/docs for full details
 @csrf_exempt
-def fetch_scores(request):
+def synchronization_webhook(request):
 	print("Webhook: enter")
 	body = request.body.decode('utf-8')
 	print("Webhook: decoded body")
@@ -680,139 +699,12 @@ def fetch_scores(request):
 	user.last_fetch = timezone.now()
 	user.save()
 	print("Webhook: Set last fetch time to now")
-	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
+	return _synchronization_response(synchronize(user))
 
 # This is for players for whom the webhook wasn't called for some reason
-def force_fetch(request):
+def force_synchronization(request):
 	user = get_user(request)
-	return perform_fetch(user, request.build_absolute_uri(reverse('scores')))
-
-def perform_fetch(user, redirect_uri):
-	print("perform_fetch: enter")
-	scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
-	if scores_response.status_code == 400:
-		print("perform_fetch: first get_scores failed. response:")
-		print(scores_response.text)
-		print("----------")
-		print("perform_fetch: refreshing user and trying again")
-		if not refresh_user(user):
-			print("perform_fetch: couldn't refresh; forcing re-auth - user must load scores page to re-link sanbai")
-			user.reauth = True
-			user.save()
-			return HttpResponse('Need to re-link 3icecream!  Click "Browse Scores" above to do so.')
-
-		scores_response = requests.post('https://3icecream.com/dev/api/v1/get_scores', data={'access_token': user.access_token})
-	print("perform_fetch: got scores response")
-
-	if scores_response.status_code != 200:
-		return HttpResponse("Got {} from 3icecream; can't proceed.  3icecream error follows.<hr />{}".format(scores_response.status_code, scores_response.text))
-
-	user.pulling_scores = True
-	user.save()
-	print("perform_fetch: pulling_scores set - username = {}".format(user.django_user.username))
-
-	challenge_task = UnlockTask.objects.get(name="New Challenge charts (A3+)")
-	try:
-		all_charts = {(chart.song_id, chart.difficulty_id): chart for chart in Chart.objects.all()}
-		print("perform_fetch: got chart ids")
-		all_song_ids = [song.id for song in Song.objects.all()]
-		print("perform_fetch: got song ids")
-		scores_lookup = {}
-
-		for score in scores_response.json():
-			difficulty = score['difficulty']
-			if (difficulty > 4):
-				continue
-			rating = score['rating']
-			song_id = score['song_id']
-			title = score['song_name']
-			timestamp = score['time_played'] or score['time_uploaded']
-			lamp = score['lamp']
-			flare_gauge = score['flare'] if 'flare' in score else None
-			score = score['score']
-
-			key = (song_id, difficulty)
-			scores_lookup[key] = (score, timestamp, lamp, flare_gauge)
-
-			if key not in all_charts:
-				if song_id not in all_song_ids:
-					Song.objects.create(id=song_id, version_id=20, title=title, sort_key=sort_key(title))
-					all_song_ids.append(song_id)
-
-				with transaction.atomic():
-					chart = Chart.objects.create(song_id=song_id, difficulty_id=difficulty, rating=rating, hidden=True)
-					if chart.song.version_id <= 18:
-						ChartUnlock.objects.create(task=challenge_task, chart=chart)
-					all_charts[key] = chart
-
-		print("perform_fetch: built scores dict")
-
-		current_scores = {}
-		for score in UserScore.objects            \
-				.filter(user=user, current=True)  \
-				.only('chart_id', 'score', 'clear_type', 'flare_gauge'):
-			current_scores[score.chart_id] = score
-		print("perform_fetch: got current scores")
-
-		formerly_current_scores = []
-		new_scores = []
-		new_flares = []
-
-		for key in scores_lookup:
-			chart = all_charts[key]
-			normscore_breakpoints = json.loads(chart.normscore_breakpoints) if chart.normscore_breakpoints else None
-			quality_breakpoints = json.loads(chart.quality_breakpoints) if chart.quality_breakpoints else None
-
-			new_score = scores_lookup[key]
-			normalized = (-2.323) if (new_score[0] == 1000000) else (-math.log2(1000000 - new_score[0]))
-			quality = None
-			if (new_score[2] > 0) and quality_breakpoints:
-				quality = interp(normalized, normscore_breakpoints, quality_breakpoints)
-			new_entry = UserScore(
-				user=user,
-				chart_id=chart.id,
-				score=new_score[0],
-				normalized=normalized,
-				timestamp=new_score[1],
-				clear_type=new_score[2],
-				flare_gauge=new_score[3],
-				quality=quality,
-				current=True,
-			)
-			if chart.id in current_scores:
-				old_score = current_scores[chart.id]
-				if (
-					(new_score[0] > old_score.score) or
-					(new_score[2] > old_score.clear_type) or
-					(new_score[3] != old_score.flare_gauge)
-				):
-					new_scores.append(new_entry)
-					old_score.current = None
-					formerly_current_scores.append(old_score)
-				elif (old_score.flare_gauge is None) and (new_score[3] is not None):
-					old_score.flare_gauge = new_score[3]
-					new_flares.append(old_score)
-			else:
-				new_scores.append(new_entry)
-		print("perform_fetch: built score updates")
-
-		with transaction.atomic():
-			UserScore.objects.bulk_update(formerly_current_scores, ['current'])
-			print("perform_fetch: cleared current on outdated scores")
-			UserScore.objects.bulk_create(new_scores)
-			print("perform_fetch: created new scores")
-			UserScore.objects.bulk_update(new_flares, ['flare_gauge'])
-			print("perform_fetch: set flare gauges of old scores")
-		return HttpResponse("Pulled new scores")
-
-	except Exception:
-		print("----------")
-		traceback.print_exc()
-		print("----------")
-
-	finally:
-		user.pulling_scores = False
-		user.save()
+	return _synchronization_response(synchronize(user))
 
 
 def check_locks(song_id, song_locks, cabinet):
@@ -1188,10 +1080,10 @@ def scores(request, user_id):
 	user_id = int(user_id)
 	scores_user = User.objects.get(id=user_id)
 
-	redirect_uri = request.build_absolute_uri(reverse('scores'))
 	logged_in_user = get_user(request)
 	if not logged_in_user:
 		return redirect('link_sanbai')
+	synchronized = False
 	if settings.WEBHOOK_ID and not scores_user.webhooked:
 		hook_response = register_webhook(scores_user)
 		if hook_response.status_code != 200:
@@ -1203,7 +1095,8 @@ def scores(request, user_id):
 		scores_user.webhooked = True
 		scores_user.save()
 
-		perform_fetch(scores_user, redirect_uri)
+		synchronize(scores_user)
+		synchronized = True
 
 	if user_id != logged_in_user.id:
 		min_visibility = 2
@@ -1211,13 +1104,6 @@ def scores(request, user_id):
 			min_visibility = 1
 		if scores_user.visibility.id < min_visibility:
 			return redirect('forbidden')
-
-	if scores_user.pulling_scores:
-		while True:
-			time.sleep(1)
-			scores_user = User.objects.get(id=user_id)
-			if not scores_user.pulling_scores:
-				break
 
 	#### POST-CREATION EMAIL REGISTRATION ####
 	# this is for users that signed up before I introduced email validation.
@@ -1229,8 +1115,8 @@ def scores(request, user_id):
 
 	current_scores = {}
 	score_db_query = UserScore.objects.filter(user=scores_user, current=True)
-	if len(score_db_query) == 0 and scores_user.access_token:
-		perform_fetch(scores_user, redirect_uri)
+	if (not synchronized) and (len(score_db_query) == 0) and scores_user.access_token:
+		synchronize(scores_user)
 		score_db_query = UserScore.objects.filter(user=scores_user, current=True)
 	for score in score_db_query:
 		current_scores[score.chart_id] = score
@@ -1444,4 +1330,5 @@ def scores(request, user_id):
 		'any_hidden': any_hidden,
 		'same_user': same_user,
 		'username': scores_user.django_user.username,
+		'synchronization_in_progress': is_synchronization_in_progress(scores_user),
 	})
