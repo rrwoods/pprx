@@ -1,0 +1,72 @@
+name: Promote to prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_ci_check:
+        description: "Skip verifying Django CI passed on main HEAD"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: promote-to-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.PROD_PROMOTE_APP_ID }}
+          private-key: ${{ secrets.PROD_PROMOTE_APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Verify fast-forward and main CI status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CI_CHECK: ${{ inputs.skip_ci_check }}
+        run: |
+          git fetch --no-tags origin
+          MAIN_SHA=$(git rev-parse origin/main)
+          PROD_SHA=$(git rev-parse origin/prod)
+
+          if [ "$MAIN_SHA" = "$PROD_SHA" ]; then
+            echo "prod is already at main ($MAIN_SHA). Nothing to promote."
+            exit 0
+          fi
+
+          if ! git merge-base --is-ancestor "$PROD_SHA" "$MAIN_SHA"; then
+            echo "::error::Cannot fast-forward: prod ($PROD_SHA) is not an ancestor of main ($MAIN_SHA)."
+            exit 1
+          fi
+
+          if [ "$SKIP_CI_CHECK" != "true" ]; then
+            CONCLUSION=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&head_sha=${MAIN_SHA}&event=push&per_page=10" \
+              --jq '[.workflow_runs[] | select(.status == "completed")][0].conclusion // ""')
+            if [ "$CONCLUSION" != "success" ]; then
+              echo "::error::Django CI has not passed for main commit ${MAIN_SHA} (conclusion: ${CONCLUSION:-none/pending})."
+              exit 1
+            fi
+          fi
+
+      - name: Fast-forward prod to main
+        run: |
+          MAIN_SHA=$(git rev-parse origin/main)
+          PROD_SHA=$(git rev-parse origin/prod)
+          if [ "$MAIN_SHA" != "$PROD_SHA" ]; then
+            git push origin "${MAIN_SHA}:refs/heads/prod"
+            echo "Fast-forwarded prod from ${PROD_SHA} to ${MAIN_SHA}."
+          fi

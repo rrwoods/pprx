@@ -1,0 +1,17 @@
+name: Block PR UI merge to prod
+
+on:
+  pull_request:
+    branches: [ "prod" ]
+
+permissions:
+  contents: read
+
+jobs:
+  forbid-ui-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject GitHub UI merge into prod
+        run: |
+          echo "::error::Do not merge PRs into prod via the GitHub UI (Rebase/Squash rewrites commit SHAs). Once Django CI passes, run 'Actions -> Promote to prod' to fast-forward prod to main, which will automatically mark this PR as Merged."
+          exit 1
