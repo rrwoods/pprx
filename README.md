@@ -25,7 +25,8 @@ Visit **[pprx.gg](https://pprx.gg/)** to get started!
 - **[VISION.md](VISION.md)**: Project vision, dual North Stars, scoring difficulty philosophy, and explicit anti-goals.
 - **[GLOSSARY.md](GLOSSARY.md)**: Canonical domain language and definitions (Player vs. User, Rating vs. Spice vs. Quality, Cabinets, and Unlocks).
 - **[Architecture & Pipeline Guide](docs/architecture.md)**: Technical guide detailing data ingestion, the statistical calibration pipeline, operational landmines, and deployment topology.
-- **[Staging Operations & DB Refresh Runbook](docs/runbooks/staging-operations.md)**: Environment topology (`pprx-prod` vs `pprx-staging`), `main` → `prod` promotion, and prod-to-staging DB clone/sanitization workflow.
+- **[Prod Promotion Runbook](docs/runbooks/promote-to-prod.md)**: Checklist and troubleshooting for fast-forwarding `main` → `prod` via GitHub Actions.
+- **[Staging Operations & DB Refresh Runbook](docs/runbooks/staging-operations.md)**: Environment topology (`pprx-prod` vs `pprx-staging`), CI/branch setup, and prod-to-staging DB clone/sanitization workflow.
 - **[Architecture Decision Records](docs/adr/)**: Record of key design choices and architectural trade-offs.
 
 ---
@@ -95,10 +96,10 @@ The project's virtualenv is named `pprx` and is managed by virtualenvwrapper, so
 
 PPR X runs two **DigitalOcean App Platform** environments sharing the `pprx-prod` Managed MySQL cluster (with static assets served via WhiteNoise):
 
-- **Production (`pprx-prod`)**: Deploys from `prod`, serving **[pprx.gg](https://pprx.gg/)** against database `ebdb`. Promoted from `main` via fast-forward push (`git push origin main:prod`).
+- **Production (`pprx-prod`)**: Deploys from `prod`, serving **[pprx.gg](https://pprx.gg/)** against database `ebdb`. Promoted from `main` via fast-forward (**Actions → Promote to prod**; see [docs/runbooks/promote-to-prod.md](docs/runbooks/promote-to-prod.md)).
 - **Staging (`pprx-staging`)**: Deploys from `main`, serving **`https://pprx-staging-2xs7w.ondigitalocean.app`** against database `pprx_staging` (cloned and sanitized from `ebdb` via `scripts/clone_prod_to_staging.ps1` and `scripts/sanitize_staging.sql`).
 
-Refer to [docs/architecture.md](docs/architecture.md) and [docs/runbooks/staging-operations.md](docs/runbooks/staging-operations.md) for staging guards, promotion steps, and the DB refresh runbook.
+Refer to [docs/architecture.md](docs/architecture.md), [docs/runbooks/promote-to-prod.md](docs/runbooks/promote-to-prod.md), and [docs/runbooks/staging-operations.md](docs/runbooks/staging-operations.md) for staging guards, promotion steps, and the DB refresh runbook.
 
 ---
 
