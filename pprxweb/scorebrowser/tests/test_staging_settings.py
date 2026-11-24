@@ -12,9 +12,9 @@ from pprxweb.settings import (
     DEFAULT_WEBHOOK_ID,
     load_runtime_settings,
 )
+from scorebrowser.synchronization import SynchronizationOutcome, SynchronizationResult, refresh_user
 from scorebrowser.tests import PPRXTestCase
 from scorebrowser.tests.helpers import create_user
-from scorebrowser.views import refresh_user
 
 
 def _make_env(values):
@@ -155,10 +155,10 @@ class StagingWebhookAndOAuthGuardTests(PPRXTestCase):
         return user
 
     @override_settings(WEBHOOK_ID='')
-    @patch('scorebrowser.views.perform_fetch')
+    @patch('scorebrowser.views.synchronize')
     @patch('scorebrowser.views.register_webhook')
     def test_scores_skips_webhook_and_empty_fetch_for_scrubbed_user_when_webhook_disabled(
-        self, mock_register_webhook, mock_perform_fetch
+        self, mock_register_webhook, mock_synchronize
     ):
         user = self._create_logged_in_user(webhooked=False, access_token=None)
 
@@ -166,15 +166,15 @@ class StagingWebhookAndOAuthGuardTests(PPRXTestCase):
 
         self.assertEqual(response.status_code, 200)
         mock_register_webhook.assert_not_called()
-        mock_perform_fetch.assert_not_called()
+        mock_synchronize.assert_not_called()
         user.refresh_from_db()
         self.assertFalse(user.webhooked)
 
     @override_settings(WEBHOOK_ID='')
-    @patch('scorebrowser.views.perform_fetch')
+    @patch('scorebrowser.views.synchronize')
     @patch('scorebrowser.views.register_webhook')
     def test_scores_skips_webhook_but_fetches_empty_scores_when_access_token_present(
-        self, mock_register_webhook, mock_perform_fetch
+        self, mock_register_webhook, mock_synchronize
     ):
         user = self._create_logged_in_user(webhooked=False, access_token='live-token')
 
@@ -182,15 +182,15 @@ class StagingWebhookAndOAuthGuardTests(PPRXTestCase):
 
         self.assertEqual(response.status_code, 200)
         mock_register_webhook.assert_not_called()
-        mock_perform_fetch.assert_called_once()
+        mock_synchronize.assert_called_once()
         user.refresh_from_db()
         self.assertFalse(user.webhooked)
 
     @override_settings(WEBHOOK_ID='hook-123')
-    @patch('scorebrowser.views.perform_fetch')
+    @patch('scorebrowser.views.synchronize')
     @patch('scorebrowser.views.register_webhook')
     def test_scores_registers_webhook_when_webhook_id_set(
-        self, mock_register_webhook, mock_perform_fetch
+        self, mock_register_webhook, mock_synchronize
     ):
         mock_register_webhook.return_value = MagicMock(status_code=200)
         user = self._create_logged_in_user(webhooked=False, access_token='live-token')
@@ -201,7 +201,7 @@ class StagingWebhookAndOAuthGuardTests(PPRXTestCase):
         mock_register_webhook.assert_called_once()
         user.refresh_from_db()
         self.assertTrue(user.webhooked)
-        self.assertEqual(mock_perform_fetch.call_count, 2)
+        mock_synchronize.assert_called_once_with(user)
 
     @override_settings(WEBHOOK_ID='')
     @patch('scorebrowser.views.register_webhook')
@@ -249,30 +249,16 @@ class StagingWebhookAndOAuthGuardTests(PPRXTestCase):
         user.refresh_from_db()
         self.assertTrue(user.webhooked)
 
-    @patch('scorebrowser.views.requests.post')
-    def test_refresh_user_uses_passed_redirect_uri_by_default(self, mock_post):
-        user = create_user(with_django_user=True, refresh_token='old-refresh')
-        mock_post.return_value = MagicMock(
-            json=lambda: {'access_token': 'new-access', 'refresh_token': 'new-refresh'},
-        )
-
-        ok = refresh_user(user, 'https://example.test/scorebrowser/scores')
-
-        self.assertTrue(ok)
-        self.assertEqual(
-            mock_post.call_args.kwargs['data']['redirect_uri'],
-            'https://example.test/scorebrowser/scores',
-        )
-
     @override_settings(SANBAI_OAUTH_REDIRECT_URI='https://pprx.gg/scorebrowser/scores')
-    @patch('scorebrowser.views.requests.post')
+    @patch('scorebrowser.synchronization.requests.post')
     def test_refresh_user_honors_sanbai_oauth_redirect_uri_setting(self, mock_post):
         user = create_user(with_django_user=True, refresh_token='old-refresh')
         mock_post.return_value = MagicMock(
+            status_code=200,
             json=lambda: {'access_token': 'new-access', 'refresh_token': 'new-refresh'},
         )
 
-        ok = refresh_user(user, 'https://pprx-staging.ondigitalocean.app/scorebrowser/scores')
+        ok = refresh_user(user)
 
         self.assertTrue(ok)
         self.assertEqual(
@@ -280,20 +266,13 @@ class StagingWebhookAndOAuthGuardTests(PPRXTestCase):
             'https://pprx.gg/scorebrowser/scores',
         )
 
-    @override_settings(SANBAI_OAUTH_REDIRECT_URI='https://custom.example/scorebrowser/scores')
-    @patch('scorebrowser.management.commands.fetch.perform_fetch')
-    def test_fetch_command_honors_sanbai_oauth_redirect_uri(self, mock_perform_fetch):
+    @patch('scorebrowser.management.commands.synchronize.synchronize')
+    def test_synchronize_command_calls_synchronize(self, mock_synchronize):
         user = create_user(with_django_user=True)
+        mock_synchronize.return_value = SynchronizationResult(
+            outcome=SynchronizationOutcome.SYNCHRONIZED,
+        )
 
-        call_command('fetch', user.django_user.username)
+        call_command('synchronize', user.django_user.username)
 
-        mock_perform_fetch.assert_called_once_with(user, 'https://custom.example/scorebrowser/scores')
-
-    @override_settings(SANBAI_OAUTH_REDIRECT_URI=None)
-    @patch('scorebrowser.management.commands.fetch.perform_fetch')
-    def test_fetch_command_defaults_to_prod_redirect_uri(self, mock_perform_fetch):
-        user = create_user(with_django_user=True)
-
-        call_command('fetch', user.django_user.username)
-
-        mock_perform_fetch.assert_called_once_with(user, 'https://pprx.gg/scorebrowser/scores')
+        mock_synchronize.assert_called_once_with(user)

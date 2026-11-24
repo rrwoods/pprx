@@ -74,14 +74,12 @@ class StagingCloneArtifactsTests(SimpleTestCase):
             'refresh_token',
             'reauth',
             'webhooked',
-            'pulling_scores',
+            'synchronization_started_at',
         ):
             self.assertIn(User._meta.get_field(field_name).column, sql)
 
         self.assertIn("is_staff = 0", sql)
         self.assertIn("username != 'rrwoods'", sql)
-        self.assertIn("INFORMATION_SCHEMA.COLUMNS", sql)
-        self.assertIn("synchronization_started_at", sql)
         self.assertIn("TRUNCATE TABLE django_session;", sql)
 
     def test_clone_script_syntax_and_dry_run(self):
