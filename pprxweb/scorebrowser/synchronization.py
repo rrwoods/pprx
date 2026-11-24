@@ -5,7 +5,9 @@ import json
 import math
 from typing import Optional, Protocol
 import numpy as np
+import requests
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -36,6 +38,74 @@ class UpstreamScore:
 class UpstreamScoreSource(Protocol):
     def fetch_scores(self, user: User) -> list[UpstreamScore]:
         ...
+
+
+SANBAI_GET_SCORES_URL = "https://3icecream.com/dev/api/v1/get_scores"
+SANBAI_OAUTH_TOKEN_URL = "https://3icecream.com/oauth/token"
+
+
+def refresh_user(user: User) -> bool:
+    """Refresh 3icecream OAuth tokens for a User and persist them on success."""
+    refresh_response = requests.post(
+        SANBAI_OAUTH_TOKEN_URL,
+        data={
+            "client_id": settings.CLIENT_ID,
+            "client_secret": settings.CLIENT_SECRET,
+            "grant_type": "refresh_token",
+            "refresh_token": user.refresh_token,
+            "redirect_uri": settings.SANBAI_OAUTH_REDIRECT_URI,
+        },
+    )
+    if refresh_response.status_code == 200:
+        try:
+            response_json = refresh_response.json()
+            user.access_token = response_json["access_token"]
+            user.refresh_token = response_json["refresh_token"]
+        except (ValueError, KeyError, TypeError):
+            pass
+        else:
+            user.save(update_fields=["access_token", "refresh_token"])
+            return True
+    print(f"refresh_user: unexpected token response ({refresh_response.status_code}): {refresh_response.text}")
+    return False
+
+
+class SanbaiScoreSource:
+    """Production UpstreamScoreSource backed by 3icecream's OAuth score API."""
+
+    def fetch_scores(self, user: User) -> list[UpstreamScore]:
+        scores_response = requests.post(
+            SANBAI_GET_SCORES_URL,
+            data={"access_token": user.access_token},
+        )
+        if scores_response.status_code == 400:
+            print(f"get_scores returned 400 for user {user.id}; refreshing token")
+            if not refresh_user(user):
+                user.reauth = True
+                user.save(update_fields=["reauth"])
+                raise ReauthRequired()
+            scores_response = requests.post(
+                SANBAI_GET_SCORES_URL,
+                data={"access_token": user.access_token},
+            )
+        if scores_response.status_code != 200:
+            raise UpstreamError(
+                status=scores_response.status_code,
+                body=scores_response.text,
+            )
+        return [
+            UpstreamScore(
+                song_id=entry["song_id"],
+                difficulty=entry["difficulty"],
+                rating=entry["rating"],
+                song_title=entry["song_name"],
+                score=entry["score"],
+                lamp=entry["lamp"],
+                timestamp=entry.get("time_played") or entry["time_uploaded"],
+                flare_gauge=entry.get("flare"),
+            )
+            for entry in scores_response.json()
+        ]
 
 
 class SynchronizationError(Exception):
@@ -118,7 +188,7 @@ def is_synchronization_in_progress(user: User) -> bool:
 
 def synchronize(user: User, source: Optional[UpstreamScoreSource] = None) -> SynchronizationResult:
     if source is None:
-        raise NotImplementedError("Production 3icecream adapter is implemented in #75")
+        source = SanbaiScoreSource()
 
     now = timezone.now()
     cutoff = now - CLAIM_TIMEOUT

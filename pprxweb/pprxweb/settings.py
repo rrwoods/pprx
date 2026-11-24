@@ -42,6 +42,7 @@ DEFAULT_PROD_CSRF_ORIGINS = [
     'https://pprx.gg',
 ]
 
+MAINTAINER_EMAIL = 'rick.r.woods@gmail.com'
 WEBHOOK_ID = DEFAULT_WEBHOOK_ID
 SANBAI_OAUTH_REDIRECT_URI = None
 IS_STAGING = False

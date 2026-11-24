@@ -21,6 +21,7 @@ from numpy import interp
 from .forms import SetPasswordForm, UpdateEmailForm, UserRegistrationForm
 from .misc import sort_key
 from .models import *
+from .synchronization import refresh_user
 from .tokens import ACCOUNT_ACTIVATION_TOKEN_GENERATOR
 import json
 import math
@@ -139,29 +140,6 @@ def login_user(request):
 @login_required(login_url='login')
 def link_sanbai(request):
 	return render(request, 'scorebrowser/link_sanbai.html', {'client_id': settings.CLIENT_ID})
-
-def refresh_user(user, redirect_uri):
-	print("refresh_user: enter")
-	redirect_uri = settings.SANBAI_OAUTH_REDIRECT_URI or redirect_uri
-	refresh_response = requests.post('https://3icecream.com/oauth/token', data={
-		'client_id': settings.CLIENT_ID,
-		'client_secret': settings.CLIENT_SECRET,
-		'grant_type': 'refresh_token',
-		'refresh_token': user.refresh_token,
-		'redirect_uri': redirect_uri,
-	})
-	print("refresh_user: got token response from 3icecream")
-	try:
-		response_json = refresh_response.json()
-		user.access_token = response_json['access_token']
-		user.refresh_token = response_json['refresh_token']
-		user.save()
-	except:
-		print("refresh_user: unexpected token response:")
-		print(refresh_response.text)
-		return False
-	print("refresh_user: exit")
-	return True
 
 def finish_link(request):
 	if 'code' not in request.GET:
@@ -717,7 +695,7 @@ def perform_fetch(user, redirect_uri):
 		print(scores_response.text)
 		print("----------")
 		print("perform_fetch: refreshing user and trying again")
-		if not refresh_user(user, redirect_uri):
+		if not refresh_user(user):
 			print("perform_fetch: couldn't refresh; forcing re-auth - user must load scores page to re-link sanbai")
 			user.reauth = True
 			user.save()
@@ -1217,7 +1195,7 @@ def scores(request, user_id):
 	if settings.WEBHOOK_ID and not scores_user.webhooked:
 		hook_response = register_webhook(scores_user)
 		if hook_response.status_code != 200:
-			if not refresh_user(scores_user, redirect_uri):
+			if not refresh_user(scores_user):
 				return redirect('link_sanbai')
 			hook_response = register_webhook(scores_user)
 			if hook_response.status_code != 200:
