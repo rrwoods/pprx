@@ -80,5 +80,5 @@ Before promoting `main` to `prod`:
 
 ### `Create GitHub App token` or `git push` permission error
 
-- Confirm repository Actions secrets `PROD_PROMOTE_APP_ID` and `PROD_PROMOTE_APP_PRIVATE_KEY` are configured.
+- Confirm repository Actions secrets `PROD_PROMOTE_APP_CLIENT_ID` (or `PROD_PROMOTE_APP_ID`) and `PROD_PROMOTE_APP_PRIVATE_KEY` are configured.
 - Confirm the GitHub App is installed on `rrwoods/pprx` with `Contents: Read and write` permission and added to the `prod` Ruleset **Bypass list** (and that no legacy classic branch protection rule remains on `prod`).
