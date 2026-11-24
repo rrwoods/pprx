@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest import mock
 from django.contrib.auth.models import User as DjangoUser
 from django.urls import reverse
 from django.utils import timezone
@@ -65,3 +66,80 @@ class ScoresViewTests(PPRXTestCase):
         self.assertNotContains(response, 'id="synchronization-in-progress"')
         self.assertContains(response, "Stale Test Song")
         self.assertContains(response, "980000")
+
+
+class ScoresViewVisibilityTests(PPRXTestCase):
+    PRIVATE, ADMIN_ONLY, PUBLIC = 0, 1, 2
+
+    def _create_user(self, visibility_id, is_staff=False, **kwargs):
+        django_user = DjangoUser.objects.create_user(
+            username=f"dj_{DjangoUser.objects.count() + 1}",
+            email="user@example.com",
+            is_staff=is_staff,
+        )
+        return create_user(django_user=django_user, visibility_id=visibility_id, **kwargs)
+
+    def _view_scores(self, viewer, owner):
+        self.client.force_login(viewer.django_user)
+        return self.client.get(reverse("scores", args=[owner.id]))
+
+    def test_private_profile_is_forbidden_to_other_users(self):
+        viewer = self._create_user(self.PUBLIC, webhooked=True)
+        owner = self._create_user(self.PRIVATE, webhooked=True)
+
+        response = self._view_scores(viewer, owner)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_only_profile_is_forbidden_to_non_staff_users(self):
+        viewer = self._create_user(self.PUBLIC, webhooked=True)
+        owner = self._create_user(self.ADMIN_ONLY, webhooked=True)
+
+        response = self._view_scores(viewer, owner)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_view_admin_only_profile(self):
+        viewer = self._create_user(self.PRIVATE, is_staff=True, webhooked=True)
+        owner = self._create_user(self.ADMIN_ONLY, webhooked=True)
+
+        response = self._view_scores(viewer, owner)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_staff_cannot_view_private_profile(self):
+        viewer = self._create_user(self.PUBLIC, is_staff=True, webhooked=True)
+        owner = self._create_user(self.PRIVATE, webhooked=True)
+
+        response = self._view_scores(viewer, owner)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_public_profile_is_visible_to_other_users(self):
+        viewer = self._create_user(self.PRIVATE, webhooked=True)
+        owner = self._create_user(self.PUBLIC, webhooked=True)
+
+        response = self._view_scores(viewer, owner)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_user_can_view_their_own_private_profile(self):
+        user = self._create_user(self.PRIVATE, webhooked=True)
+
+        response = self._view_scores(user, user)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_forbidden_request_does_not_touch_the_profile_owner(self):
+        viewer = self._create_user(self.PUBLIC, webhooked=True)
+        owner = self._create_user(self.PRIVATE, webhooked=False)
+
+        with mock.patch("scorebrowser.views.register_webhook") as register_webhook, \
+                mock.patch("scorebrowser.views.synchronize") as synchronize:
+            response = self._view_scores(viewer, owner)
+
+        self.assertEqual(response.status_code, 403)
+        register_webhook.assert_not_called()
+        synchronize.assert_not_called()
+        owner.refresh_from_db()
+        self.assertFalse(owner.webhooked)

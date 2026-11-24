@@ -9,7 +9,7 @@ from django.core.mail import EmailMessage
 from django.db import transaction
 from django.db.models import Max
 from django.db.models.functions import Lower
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -1083,6 +1083,16 @@ def scores(request, user_id):
 	logged_in_user = get_user(request)
 	if not logged_in_user:
 		return redirect('link_sanbai')
+
+	# Decide access before doing any work on the profile owner's behalf, so a
+	# forbidden request never registers a webhook or synchronizes their scores.
+	if user_id != logged_in_user.id:
+		min_visibility = 2
+		if logged_in_user.django_user.is_staff:
+			min_visibility = 1
+		if scores_user.visibility.id < min_visibility:
+			return HttpResponseForbidden("You don't have permission to view this page.")
+
 	synchronized = False
 	if settings.WEBHOOK_ID and not scores_user.webhooked:
 		hook_response = register_webhook(scores_user)
@@ -1097,13 +1107,6 @@ def scores(request, user_id):
 
 		synchronize(scores_user)
 		synchronized = True
-
-	if user_id != logged_in_user.id:
-		min_visibility = 2
-		if logged_in_user.django_user.is_staff:
-			min_visibility = 1
-		if scores_user.visibility.id < min_visibility:
-			return redirect('forbidden')
 
 	#### POST-CREATION EMAIL REGISTRATION ####
 	# this is for users that signed up before I introduced email validation.
