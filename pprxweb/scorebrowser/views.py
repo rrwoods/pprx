@@ -726,7 +726,7 @@ def my_scores(request):
 
 
 def forbidden(request):
-	return HttpResponse("You don't have permission to view this page.")
+	return HttpResponse("You don't have permission to view this page.", status=403)
 
 
 def admin(request):
